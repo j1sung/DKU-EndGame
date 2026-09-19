@@ -1,0 +1,68 @@
+# =========================================================
+# Unreal Engine
+# =========================================================
+
+# Build output
+Binaries/
+DerivedDataCache/
+Intermediate/
+Saved/
+
+# Unreal project user settings
+.vsconfig
+
+# Unreal Editor user-specific settings
+*.user
+*.userprefs
+
+# =========================================================
+# Visual Studio
+# =========================================================
+
+.vs/
+.vscode/
+
+# Visual Studio user-specific files
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Visual Studio database / cache
+*.VC.db
+*.VC.VC.opendb
+
+# =========================================================
+# JetBrains Rider
+# =========================================================
+
+.idea/
+*.sln.iml
+
+# =========================================================
+# Build / temporary files
+# =========================================================
+
+[Bb]uild/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+
+*.log
+*.tmp
+*.temp
+
+# =========================================================
+# OS
+# =========================================================
+
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# =========================================================
+# Unreal generated files
+# =========================================================
+
+*_BuiltData.uasset
