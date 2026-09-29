@@ -42,7 +42,23 @@ protected:
     FVector2D CurrentTilt;
 
     // 균형.
+	void UpdateBodyTilt(float DeltaTime);
     void FallOver(); // 넘어짐 처리 함수.
+
+	UPROPERTY(BlueprintReadOnly, Category = "Balance")
+	FVector2D BodyTilt = FVector2D::ZeroVector; // 실제 몸체 기울기. 입력과 물리적 반응을 기반으로 계산됨.
+
+    // 기울기 변화 속도.
+	UPROPERTY(EditAnywhere, Category = "Balance")
+    float TiltSpeed = 0.8f;
+
+    //넘어지는 최대 기울기.
+	UPROPERTY(EditAnywhere, Category = "Balance")
+    float MaxBodyTilt = 1.0f;
+
+    // 입력이 없을 때 중심으로 돌아오는 속도.
+	UPROPERTY(EditAnywhere, Category = "Balance")
+    float TiltRecoverySpeed = 1.5f;
 
     UPROPERTY(BlueprintReadOnly, Category = "Balance")
     bool bIsFallen = false;

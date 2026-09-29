@@ -25,25 +25,30 @@ void AChickenCharacter::Tick(float DeltaTime)
 	SetActorRotation(NewRot);
 
 	// 균형 시스템 처리.
+	//if (!bIsFallen)
+	//{
+	//	// 입력이 있는 상태인지 확인.
+	//	if (CurrentTilt.SizeSquared() > 0.01f)
+	//	{
+	//		// 기울이고 있으면 시간 누적.
+	//		TiltAccumulator += DeltaTime;
+
+	//		// 한계치에 도달하면 넘어짐.
+	//		if (TiltAccumulator >= MaxTiltTime)
+	//		{
+	//			FallOver();
+	//		}
+	//	}
+	//	else
+	//	{
+	//		// 입력을 놓으면 기울기가 회복됨.
+	//		TiltAccumulator = FMath::Max(0.0f, TiltAccumulator - (DeltaTime * 2.0f));
+	//	}
+	//}
+
 	if (!bIsFallen)
 	{
-		// 입력이 있는 상태인지 확인.
-		if (CurrentTilt.SizeSquared() > 0.01f)
-		{
-			// 기울이고 있으면 시간 누적.
-			TiltAccumulator += DeltaTime;
-
-			// 한계치에 도달하면 넘어짐.
-			if (TiltAccumulator >= MaxTiltTime)
-			{
-				FallOver();
-			}
-		}
-		else
-		{
-			// 입력을 놓으면 기울기가 회복됨.
-			TiltAccumulator = FMath::Max(0.0f, TiltAccumulator - (DeltaTime * 2.0f));
-		}
+		UpdateBodyTilt(DeltaTime);
 	}
 
 	// 차징 점프 게이지 채우기.
@@ -65,6 +70,17 @@ void AChickenCharacter::Tick(float DeltaTime)
 			}
 		}
 	}
+
+	// Mesh 회전도 같이 연결.
+	float Pitch = -BodyTilt.Y * 35.0f;
+	float Roll = BodyTilt.X * 35.0f;
+
+	FRotator TargetMeshRotation(Pitch, -90.f, Roll);
+
+	FRotator CurrentMeshRotation = GetMesh()->GetRelativeRotation();
+
+	FRotator NewMeshRotation = FMath::RInterpTo(CurrentMeshRotation, TargetMeshRotation, DeltaTime, 8.0f);
+	GetMesh()->SetRelativeRotation(NewMeshRotation);
 }
 
 void AChickenCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -104,7 +120,7 @@ void AChickenCharacter::MoveRight(float Value)
 {
 	if (bIsFallen) return;
 
-	CurrentTilt.Y = Value;
+	CurrentTilt.Y = -Value;
 
 	// 위랑 같다.
 	if (Value != 0.0f)
@@ -139,12 +155,14 @@ void AChickenCharacter::ExecuteJump()
 	if (!bIsCharging || bIsFallen) return;
 	bIsCharging = false;
 
-	float TiltMagnitude = FMath::Clamp(CurrentTilt.Size(), 0.0f, 1.0f);
+	//float TiltMagnitude = FMath::Clamp(CurrentTilt.Size(), 0.0f, 1.0f);
+	float TiltMagnitude = FMath::Clamp(BodyTilt.Size(), 0.0f, 1.0f);
 	FVector ForwardDir = GetActorForwardVector();
 	FVector RightDir = GetActorRightVector();
 
 	// 이동 입력이 없으면 위로만, 있으면 기울인 방향으로.
-	FVector TiltWorldDirection = TiltMagnitude > 0.01f ? (ForwardDir * CurrentTilt.X + RightDir * CurrentTilt.Y).GetSafeNormal() : FVector::ZeroVector;
+	//FVector TiltWorldDirection = TiltMagnitude > 0.01f ? (ForwardDir * CurrentTilt.X + RightDir * CurrentTilt.Y).GetSafeNormal() : FVector::ZeroVector;
+	FVector TiltWorldDirection = TiltMagnitude > 0.01f ? (ForwardDir * BodyTilt.X + RightDir * BodyTilt.Y).GetSafeNormal() : FVector::ZeroVector;
 
 	// 기울기에 따른 수직/수평 힘 비율.
 	float VertForceRatio = FMath::Lerp(1.0f, 0.3f, TiltMagnitude);
@@ -161,4 +179,27 @@ void AChickenCharacter::ExecuteJump()
 	TiltAccumulator = 0.0f;
 }
 
+void AChickenCharacter::UpdateBodyTilt(float DeltaTime)
+{
+	// 입력이 있으면 해당 방향으로 몸의 기울기 누적.
+	if (CurrentTilt.SizeSquared() > KINDA_SMALL_NUMBER)
+	{
+		BodyTilt += CurrentTilt * TiltSpeed * DeltaTime;
+	}
+	else
+	{
+		// 입력이 없으면 천천히 중심으로 복귀.
+		BodyTilt = FMath::Vector2DInterpTo(BodyTilt, FVector2D::ZeroVector, DeltaTime, TiltRecoverySpeed);
+	}
+
+	// 최대 기울기 제한.
+	BodyTilt.X = FMath::Clamp(BodyTilt.X, -MaxBodyTilt, MaxBodyTilt);
+	BodyTilt.Y = FMath::Clamp(BodyTilt.Y, -MaxBodyTilt, MaxBodyTilt);
+
+	// 어느 한 축이라도 한계를 넘으면 넘어짐 처리.
+	if (FMath::Abs(BodyTilt.X) >= MaxBodyTilt || FMath::Abs(BodyTilt.Y) >= MaxBodyTilt)
+	{
+		FallOver();
+	}
+}
 
