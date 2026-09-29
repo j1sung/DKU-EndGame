@@ -23,6 +23,10 @@ protected:
     UPROPERTY(EditAnywhere, Category = "Movement|Hopping")
     float BaseHopForce = 350.0f; // 기본으로 콩콩 뛰는 힘
 
+    // 착지 시 재생할 몽타주 변수.
+	UPROPERTY(EditAnywhere, Category = "Animation")
+	class UAnimMontage* LandMontage;
+
     // 이동 및 기울기.
     void MoveForward(float Value);
     void MoveRight(float Value);
