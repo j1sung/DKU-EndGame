@@ -8,11 +8,11 @@
 | --- | --- |
 | `Content/UI/WaitingRoom/WBP_CF_WaitingRoom` | 제목, 참가자 패널, 상태 문구, 나가기/경기 시작 버튼. Designer에서 배치·색·폰트 수정 |
 | `Content/UI/WaitingRoom/WBP_CF_WaitingPlayerRow` | 참가자 한 줄의 이름·상태 점·호스트 배지 디자인 |
-| `Content/UI/WaitingRoom/BP_CF_ArenaController` | 기존 BP_ThirdPersonPlayerController 상속. 로컬 컨트롤러의 BeginPlay에서 위젯 생성 및 Game and UI 입력 설정 |
-| `Content/UI/WaitingRoom/BP_CF_ArenaGameMode` | 기존 BP_CF_GameMode 상속. PlayerController만 위 클래스로 변경 |
+| `Content/UI/WaitingRoom/BP_CF_ArenaController` | 기존 BP_ThirdPersonPlayerController 상속. 대기용 IMC_CF_Waiting 사용. 로컬 BeginPlay에서 위젯 생성 및 Game and UI 입력 설정 |
+| `Content/UI/WaitingRoom/BP_CF_ArenaGameMode` | 기존 BP_CF_GameMode 상속. PlayerController는 위 클래스, Default Pawn은 BP_CF_WaitingCharacter로 지정 |
 | `Source/DKUEndGame/UI/CFWaitingRoomWidget.h/.cpp` | 참가자 목록 갱신, 버튼 표시 조건, 상태 문구와 이벤트 |
 
-`Lvl_CF_Arena`의 World Settings → GameMode Override가 `BP_CF_ArenaGameMode`입니다. 기존 맵 구조·스폰 위치·Default Pawn(`BP_CF_Character`)은 유지합니다. 전역 GameDefaultMap/EditorStartupMap과 메인 메뉴의 방 생성 버튼은 이번 변경에서 수정하지 않았습니다.
+`Lvl_CF_Arena`의 World Settings → GameMode Override가 `BP_CF_ArenaGameMode`입니다. 맵 구조와 스폰 위치는 유지하며, Default Pawn은 대기용 `BP_CF_WaitingCharacter`를 사용합니다. 전역 GameDefaultMap/EditorStartupMap과 메인 메뉴의 방 생성 버튼은 이번 변경에서 수정하지 않았습니다.
 
 ## 현재 동작
 
@@ -34,18 +34,37 @@
 
 경기 시작 시 이 위젯을 제거하고 경기 HUD로 교체하는 단계는 아직 구현하지 않았습니다. 현재 레벨을 그대로 사용해 Waiting → Playing 상태를 전환할 수도 있습니다.
 
-## 서기·걷기 연결 전 확인 사항
+## 대기 중 서기·걷기
 
-이번 변경은 대기 UI 단계입니다. `AN_CF_STAND` / `AN_CF_WALK` 에셋은 있지만 대기 상태의 애니메이션 전환은 아직 연결하지 않았습니다.
+`BP_CF_WaitingCharacter`는 C++ `ACFWaitingCharacter`를 상속하고 기존 White Round 메시·재질·스켈레톤을 사용합니다. UI가 표시된 상태로 WASD 및 방향키 이동이 가능합니다. 캐릭터는 이동 방향을 바라보며 걷고, 멈추면 두 발로 섭니다.
 
-검증 중 기존 입력 불일치를 확인했습니다. `BP_CF_Character`는 `IA_Move`를 사용하지만, 공유 `IMC_Default`의 WASD/방향키는 `IA_Tilt`에 매핑되어 있습니다. UI 추가 전의 `BP_CF_GameMode`로도 이동 거리가 0인 것을 비교 확인했습니다. 다음 대기용 캐릭터/이동 상태 작업에서 걷기용 입력과 Stand/Walk를 함께 연결해야 합니다. 친구의 공용 입력 매핑은 이번에 변경하지 않았습니다.
+- 캐릭터: `Content/Characters/WhiteRound/Blueprints/BP_CF_WaitingCharacter`
+- AnimBP: `Content/Characters/WhiteRound/Animations/ABP_CF_Waiting`
+- 입력: `Content/Input/IMC_CF_Waiting` → `IA_Move` (WASD, 방향키, 게임패드 왼쪽 스틱 매핑)
+- 상태 머신: `WaitingLocomotion`의 Stand(`AN_CF_STAND`) ↔ Walk(`AN_CF_WALK`), 전환 블렌드 0.15초
+- 두 전환은 Standard Blend, `Allow Inertialization for Self Transitions` 꺼짐. 빠른 재진입 시 Inertialization 노드 누락 경고를 방지합니다.
+- STAND/WALK의 Legacy FBX Import Uniform Scale은 100으로 저장했습니다. 기존 스켈레톤의 루트 배율과 맞추기 위한 값이며, 메시 컴포넌트 Scale은 1입니다.
+- 이동 수치: `Source/DKUEndGame/Character/CFWaitingCharacter.cpp`
+  - 최대 걷기 속도 110cm/s, 가속도 600cm/s², 제동 감속도 800cm/s²
+  - 대기용 캐릭터는 점프하지 않으며, 대기 입력에 차징/기울기를 포함하지 않습니다.
+- 애니메이션 값: `Source/DKUEndGame/Character/CFWaitingAnimInstance.h/.cpp`
+  - 실제 수평 속도(GroundSpeed)를 읽어 상태 판정
+  - 걷기 진입 5cm/s 초과 / 서기 복귀 2cm/s 이하로 경계 떨림 방지
+  - 재생 속도 = 실제 속도 ÷ (원본 클립 기준 속도 65.75cm/s × 메시의 균일 스케일)
+  - 기본 110cm/s에서는 약 1.673배속, 55cm/s에서는 약 0.837배속
+  - Root Motion 없이 CharacterMovement가 실제 이동을 처리합니다.
+
+기존 공용 `IMC_Default`의 WASD는 닭싸움용 `IA_Tilt`를 유지합니다. 대기 컨트롤러에서만 별도의 `IMC_CF_Waiting`을 사용하여 기존 `IA_Move` 입력 불일치를 해결했습니다. `BP_CF_Character`, `ABP_Chicken` 및 닭싸움 물리 코드는 수정하지 않았습니다.
+
+경기 시작 시 닭싸움 캐릭터와 전투용 입력으로 전환하는 작업, 탈락 후 관전용 캐릭터 배치는 게임 매니저 단계에서 연결해야 합니다. 게임패드 매핑은 포함했지만 실제 게임패드 장치 검증은 아직 수행하지 않았습니다.
 
 ## 검증
 
 - 프로젝트 C++ 빌드 성공, 새 블루프린트 4개 재컴파일: 오류 0 / 경고 0.
 - PIE: 위젯 단일 생성, 실제 1인 목록, 호스트·빈자리 표시, 한글 이름, 호스트/참가자 표시 전환, 시작 버튼 조건, 월드 목록 복구 확인.
-- PIE: UI가 표시된 상태에서 W 키가 컨트롤러에 도달하고 이동 입력 차단 플래그가 꺼져 있음 확인. 캐릭터의 실제 걷기는 위의 기존 입력 불일치로 미검증.
+- 대기용 이동 PIE 검증 45개 통과: WASD 4방향/대각선 이동, 실제 Walk 상태 평가, 입력 해제 후 Stand 복귀, 110/55cm/s 재생 속도 대응, 점프·차징 미실행, UI 유지 및 메뉴 복귀. 추가로 서기/걷기의 실제 뼈 크기와 12회 빠른 입력 재진입을 확인했으며 Inertialization 누락 경고는 발생하지 않았습니다.
 - PIE와 실제 편집기 화면: 나가기 → 메인 메뉴, 이전 위젯·캐릭터 제거 확인.
 - 실제 편집기에서 패널·문구·버튼 배치 확인. 2명 데이터 주입은 UI 상태 테스트이며, 별도 호스트/클라이언트 접속 테스트는 아직 수행하지 않았습니다.
+- 수정 후 실제 렌더링으로 정상 크기의 서기, 오른쪽으로 걷기, 멈춤, 메인 메뉴 복귀 화면까지 확인했습니다.
 
-확인 방법: `Content/Maps/Lvl_CF_Arena` 열기 → Play. 디자인 수정은 `Content/UI/WaitingRoom/WBP_CF_WaitingRoom`의 Designer에서 진행합니다.
+확인 방법: `Content/Maps/Lvl_CF_Arena` 열기 → Play → 게임 화면 클릭 → WASD로 이동 → 키를 놓아 서기 확인 → 나가기. 디자인 수정은 `Content/UI/WaitingRoom/WBP_CF_WaitingRoom`의 Designer에서 진행합니다.
