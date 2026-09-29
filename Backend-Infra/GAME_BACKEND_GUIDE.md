@@ -202,11 +202,11 @@ FORMING → SESSION_READY → READY_TO_START → IN_GAME
 
 | 단계 | 목표 |
 |---|---|
-| Sprint 2 | DB 상세 설계, AWS·EOS 개발 환경, API 기반 준비 |
-| Sprint 3 | EOS 인증과 고유 닉네임 프로필 구현 |
-| Sprint 4 | 동시성에 안전한 4인 중앙 매칭 구현 |
-| Sprint 5 | 호스트 지정과 EOS 세션 연결 준비 |
-| Sprint 6 | Unreal 통합, 배포, 실제 4인 경기 시작 검증 |
+| Sprint 1 | DB 상세 설계, AWS·EOS 개발 환경, API 기반 준비 |
+| Sprint 2 | EOS 인증과 고유 닉네임 프로필 구현 |
+| Sprint 3 | 동시성에 안전한 4인 중앙 매칭 구현 |
+| Sprint 4 | 호스트 지정과 EOS 세션 연결 준비 |
+| Sprint 5 | Unreal 통합, 배포, 실제 4인 경기 시작 검증 |
 
 각 단계의 구체적인 작업과 완료 조건은 해당 스프린트 체크리스트에서 관리한다.
 
