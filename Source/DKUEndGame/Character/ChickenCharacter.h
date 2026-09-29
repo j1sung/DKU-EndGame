@@ -12,6 +12,13 @@ class DKUENDGAME_API AChickenCharacter : public ACharacter
 public:
 	AChickenCharacter();
 
+    bool IsChargingJump() const { return bIsCharging; }
+    bool IsFallen() const { return bIsFallen; }
+    bool IsRecoveringFromLanding() const { return bInLandingRecovery; }
+    int32 GetTakeoffSerial() const { return TakeoffSerial; }
+    float GetLandingRecoveryTime() const { return LandingRecoveryTime; }
+    float GetNormalizedJumpCharge() const { return MaxJumpPower > 0.f ? CurrentJumpPower / MaxJumpPower : 0.f; }
+
 protected:
     virtual void Tick(float DeltaTime) override;
     virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
@@ -51,7 +58,7 @@ protected:
     void ExecuteJump();
 
     UPROPERTY(BlueprintReadOnly, Category = "Jump")
-    float CurrentJumpPower;
+    float CurrentJumpPower = 0.f;
 
     UPROPERTY(EditAnywhere, Category = "Jump")
     float MaxJumpPower = 1500.0f;
@@ -59,7 +66,20 @@ protected:
     UPROPERTY(EditAnywhere, Category = "Jump")
     float ChargeRate = 1000.0f;
 
+    UPROPERTY(BlueprintReadOnly, Category = "Jump")
     bool bIsCharging = false;
+
+    // Gameplay owns the rebound delay; animation only visualizes it.
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement|Hopping", meta=(ClampMin="0.01", Units="s"))
+    float LandingRecoveryTime = 0.2f;
+
+    UPROPERTY(BlueprintReadOnly, Category = "Animation")
+    bool bInLandingRecovery = false;
+
+    UPROPERTY(BlueprintReadOnly, Category = "Animation")
+    int32 TakeoffSerial = 0;
+
+    float LandingRecoveryRemaining = 0.f;
 
     // Ä«¸Þ¶ó.
     UPROPERTY(EditAnywhere, Category = "Camera")
