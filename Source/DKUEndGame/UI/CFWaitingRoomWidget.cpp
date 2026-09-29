@@ -7,6 +7,10 @@
 #include "GameFramework/GameStateBase.h"
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/PlayerState.h"
+#include "Network/CFSessionSubsystem.h"
+#include "Network/CFWaitingNetwork.h"
+#include "Engine/GameInstance.h"
+#include "TimerManager.h"
 
 void UCFWaitingPlayerRowWidget::SetPlayer(const FText& Name, bool bHost, bool bEmpty)
 {
@@ -26,24 +30,27 @@ void UCFWaitingRoomWidget::NativeConstruct()
     LeaveButton->OnClicked.AddUniqueDynamic(this,&ThisClass::HandleLeave);
     LastDisplayKey.Reset();
     if (bReadWorldRoster) RefreshFromWorld();
+    if (auto* Service=GetGameInstance()->GetSubsystem<UCFSessionSubsystem>())
+        Service->OnChanged.AddUniqueDynamic(this,&ThisClass::RefreshSessionState);
+    RefreshSessionState();
+    GetWorld()->GetTimerManager().SetTimer(RosterTimer,this,&ThisClass::RefreshLiveDisplay,.35f,true);
 }
 
 void UCFWaitingRoomWidget::NativeDestruct()
 {
+    if (GetWorld()) GetWorld()->GetTimerManager().ClearTimer(RosterTimer);
     StartButton->OnClicked.RemoveDynamic(this,&ThisClass::HandleStart);
     LeaveButton->OnClicked.RemoveDynamic(this,&ThisClass::HandleLeave);
+    if (auto* Service=GetGameInstance()->GetSubsystem<UCFSessionSubsystem>())
+        Service->OnChanged.RemoveDynamic(this,&ThisClass::RefreshSessionState);
     Super::NativeDestruct();
 }
 
-void UCFWaitingRoomWidget::NativeTick(const FGeometry& Geometry,float DeltaTime)
+void UCFWaitingRoomWidget::RefreshLiveDisplay()
 {
-    Super::NativeTick(Geometry,DeltaTime);
-    RefreshElapsed += DeltaTime;
-    if (bReadWorldRoster && RefreshElapsed >= .35f)
-    {
-        RefreshElapsed = 0.f;
-        RefreshFromWorld();
-    }
+    // Network roster updates must not depend on whether Slate paints this window.
+    if (bReadWorldRoster) RefreshFromWorld();
+    RefreshSessionState();
 }
 
 void UCFWaitingRoomWidget::RefreshFromWorld()
@@ -53,19 +60,19 @@ void UCFWaitingRoomWidget::RefreshFromWorld()
     TArray<FText> Names;
     int32 HostIndex=INDEX_NONE;
     const bool bLocalHost=PC && PC->HasAuthority();
+    const auto* Room=Cast<ACFWaitingGameState>(GS);
     if (GS)
     {
         for (APlayerState* State : GS->PlayerArray)
         {
             if (!IsValid(State) || State->IsInactive()) continue;
-            // Remote host identity will be supplied by SetRoomDisplay with the lobby backend.
-            if (bLocalHost && State==PC->PlayerState) HostIndex=Names.Num();
+            if ((Room && State==Room->HostPlayerState) || (!Room && bLocalHost && State==PC->PlayerState)) HostIndex=Names.Num();
             const FString Name=State->GetPlayerName();
             Names.Add(FText::FromString(Name.IsEmpty() ? FString::Printf(TEXT("PLAYER %02d"),Names.Num()+1) : Name));
         }
     }
     // Showing connected players does not mean a match-start backend is ready.
-    ApplyDisplay(Names,HostIndex,MaxPlayers,bLocalHost,false);
+    ApplyDisplay(Names,HostIndex,Room ? Room->RoomCapacity : MaxPlayers,bLocalHost,false);
 }
 
 void UCFWaitingRoomWidget::SetRoomDisplay(const TArray<FText>& PlayerNames,int32 HostIndex,int32 Capacity,bool bLocalHost,bool bCanStart)
@@ -122,5 +129,16 @@ void UCFWaitingRoomWidget::HandleStart()
 void UCFWaitingRoomWidget::HandleLeave()
 {
     if (OnLeaveRequested.IsBound()) { OnLeaveRequested.Broadcast(); return; }
+    if (auto* Service=GetGameInstance()->GetSubsystem<UCFSessionSubsystem>()) { Service->LeaveRoom(); return; }
     if (auto* PC=GetOwningPlayer()) PC->ClientTravel(TEXT("/Game/Maps/Lvl_CF_MainMenu"),TRAVEL_Absolute);
+}
+
+void UCFWaitingRoomWidget::RefreshSessionState()
+{
+    if (auto* Service=GetGameInstance()->GetSubsystem<UCFSessionSubsystem>())
+    {
+        const bool bLeaving=Service->State==ECFSessionState::Leaving;
+        LeaveButton->SetIsEnabled(!bLeaving);
+        if (bLeaving) { StatusText->SetText(Service->StatusMessage); StartButton->SetIsEnabled(false); }
+    }
 }
