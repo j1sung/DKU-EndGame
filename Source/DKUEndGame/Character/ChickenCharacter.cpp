@@ -72,6 +72,12 @@ void AChickenCharacter::Landed(const FHitResult& Hit)
 	if (!bIsFallen && !bIsCharging)
 	{
 		LaunchCharacter(FVector(0.f, 0.f, BaseHopForce), false, true);
+
+		// 착지 몽타주 애니메이션 재생.
+		if (LandMontage)
+		{
+			PlayAnimMontage(LandMontage);
+		}
 	}
 }
 
