@@ -51,6 +51,20 @@ void AChickenCharacter::Tick(float DeltaTime)
 	{
 		CurrentJumpPower = FMath::Clamp(CurrentJumpPower + (ChargeRate * DeltaTime), 0.0f, MaxJumpPower);
 	}
+
+	if (bInLandingRecovery)
+	{
+		LandingRecoveryRemaining -= DeltaTime;
+		if (LandingRecoveryRemaining <= 0.f)
+		{
+			bInLandingRecovery = false;
+			if (!bIsFallen && !bIsCharging && GetCharacterMovement()->IsMovingOnGround())
+			{
+				LaunchCharacter(FVector(0.f, 0.f, BaseHopForce), false, true);
+				++TakeoffSerial;
+			}
+		}
+	}
 }
 
 void AChickenCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -67,20 +81,10 @@ void AChickenCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 void AChickenCharacter::Landed(const FHitResult& Hit)
 {
 	Super::Landed(Hit);
-
-	// 넘어지지 않았고, 크게 뛰려고 모으는 중이 아니라면 바로 다시 가볍게 뜀.
-	if (!bIsFallen && !bIsCharging)
-	{
-		LaunchCharacter(FVector(0.f, 0.f, BaseHopForce), false, true);
-
-		// 착지 몽타주 애니메이션 재생.
-		if (LandMontage)
-		{
-			PlayAnimMontage(LandMontage);
-		}
-	}
+	// ABP_Chicken plays Land in its state machine. Do not also play AM_Land.
+	bInLandingRecovery = !bIsFallen;
+	LandingRecoveryRemaining = FMath::Max(0.01f, LandingRecoveryTime);
 }
-
 // WASD 입력.
 // 카메라 방향 기준 상체 기울기.
 void AChickenCharacter::MoveForward(float Value)
@@ -112,6 +116,7 @@ void AChickenCharacter::MoveRight(float Value)
 void AChickenCharacter::FallOver()
 {
 	bIsFallen = true;
+	bInLandingRecovery = false;
 	bIsCharging = false;
 
 	// TODO : 여기서 애니메이션 블루프린트나 래그돌 물리 전환으로 넘어지는 연출 실행.
@@ -148,7 +153,9 @@ void AChickenCharacter::ExecuteJump()
 	FVector LaunchVelocity = (TiltWorldDirection * HorizForceRatio) + (FVector::UpVector * VertForceRatio);
 	LaunchVelocity *= CurrentJumpPower;
 
+	bInLandingRecovery = false;
 	LaunchCharacter(LaunchVelocity, true, true);
+	++TakeoffSerial;
 
 	CurrentJumpPower = 0.0f;
 	TiltAccumulator = 0.0f;
