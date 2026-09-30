@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "Character/CFKnockdownTypes.h"
 #include "ChickenCharacter.generated.h"
 
 UCLASS()
@@ -11,6 +12,16 @@ class DKUENDGAME_API AChickenCharacter : public ACharacter
 
 public:
 	AChickenCharacter();
+
+    // Direction is relative to this character, not the camera or incoming hit.
+    UFUNCTION(BlueprintCallable, Category="Chicken|Knockdown")
+    bool StartKnockdown(ECFKnockdownDirection Direction);
+
+    UFUNCTION(BlueprintPure, Category="Chicken|Knockdown")
+    ECFKnockdownDirection GetKnockdownDirection() const { return KnockdownDirection; }
+
+    UFUNCTION(BlueprintPure, Category="Chicken|Knockdown")
+    bool IsKnockdownPending() const { return bKnockdownPending; }
 
     bool IsChargingJump() const { return bIsCharging; }
     bool IsFallen() const { return bIsFallen; }
@@ -80,6 +91,20 @@ protected:
     int32 TakeoffSerial = 0;
 
     float LandingRecoveryRemaining = 0.f;
+
+    UPROPERTY(EditDefaultsOnly, Category="Balance")
+    bool bEnableBalanceFailure = true;
+
+    UPROPERTY(EditDefaultsOnly, Category="Movement|Hopping")
+    bool bEnableAutoHop = true;
+
+    UPROPERTY(BlueprintReadOnly, Category="Chicken|Knockdown")
+    ECFKnockdownDirection KnockdownDirection = ECFKnockdownDirection::Forward;
+
+    UPROPERTY(BlueprintReadOnly, Category="Chicken|Knockdown")
+    bool bKnockdownPending = false;
+
+    void BeginKnockdown();
 
     // Ä«¸Þ¶ó.
     UPROPERTY(EditAnywhere, Category = "Camera")
