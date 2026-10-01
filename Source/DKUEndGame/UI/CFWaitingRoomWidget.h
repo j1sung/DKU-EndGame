@@ -25,7 +25,7 @@ protected:
     UPROPERTY(meta=(BindWidget)) TObjectPtr<UBorder> ConnectionDot;
 };
 
-/** Waiting-screen presentation only. Match authority and travel-to-arena belong to the later lobby backend. */
+/** Waiting roster presentation. Session lifecycle is handled by CFSessionSubsystem. */
 UCLASS(Abstract, Blueprintable)
 class DKUENDGAME_API UCFWaitingRoomWidget : public UUserWidget
 {
@@ -55,7 +55,6 @@ public:
 protected:
     virtual void NativeConstruct() override;
     virtual void NativeDestruct() override;
-    virtual void NativeTick(const FGeometry& Geometry, float DeltaTime) override;
 
     UPROPERTY(meta=(BindWidget)) TObjectPtr<UTextBlock> ParticipantCountText;
     UPROPERTY(meta=(BindWidget)) TObjectPtr<UTextBlock> StatusText;
@@ -66,10 +65,12 @@ protected:
 private:
     UFUNCTION() void HandleStart();
     UFUNCTION() void HandleLeave();
+    UFUNCTION() void RefreshSessionState();
+    void RefreshLiveDisplay();
     void RefreshFromWorld();
     void ApplyDisplay(const TArray<FText>& Names, int32 HostIndex, int32 Capacity, bool bLocalHost, bool bCanStart);
     bool bReadWorldRoster = true;
     bool bStartPermitted = false;
-    float RefreshElapsed = 0.f;
+    FTimerHandle RosterTimer;
     FString LastDisplayKey;
 };

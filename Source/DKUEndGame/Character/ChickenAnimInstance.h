@@ -41,6 +41,9 @@ public:
     float Speed = 0.f;
 
     UPROPERTY(BlueprintReadOnly, Category="Chicken|Animation")
+    int32 KnockdownIndex = 0;
+
+    UPROPERTY(BlueprintReadOnly, Category="Chicken|Animation")
     float NormalizedCharge = 0.f;
 
     // These match AN_CF_Charge_Start (0.4s), AN_CF_Jump_Start (0.3s), AN_CF_Land (0.7s).

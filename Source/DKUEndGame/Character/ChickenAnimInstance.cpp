@@ -34,6 +34,7 @@ void UChickenAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
     bInAir = Character->GetCharacterMovement()->IsFalling();
     bCharging = Character->IsChargingJump();
     bFallen = Character->IsFallen();
+    KnockdownIndex = static_cast<int32>(Character->GetKnockdownDirection());
     Speed = Character->GetVelocity().Size2D();
     NormalizedCharge = FMath::Clamp(Character->GetNormalizedJumpCharge(), 0.f, 1.f);
     JumpStartPlayRate = 0.3f / FMath::Max(0.01f, JumpStartDuration);
