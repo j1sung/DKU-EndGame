@@ -15,6 +15,8 @@
 - [전체 문서 갱신 요청문](../.agents/prompts/refresh-project-docs.md)
 
 ## 최근 기록
+- [2026-10-01 · 문서 갱신 스킬 이름 단축](Changes.md#change-20261001-06)
+- [2026-10-01 · 커밋 스킬 이름 단축](Changes.md#change-20261001-05)
 - [2026-10-01 · 커밋 스킬 자동 스테이징](Changes.md#change-20261001-04)
 - [2026-10-01 · 스테이징 커밋 스킬 추가](Changes.md#change-20261001-03)
 - [2026-10-01 · 지침 구조화·규칙 보강](Changes.md#change-20261001-02)

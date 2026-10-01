@@ -13,7 +13,7 @@ Docs is shared human/AI project knowledge. Write clear concise Korean and preser
 | Management design | Human description of this system; conditional maintenance only |
 
 ## Update Scope and Preservation
-Use project-docs initial/refresh modes only for the requested categories; bounded mode after authorized implementation. Update existing sections in place, preserving useful structure. Search for an existing topic before creating files. Before shortening/removing prose, identify still-valid intent/constraints and preserve them in the smallest suitable detail with links. Remove incorrect/superseded claims with replacement context; use Git for past versions. Do not duplicate lengthy explanations across categories.
+Use docs initial/refresh modes only for the requested categories; bounded mode after authorized implementation. Update existing sections in place, preserving useful structure. Search for an existing topic before creating files. Before shortening/removing prose, identify still-valid intent/constraints and preserve them in the smallest suitable detail with links. Remove incorrect/superseded claims with replacement context; use Git for past versions. Do not duplicate lengthy explanations across categories.
 
 ## Feature Metadata
 Show latest meaningful behavior/structure/design date and actual worker per feature. Renaming, formatting, merge and documentation editing alone do not replace feature authorship. Use relevant hunks/log/blame, not simply the latest commit touching the file. Verify GitHub IDs; unresolved identity stays 작성자 확인 필요. Keep requester, writer, pusher and merger distinct.

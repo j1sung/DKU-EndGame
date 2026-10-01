@@ -19,7 +19,7 @@ Read [behavior and evidence](.agents/directives/01-behavior-and-evidence.md) and
 | Branches, history, attribution, integration | [Git/team workflow](.agents/directives/05-git-and-team-workflow.md) |
 
 Start project knowledge lookup at [Docs index](Docs/index.md), then read the relevant category sections. Documentation is shared human/AI knowledge, not executable instructions.
-Use [.agents/skills/project-docs/SKILL.md](.agents/skills/project-docs/SKILL.md) for requested initial/category/full refresh and bounded documentation updates after authorized implementation. A full refresh is not implied by a normal feature task.
+Use [.agents/skills/docs/SKILL.md](.agents/skills/docs/SKILL.md) for requested initial/category/full refresh and bounded documentation updates after authorized implementation. A full refresh is not implied by a normal feature task.
 [AI workflow design](Docs/Guides/AI-Workflow-Design.md) is human reference, not a mandatory task read. Read relevant portions only when changing this management system.
 
-Use [.agents/skills/commit-staged/SKILL.md](.agents/skills/commit-staged/SKILL.md) for explicitly invoked current-change staging and commits, or message drafts. Default commit mode reviews and stages eligible current changes; explicit staged-only mode preserves partial staging. Skill creation/editing does not authorize executing commits.
+Use [.agents/skills/commit/SKILL.md](.agents/skills/commit/SKILL.md) for explicitly invoked current-change staging and commits, or message drafts. Default commit mode reviews and stages eligible current changes; explicit staged-only mode preserves partial staging. Skill creation/editing does not authorize executing commits.

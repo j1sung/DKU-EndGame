@@ -2,13 +2,27 @@
 
 의미 있는 구현·이름·경로·설정 변경을 짧게 기록하고 관련 현재 문서로 연결한다. 기존 작업 전체의 이력을 소급 복원하지 않으며 과거 상세는 Git과 기존 문서 참고.
 
+<a id="change-20261001-06"></a>
+### 2026-10-01 · 문서 갱신 스킬 이름 단축
+
+- 작업자: @j1sung · Codex 수행
+- 변경: `project-docs` → `docs`. 폴더·스킬 식별자·지침·설계 안내·요청문 참조 갱신. 동작 변경 없음.
+- 문서: [문서 갱신 스킬](../.agents/skills/docs/SKILL.md) · [설계 안내](Guides/AI-Workflow-Design.md#12-스킬템플릿프롬프트).
+
+<a id="change-20261001-05"></a>
+### 2026-10-01 · 커밋 스킬 이름 단축
+
+- 작업자: @j1sung · Codex 수행
+- 변경: `commit-staged` → `commit`. 스킬 폴더·식별자·현재 안내·기존 기록의 링크 갱신. 동작 변경 없음.
+- 문서: [커밋 스킬](../.agents/skills/commit/SKILL.md) · [설계 안내](Guides/AI-Workflow-Design.md#15-스테이징-커밋-스킬).
+
 <a id="change-20261001-04"></a>
 ### 2026-10-01 · 커밋 스킬의 자동 스테이징 추가
 
 - 작업자: @j1sung · Codex 수행 · 미커밋
 - 배경: 스테이징을 따로 하지 않아도 현재 작업을 묶어서 커밋하도록 요청.
 - 변경: 기본 실행은 현재 변경 검토→선택 스테이징→작업별 커밋. 스테이징 전용·메시지 초안 모드 유지, 생성물·비밀정보 제외 및 부분 스테이징 처리 명시.
-- 문서: [커밋 스킬 설계](Guides/AI-Workflow-Design.md#15-스테이징-커밋-스킬) · [스킬](../.agents/skills/commit-staged/SKILL.md).
+- 문서: [커밋 스킬 설계](Guides/AI-Workflow-Design.md#15-스테이징-커밋-스킬) · [스킬](../.agents/skills/commit/SKILL.md).
 
 <a id="change-20261001-03"></a>
 ### 2026-10-01 · 스테이징 커밋 스킬 추가
@@ -16,7 +30,7 @@
 - 작업자: @j1sung · Codex 수행 · 미커밋
 - 배경: 스테이징된 여러 작업을 지나치게 세분화하지 않고 관련 작업끼리 묶어 기록할 필요.
 - 변경: commit-staged 스킬과 한국어 메시지 템플릿 추가. 큰 작업 단위 분류, 영어 태그·한국어 제목·본문, 부분 스테이징 보존 및 커밋 승인 범위 정의.
-- 문서: [커밋 스킬 설계](Guides/AI-Workflow-Design.md#15-스테이징-커밋-스킬) · [스킬](../.agents/skills/commit-staged/SKILL.md).
+- 문서: [커밋 스킬 설계](Guides/AI-Workflow-Design.md#15-스테이징-커밋-스킬) · [스킬](../.agents/skills/commit/SKILL.md).
 
 <a id="change-20261001-02"></a>
 ### 2026-10-01 · AI 지침 구조화 및 공통 규칙 보강

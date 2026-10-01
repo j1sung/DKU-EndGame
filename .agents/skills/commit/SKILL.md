@@ -1,5 +1,5 @@
 ---
-name: commit-staged
+name: commit
 description: Review current repository changes, stage eligible tracked and untracked work, and group it into a few commits with English tags and Korean messages when explicitly invoked for committing. Supports explicit staged-only and draft-only requests.
 ---
 

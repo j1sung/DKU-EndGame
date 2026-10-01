@@ -1,5 +1,5 @@
 ---
-name: project-docs
+name: docs
 description: Create initial Korean category documentation, reconcile requested categories with current Unreal implementation and Git history, or maintain affected docs after authorized implementation. Full refresh requires an explicit request.
 ---
 
