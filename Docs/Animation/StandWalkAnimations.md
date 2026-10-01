@@ -1,5 +1,9 @@
 # 일반 서기 · 걷기
 
+> 최근 기능 변경: 2026-09-29 · 작성자 GitHub ID 확인 필요 (Git 작성자: 정규민, `3b7a7c8`)
+
+관련 개요: [카테고리 개요](Overview.md)
+
 기존 White Round v2 리그와 웨이트를 사용하는 반복 애니메이션 두 개입니다.
 
 | 파일 | 동작 | 길이 | 샘플 | 반복 |
@@ -26,7 +30,9 @@
 
 걷기는 몸이 진행 방향을 바라보는 전진 동작입니다. 후진/옆걸음 전용 클립은 아닙니다. 1배속에서 발이 지면을 미는 구간의 속도는 약 **65.75cm/s**입니다. 게임 이동 속도를 이 기준에 맞추거나 재생 속도를 함께 조절해야 발 미끄러짐을 줄일 수 있습니다. STAND/WALK 블렌딩은 시작값으로 0.15~0.2초를 사용할 수 있습니다.
 
-## 확인 결과
+## 기존 확인 기록
+
+아래는 기존 문서의 과거 확인 결과이며 이번 정리에서 재실행하지 않았다.
 
 - Blender 저장본 재열기 및 FBX 재반입: 전체 92프레임 확인.
 - 기존 17개 액션 보존, 28개 변형 뼈 유지, IK 도달 오차와 지면 관통 검사 통과.
@@ -38,10 +44,20 @@
 
 검사 기록: `validation.json`, `export_validation.json`, `unreal_import_validation.json`, `unreal_pose_validation.json`.
 
-FBX 원본은 게임 저장소 외부의 이 폴더에 보관하고, 게임 저장소에는 `.uasset` 두 개를 추가했습니다.
+원본 FBX·Blender 파일과 검사 JSON·미리보기는 과거 작업에서 저장소 외부 자료로 기록되어 있다. 현재 문서에는 해당 외부 폴더의 정확한 위치가 없어 접근 경로는 확인 필요. 게임 저장소의 AnimSequence 에셋과 외부 원본 자료를 구분한다.
 
 ## 아레나 적용
 
-`Lvl_CF_Arena`의 `BP_CF_ArenaGameMode`는 `BP_CF_WaitingCharacter`를 생성합니다. `IMC_CF_Waiting`으로 WASD를 IA_Move에 연결하고, 실제 이동 속도에 맞춰 `CFWaitingAnimInstance`가 걷기 재생 속도를 계산합니다. 기본 속도 110cm/s에서 약 1.673배속이며 Stand/Walk 전환은 0.15초입니다. 상세 설정과 검증은 [WaitingRoomUI.md](WaitingRoomUI.md)를 참고하세요.
+`Lvl_CF_Arena`의 `BP_CF_ArenaGameMode`는 `BP_CF_WaitingCharacter`를 생성합니다. `IMC_CF_Waiting`으로 WASD를 IA_Move에 연결하고, 실제 이동 속도에 맞춰 `CFWaitingAnimInstance`가 걷기 재생 속도를 계산합니다. 기본 속도 110cm/s에서 약 1.673배속이며 Stand/Walk 전환은 0.15초입니다. 상세 설정과 검증은 [WaitingRoomUI.md](../UI/WaitingRoomUI.md)를 참고하세요.
 
 전환은 Standard Blend이며 양쪽 전환의 `Allow Inertialization for Self Transitions`를 껐습니다. UE 5.8에서 새 전환 생성 시 이 옵션이 켜지면 빠르게 걷기/서기로 재진입할 때 Inertialization 노드 누락 경고가 발생할 수 있습니다.
+
+## 대기 이동 연결 상세
+
+- 캐릭터: `/Game/Characters/WhiteRound/Blueprints/BP_CF_WaitingCharacter`
+- AnimBP: `/Game/Characters/WhiteRound/Animations/ABP_CF_Waiting`
+- 입력: `/Game/Input/IMC_CF_Waiting` → `IA_Move`
+- 이동: `CFWaitingCharacter.cpp`에서 속도 110, 가속 600, 제동 800cm/s². 이동 방향으로 회전하며 점프 불가.
+- 애니메이션: `CFWaitingAnimInstance.cpp`가 수평 속도를 읽어 걷기 진입 >5cm/s, 서기 복귀 ≤2cm/s로 판정.
+- 재생 속도: 실제 속도 ÷ (기준 65.75cm/s × 메시 X 스케일 절댓값).
+- 대기용 입력만 분리하여 공용 전투 입력과 혼용하지 않는 구조.

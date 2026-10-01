@@ -1,5 +1,9 @@
 # 아레나 대기 UI
 
+> 최근 기능 변경: 2026-09-29 · 작성자 GitHub ID 확인 필요 (Git 작성자: 정규민, `d13290b`)
+
+관련 개요: [카테고리 개요](Overview.md)
+
 `Content/Maps/Lvl_CF_Arena`에서 Play하면 경기장이 보이는 대기 UI가 표시됩니다. 별도 대기 맵은 생성하지 않았습니다.
 
 ## 에셋과 편집 위치
@@ -36,29 +40,14 @@
 
 ## 대기 중 서기·걷기
 
-`BP_CF_WaitingCharacter`는 C++ `ACFWaitingCharacter`를 상속하고 기존 White Round 메시·재질·스켈레톤을 사용합니다. UI가 표시된 상태로 WASD 및 방향키 이동이 가능합니다. 캐릭터는 이동 방향을 바라보며 걷고, 멈추면 두 발로 섭니다.
+대기 Pawn은 `BP_CF_WaitingCharacter`, 입력은 `IMC_CF_Waiting`을 사용한다. 이동 속도는 기본 110cm/s이며 점프·차징은 대기 경로에 포함하지 않는다. 실제 이동에 맞춰 Stand/Walk를 표현한다.
 
-- 캐릭터: `Content/Characters/WhiteRound/Blueprints/BP_CF_WaitingCharacter`
-- AnimBP: `Content/Characters/WhiteRound/Animations/ABP_CF_Waiting`
-- 입력: `Content/Input/IMC_CF_Waiting` → `IA_Move` (WASD, 방향키, 게임패드 왼쪽 스틱 매핑)
-- 상태 머신: `WaitingLocomotion`의 Stand(`AN_CF_STAND`) ↔ Walk(`AN_CF_WALK`), 전환 블렌드 0.15초
-- 두 전환은 Standard Blend, `Allow Inertialization for Self Transitions` 꺼짐. 빠른 재진입 시 Inertialization 노드 누락 경고를 방지합니다.
-- STAND/WALK의 Legacy FBX Import Uniform Scale은 100으로 저장했습니다. 기존 스켈레톤의 루트 배율과 맞추기 위한 값이며, 메시 컴포넌트 Scale은 1입니다.
-- 이동 수치: `Source/DKUEndGame/Character/CFWaitingCharacter.cpp`
-  - 최대 걷기 속도 110cm/s, 가속도 600cm/s², 제동 감속도 800cm/s²
-  - 대기용 캐릭터는 점프하지 않으며, 대기 입력에 차징/기울기를 포함하지 않습니다.
-- 애니메이션 값: `Source/DKUEndGame/Character/CFWaitingAnimInstance.h/.cpp`
-  - 실제 수평 속도(GroundSpeed)를 읽어 상태 판정
-  - 걷기 진입 5cm/s 초과 / 서기 복귀 2cm/s 이하로 경계 떨림 방지
-  - 재생 속도 = 실제 속도 ÷ (원본 클립 기준 속도 65.75cm/s × 메시의 균일 스케일)
-  - 기본 110cm/s에서는 약 1.673배속, 55cm/s에서는 약 0.837배속
-  - Root Motion 없이 CharacterMovement가 실제 이동을 처리합니다.
+입력·캐릭터 규칙은 [Gameplay 개요](../Gameplay/Overview.md#waiting), 반입 설정·재생 속도·전환 상세는 [서기·걷기](../Animation/StandWalkAnimations.md)를 참고한다.
+경기 시작 시 전투 Pawn·입력 전환과 탈락 후 관전은 후속 작업이다.
 
-기존 공용 `IMC_Default`의 WASD는 닭싸움용 `IA_Tilt`를 유지합니다. 대기 컨트롤러에서만 별도의 `IMC_CF_Waiting`을 사용하여 기존 `IA_Move` 입력 불일치를 해결했습니다. `BP_CF_Character`, `ABP_Chicken` 및 닭싸움 물리 코드는 수정하지 않았습니다.
+## 기존 검증 기록
 
-경기 시작 시 닭싸움 캐릭터와 전투용 입력으로 전환하는 작업, 탈락 후 관전용 캐릭터 배치는 게임 매니저 단계에서 연결해야 합니다. 게임패드 매핑은 포함했지만 실제 게임패드 장치 검증은 아직 수행하지 않았습니다.
-
-## 검증
+아래는 기존 문서에 남아 있던 결과이며 이번 문서 정리에서 재실행한 결과가 아니다.
 
 - 프로젝트 C++ 빌드 성공, 새 블루프린트 4개 재컴파일: 오류 0 / 경고 0.
 - PIE: 위젯 단일 생성, 실제 1인 목록, 호스트·빈자리 표시, 한글 이름, 호스트/참가자 표시 전환, 시작 버튼 조건, 월드 목록 복구 확인.
@@ -69,4 +58,4 @@
 
 확인 방법: `Content/Maps/Lvl_CF_Arena` 열기 → Play → 게임 화면 클릭 → WASD로 이동 → 키를 놓아 서기 확인 → 나가기. 디자인 수정은 `Content/UI/WaitingRoom/WBP_CF_WaitingRoom`의 Designer에서 진행합니다.
 
-방 생성부터 연결 종료까지의 흐름과 멀티플레이 테스트 방법은 [ListenServerSessions.md](ListenServerSessions.md)를 참고하세요. 경기 시작, 닭싸움 자세 전환, 탈락·관전 처리는 다음 게임 매니저 단계입니다.
+방 생성부터 연결 종료까지의 흐름과 멀티플레이 테스트 방법은 [ListenServerSessions.md](../Network/ListenServerSessions.md)를 참고하세요. 경기 시작, 닭싸움 자세 전환, 탈락·관전 처리는 다음 게임 매니저 단계입니다.
