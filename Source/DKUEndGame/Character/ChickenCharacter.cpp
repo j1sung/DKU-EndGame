@@ -1,9 +1,9 @@
 #include "Character/ChickenCharacter.h"
+#include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Network/CFWaitingNetwork.h"
 #include "Net/UnrealNetwork.h"
-#include "Components/CapsuleComponent.h"
 
 AChickenCharacter::AChickenCharacter()
 {
@@ -23,6 +23,9 @@ void AChickenCharacter::BeginPlay()
 {
     Super::BeginPlay();
     BaseMeshRotation = GetMesh()->GetRelativeRotation();
+
+	// 닭의 Capsule 충돌 이벤트 등록.
+	GetCapsuleComponent()->OnComponentHit.AddDynamic(this, &AChickenCharacter::OnChickenHit);
 }
 
 void AChickenCharacter::Tick(float DeltaTime)
@@ -121,8 +124,10 @@ void AChickenCharacter::MoveForward(float Value)
 	CurrentTilt.X = FMath::Clamp(Value,-1.f,1.f);
     if (!HasAuthority() && Previous!=CurrentTilt.X) ServerSetTilt(CurrentTilt);
 
+	if (bIsCharging) return;
+
 	// 공중에서 해당 방향으로 이동 입력 적용.
-	if (Value != 0.0f)
+	if (!FMath::IsNearlyZero(Value))
 	{
 		AddMovementInput(GetActorForwardVector(), Value);
 	}
@@ -131,13 +136,16 @@ void AChickenCharacter::MoveForward(float Value)
 void AChickenCharacter::MoveRight(float Value)
 {
 	if (!bRoundInputEnabled || bIsFallen || bKnockdownPending) return;
+	//if (!GetCharacterMovement()->IsMovingOnGround()) return;
 
 	const float Previous = CurrentTilt.Y;
 	CurrentTilt.Y = FMath::Clamp(-Value,-1.f,1.f);
     if (!HasAuthority() && Previous!=CurrentTilt.Y) ServerSetTilt(CurrentTilt);
 
+	if (bIsCharging) return;
+
 	// 위랑 같다.
-	if (Value != 0.0f)
+	if (!FMath::IsNearlyZero(Value))
 	{
 		AddMovementInput(GetActorRightVector(), Value);
 	}
@@ -215,8 +223,7 @@ void AChickenCharacter::ExecuteJump()
 	FVector RightDir = GetActorRightVector();
 
 	// 이동 입력이 없으면 위로만, 있으면 기울인 방향으로.
-	//FVector TiltWorldDirection = TiltMagnitude > 0.01f ? (ForwardDir * CurrentTilt.X + RightDir * CurrentTilt.Y).GetSafeNormal() : FVector::ZeroVector;
-	FVector TiltWorldDirection = TiltMagnitude > 0.01f ? (ForwardDir * BodyTilt.X + RightDir * BodyTilt.Y).GetSafeNormal() : FVector::ZeroVector;
+	FVector TiltWorldDirection = TiltMagnitude > 0.01f ? (ForwardDir * BodyTilt.X + (-RightDir) * BodyTilt.Y).GetSafeNormal() : FVector::ZeroVector;
 
 	// 기울기에 따른 수직/수평 힘 비율.
 	float VertForceRatio = FMath::Lerp(1.0f, 0.3f, TiltMagnitude);
@@ -333,4 +340,98 @@ void AChickenCharacter::ServerSetCharge_Implementation(bool bPressed)
     if (!bRoundInputEnabled || bIsFallen || bKnockdownPending) return;
     if (bPressed) StartJumpCharge(); else ExecuteJump();
     ForceNetUpdate();
+}
+
+void AChickenCharacter::OnChickenHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
+{
+    // Hits are authoritative and only active combatants can eliminate others.
+    if (!HasAuthority() || !bRoundInputEnabled) return;
+
+	if (!OtherActor || OtherActor == this)
+	{
+		return;
+	}
+
+	AChickenCharacter* OtherChicken =
+		Cast<AChickenCharacter>(OtherActor);
+
+	if (!OtherChicken || !OtherChicken->IsRoundInputEnabled())
+	{
+		return;
+	}
+
+	// 이미 넘어졌거나 넘어지는 중이면 무시
+	if (bIsFallen || bKnockdownPending)
+	{
+		return;
+	}
+
+	if (OtherChicken->IsFallen() ||
+		OtherChicken->IsKnockdownPending())
+	{
+		return;
+	}
+
+	// 점프 중일 때만 공격 판정
+	if (!GetCharacterMovement()->IsFalling())
+	{
+		return;
+	}
+
+	// 현재 수평 속도가 충분하지 않으면 공격으로 인정하지 않음
+	const FVector Velocity = GetVelocity();
+
+	if (Velocity.Size2D() < 100.f)
+	{
+		return;
+	}
+
+	// 상대가 어느 방향에서 맞았는지 계산
+	const ECFKnockdownDirection HitDirection =
+		OtherChicken->GetKnockdownDirectionFor(this);
+
+	// 상대를 넘어뜨림
+	if (!OtherChicken->StartKnockdown(HitDirection)) return;
+
+	UE_LOG(
+		LogTemp,
+		Warning,
+		TEXT("%s hit %s"),
+		*GetName(),
+		*OtherChicken->GetName()
+	);
+}
+
+ECFKnockdownDirection AChickenCharacter::GetKnockdownDirectionFor(const AActor* OtherActor) const
+{
+	if (!OtherActor)
+	{
+		return ECFKnockdownDirection::Forward;
+	}
+
+	const FVector ToOther =
+		OtherActor->GetActorLocation() - GetActorLocation();
+
+	const FVector LocalDirection =
+		GetActorTransform().InverseTransformVectorNoScale(ToOther);
+
+	const float ForwardAmount = LocalDirection.X;
+	const float RightAmount = LocalDirection.Y;
+
+	if (FMath::Abs(ForwardAmount) >= FMath::Abs(RightAmount))
+	{
+		if (ForwardAmount > 0.f)
+		{
+			return ECFKnockdownDirection::Forward;
+		}
+
+		return ECFKnockdownDirection::Back;
+	}
+
+	if (RightAmount > 0.f)
+	{
+		return ECFKnockdownDirection::Right;
+	}
+
+	return ECFKnockdownDirection::Left;
 }

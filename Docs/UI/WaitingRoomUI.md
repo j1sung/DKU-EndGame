@@ -1,5 +1,9 @@
 # 아레나 대기 UI
 
+> 최근 기능 변경: 2026-10-02 · @KyuminChung (`c8a7452`, `99aeaf1`); 초기 세션·대기 구현: Git 작성자 정규민 (`d13290b`)
+
+관련 개요: [카테고리 개요](Overview.md)
+
 `Content/Maps/Lvl_CF_Arena`에서 Play하면 경기장이 보이는 대기 UI가 표시됩니다. 별도 대기 맵은 생성하지 않았습니다.
 
 ## 에셋과 편집 위치
@@ -22,7 +26,7 @@
 - 참가자 `나가기`는 로컬 세션을 정리하고 `Lvl_CF_MainMenu`로 돌아갑니다. 호스트 방은 유지됩니다. 호스트가 나가면 연결된 참가자에게 종료를 알리고 모두 메뉴로 복귀합니다. 호스트 강제 종료·연결 손실과 연결 시도 시간 초과도 메뉴 복귀 및 안내를 처리합니다.
 - UI를 로컬 플레이어 화면에 한 번만 추가합니다. 커서를 표시하고 Game and UI 입력을 사용합니다.
 
-## 이후 게임 매니저 연결
+## 게임 매니저 연결
 
 `WBP_CF_WaitingRoom`을 생성할 때 반환된 위젯 참조를 컨트롤러에 저장한 후 다음 인터페이스를 사용하면 됩니다.
 
@@ -32,33 +36,18 @@
 - `OnLeaveRequested`: 바인딩되어 있으면 기본 나가기 대신 이 이벤트를 호출합니다. 기본 동작은 CFSessionSubsystem::LeaveRoom이며, 향후 확인창 등으로 재정의할 때도 마지막에 이 함수를 호출해야 연결이 정리됩니다.
 - 위젯의 BindWidget 이름은 C++와 연결되어 있으므로 해당 이름은 유지합니다.
 
-경기 시작 시 이 위젯을 제거하고 경기 HUD로 교체합니다. 같은 레벨에서 Waiting → Countdown → Playing으로 전환하며, 상세 내용은 [경기 시작 문서](MatchStart.md)를 참고하세요.
+경기 시작 시 이 위젯을 제거하고 경기 HUD로 교체합니다. 같은 레벨에서 Waiting → Countdown → Playing으로 전환하며, 상세 내용은 [경기 시작 문서](../MatchStart.md)를 참고하세요.
 
 ## 대기 중 서기·걷기
 
-`BP_CF_WaitingCharacter`는 C++ `ACFWaitingCharacter`를 상속하고 기존 White Round 메시·재질·스켈레톤을 사용합니다. UI가 표시된 상태로 WASD 및 방향키 이동이 가능합니다. 캐릭터는 이동 방향을 바라보며 걷고, 멈추면 두 발로 섭니다.
+대기 Pawn은 `BP_CF_WaitingCharacter`, 입력은 `IMC_CF_Waiting`을 사용한다. 이동 속도는 기본 110cm/s이며 점프·차징은 대기 경로에 포함하지 않는다. 실제 이동에 맞춰 Stand/Walk를 표현한다.
 
-- 캐릭터: `Content/Characters/WhiteRound/Blueprints/BP_CF_WaitingCharacter`
-- AnimBP: `Content/Characters/WhiteRound/Animations/ABP_CF_Waiting`
-- 입력: `Content/Input/IMC_CF_Waiting` → `IA_Move` (WASD, 방향키, 게임패드 왼쪽 스틱 매핑)
-- 상태 머신: `WaitingLocomotion`의 Stand(`AN_CF_STAND`) ↔ Walk(`AN_CF_WALK`), 전환 블렌드 0.15초
-- 두 전환은 Standard Blend, `Allow Inertialization for Self Transitions` 꺼짐. 빠른 재진입 시 Inertialization 노드 누락 경고를 방지합니다.
-- STAND/WALK의 Legacy FBX Import Uniform Scale은 100으로 저장했습니다. 기존 스켈레톤의 루트 배율과 맞추기 위한 값이며, 메시 컴포넌트 Scale은 1입니다.
-- 이동 수치: `Source/DKUEndGame/Character/CFWaitingCharacter.cpp`
-  - 최대 걷기 속도 110cm/s, 가속도 600cm/s², 제동 감속도 800cm/s²
-  - 대기용 캐릭터는 점프하지 않으며, 대기 입력에 차징/기울기를 포함하지 않습니다.
-- 애니메이션 값: `Source/DKUEndGame/Character/CFWaitingAnimInstance.h/.cpp`
-  - 실제 수평 속도(GroundSpeed)를 읽어 상태 판정
-  - 걷기 진입 5cm/s 초과 / 서기 복귀 2cm/s 이하로 경계 떨림 방지
-  - 재생 속도 = 실제 속도 ÷ (원본 클립 기준 속도 65.75cm/s × 메시의 균일 스케일)
-  - 기본 110cm/s에서는 약 1.673배속, 55cm/s에서는 약 0.837배속
-  - Root Motion 없이 CharacterMovement가 실제 이동을 처리합니다.
+입력·캐릭터 규칙은 [Gameplay 개요](../Gameplay/Overview.md#waiting), 반입 설정·재생 속도·전환 상세는 [서기·걷기](../Animation/StandWalkAnimations.md)를 참고한다.
+경기 시작 시 전투 Pawn·입력으로 전환한다. 탈락하면 착지 후 넘어짐을 재생하고 제거한 뒤 고정 카메라로 관전한다. 최종 결과에서 호스트가 복귀하면 같은 방에서 전원 걷기 대기로 돌아온다. [탈락·관전](../RoundEnd.md), [최종 결과·대기 복귀](../FinalResults.md) 참고. 게임패드 매핑은 포함하지만 실제 장치 검증은 아직 수행하지 않았다.
 
-기존 공용 `IMC_Default`의 WASD는 닭싸움용 `IA_Tilt`를 유지합니다. 대기 컨트롤러에서만 별도의 `IMC_CF_Waiting`을 사용하여 기존 `IA_Move` 입력 불일치를 해결했습니다. `BP_CF_Character`, `ABP_Chicken` 및 닭싸움 물리 코드는 수정하지 않았습니다.
+## 기존 검증 기록
 
-경기 시작 시 원본 닭싸움 캐릭터와 전투용 입력으로 전환합니다. 탈락 후 링 밖 걷기 캐릭터는 생성하지 않는 기획이며, 넘어짐 완료 후 제거는 후속 단계입니다. 게임패드 매핑은 포함했지만 실제 게임패드 장치 검증은 아직 수행하지 않았습니다.
-
-## 검증
+아래는 기존 문서에 남아 있던 결과이며 이번 문서 정리에서 재실행한 결과가 아니다.
 
 - 프로젝트 C++ 빌드 성공, 새 블루프린트 4개 재컴파일: 오류 0 / 경고 0.
 - PIE: 위젯 단일 생성, 실제 1인 목록, 호스트·빈자리 표시, 한글 이름, 호스트/참가자 표시 전환, 시작 버튼 조건, 월드 목록 복구 확인.
@@ -69,4 +58,4 @@
 
 확인 방법: `Content/Maps/Lvl_CF_Arena` 열기 → Play → 게임 화면 클릭 → WASD로 이동 → 키를 놓아 서기 확인 → 나가기. 디자인 수정은 `Content/UI/WaitingRoom/WBP_CF_WaitingRoom`의 Designer에서 진행합니다.
 
-방 생성부터 연결 종료까지의 흐름과 멀티플레이 테스트 방법은 [ListenServerSessions.md](ListenServerSessions.md)를 참고하세요. 경기 시작과 닭싸움 자세 전환은 [경기 시작 문서](MatchStart.md)에 정리되어 있습니다. 탈락 후 제거와 결과 처리는 후속 단계입니다.
+방 생성부터 연결 종료까지의 흐름과 멀티플레이 테스트 방법은 [ListenServerSessions.md](../Network/ListenServerSessions.md)를 참고하세요. 경기 시작·닭싸움 자세 전환은 [경기 시작](../MatchStart.md), 4라운드 점수 진행과 최종 결과·대기 복귀는 [라운드 진행](../RoundProgression.md), [최종 결과](../FinalResults.md)를 참고하세요.

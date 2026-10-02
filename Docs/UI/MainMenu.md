@@ -1,5 +1,9 @@
 # 메인 메뉴
 
+> 최근 기능 변경: 2026-09-29 · 작성자 GitHub ID 확인 필요 (Git 작성자: 정규민, `d13290b`)
+
+관련 개요: [카테고리 개요](Overview.md)
+
 `Content/Maps/Lvl_CF_MainMenu`를 열고 Play합니다. 배경 액터가 없는 메뉴 전용 맵이므로 편집 뷰포트가 검은 것은 정상입니다. Game Default Map도 이 레벨입니다.
 
 ## 사용 방법
@@ -24,4 +28,4 @@
 
 버튼 이벤트는 C++에서 처리합니다. 이전 Event Graph의 ‘준비 중’ 안내는 제거했습니다. `BindWidget`으로 연결된 위젯 이름은 유지해야 합니다. 이 메뉴를 사용하려면 프로젝트 C++ 빌드가 필요하며 임시 생성 도구 플러그인은 필요하지 않습니다.
 
-세션 범위와 테스트 방법은 [ListenServerSessions.md](ListenServerSessions.md), 대기 캐릭터는 [WaitingRoomUI.md](WaitingRoomUI.md)를 참고하세요.
+세션 범위와 테스트 방법은 [ListenServerSessions.md](../Network/ListenServerSessions.md), 대기 캐릭터는 [WaitingRoomUI.md](WaitingRoomUI.md)를 참고하세요.
