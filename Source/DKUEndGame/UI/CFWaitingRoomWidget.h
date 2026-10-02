@@ -36,6 +36,7 @@ public:
 
     UFUNCTION(BlueprintCallable, Category="Waiting Room")
     void UseWorldRoster();
+    void ShowStartError(const FText& Reason);
 
     UPROPERTY(BlueprintAssignable, Category="Waiting Room")
     FCFWaitingRoomRequest OnStartRequested;
@@ -44,7 +45,7 @@ public:
     FCFWaitingRoomRequest OnLeaveRequested;
 
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Waiting Room", meta=(ClampMin="2", ClampMax="16"))
-    int32 MaxPlayers = 2;
+    int32 MaxPlayers = 4;
 
     UPROPERTY(EditDefaultsOnly, Category="Waiting Room")
     TSubclassOf<UCFWaitingPlayerRowWidget> PlayerRowClass;

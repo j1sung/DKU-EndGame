@@ -26,6 +26,7 @@ void UCFWaitingPlayerRowWidget::SetPlayer(const FText& Name, bool bHost, bool bE
 void UCFWaitingRoomWidget::NativeConstruct()
 {
     Super::NativeConstruct();
+    if (auto* PC=Cast<ACFWaitingPlayerController>(GetOwningPlayer())) PC->RegisterWaitingWidget(this);
     StartButton->OnClicked.AddUniqueDynamic(this,&ThisClass::HandleStart);
     LeaveButton->OnClicked.AddUniqueDynamic(this,&ThisClass::HandleLeave);
     LastDisplayKey.Reset();
@@ -71,8 +72,7 @@ void UCFWaitingRoomWidget::RefreshFromWorld()
             Names.Add(FText::FromString(Name.IsEmpty() ? FString::Printf(TEXT("PLAYER %02d"),Names.Num()+1) : Name));
         }
     }
-    // Showing connected players does not mean a match-start backend is ready.
-    ApplyDisplay(Names,HostIndex,Room ? Room->RoomCapacity : MaxPlayers,bLocalHost,false);
+    ApplyDisplay(Names,HostIndex,Room ? Room->RoomCapacity : MaxPlayers,bLocalHost,Room && Room->CanStartRound());
 }
 
 void UCFWaitingRoomWidget::SetRoomDisplay(const TArray<FText>& PlayerNames,int32 HostIndex,int32 Capacity,bool bLocalHost,bool bCanStart)
@@ -116,14 +116,16 @@ void UCFWaitingRoomWidget::ApplyDisplay(const TArray<FText>& Names,int32 HostInd
     FString Message;
     if (!bLocalHost) Message=TEXT("호스트가 경기를 시작할 때까지 기다려 주세요.");
     else if (Names.Num()<2) Message=TEXT("다른 플레이어를 기다리고 있습니다.");
-    else Message=bCanStart ? TEXT("플레이어가 모두 모였습니다.") : TEXT("경기 시작을 준비하고 있습니다.");
+    else Message=bCanStart ? TEXT("경기를 시작할 수 있습니다.") : TEXT("경기 시작을 준비하고 있습니다.");
     StatusText->SetText(FText::FromString(Message));
     StartButton->SetToolTipText(FText::FromString(Message));
 }
 
 void UCFWaitingRoomWidget::HandleStart()
 {
-    if (bStartPermitted && StartButton->GetIsEnabled()) OnStartRequested.Broadcast();
+    if (!bStartPermitted || !StartButton->GetIsEnabled()) return;
+    if (auto* PC=Cast<ACFWaitingPlayerController>(GetOwningPlayer())) PC->RequestStartGame();
+    OnStartRequested.Broadcast();
 }
 
 void UCFWaitingRoomWidget::HandleLeave()
@@ -142,3 +144,5 @@ void UCFWaitingRoomWidget::RefreshSessionState()
         if (bLeaving) { StatusText->SetText(Service->StatusMessage); StartButton->SetIsEnabled(false); }
     }
 }
+
+void UCFWaitingRoomWidget::ShowStartError(const FText& Reason) { StatusText->SetText(Reason); }

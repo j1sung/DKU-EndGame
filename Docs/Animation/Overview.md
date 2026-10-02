@@ -26,10 +26,10 @@
 > 최근 기능 변경: 2026-09-30 · 작성자 GitHub ID 확인 필요 (Git 작성자: 정규민, `4553e07`)
 
 AnimInstance의 bFallen·KnockdownIndex가 방향별 표현을 전달한다. 기존 문서에는 4개 클립 분기·마지막 자세 유지·기울기 보정 우회가 기록되어 있다. 이 AnimGraph 내부 설정은 이번 작업에서 에디터로 재확인하지 않았다.
-방향은 캐릭터 로컬 축이며 피격 방향 자체를 계산한 결과는 아니다.
+구역은 캐릭터 로컬 축의 넘어질 방향을 직접 지정한다. dev의 캐릭터 충돌 경로는 상대 위치로 방향을 계산한다. 실제 밀려나는 방향 보정은 후속 검증 범위다.
 - 상세: [넘어짐 연결·테스트 맵](DirectionalKnockdown.md).
 - 상태 소유자: [Gameplay 넘어짐](../Gameplay/Overview.md#knockdown).
 
 ## 관련 구현과 주의
 `Source/DKUEndGame/Character/ChickenAnimInstance.h/.cpp`, `CFWaitingAnimInstance.h/.cpp`.
-에셋 연결 위치·클립 설정·과거 확인 기록은 상세 문서 참고. 외부 Blender·FBX·검사 JSON 경로는 확인 필요. 전투 상태의 네트워크 복제는 별도 구현 대상.
+에셋 연결 위치·클립 설정·과거 확인 기록은 상세 문서 참고. 외부 Blender·FBX·검사 JSON 경로는 확인 필요. 전투 표현 상태·넘어짐 방향은 서버에서 복제한다. dev 병합에서 받은 AnimBP 변경은 유지하며 실제 지연 환경의 재생 시점 보정은 별도 검증 대상이다.

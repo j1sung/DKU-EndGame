@@ -15,6 +15,12 @@ class DKUENDGAME_API AChickenCharacter : public ACharacter
 public:
 	AChickenCharacter();
 
+    virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+    void SetRoundInputEnabled(bool bEnabled);
+    void FinishRound();
+    UFUNCTION(BlueprintPure, Category="Chicken|Match")
+    bool IsRoundInputEnabled() const { return bRoundInputEnabled; }
+
     // Direction is relative to this character, not the camera or incoming hit.
     UFUNCTION(BlueprintCallable, Category="Chicken|Knockdown")
     bool StartKnockdown(ECFKnockdownDirection Direction);
@@ -52,14 +58,14 @@ protected:
     void MoveForward(float Value);
     void MoveRight(float Value);
 
-    UPROPERTY(BlueprintReadOnly, Category = "Movement")
+    UPROPERTY(Replicated, BlueprintReadOnly, Category = "Movement")
     FVector2D CurrentTilt;
 
     // 균형.
 	void UpdateBodyTilt(float DeltaTime);
     void FallOver(); // 넘어짐 처리 함수.
 
-	UPROPERTY(BlueprintReadOnly, Category = "Balance")
+	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Balance")
 	FVector2D BodyTilt = FVector2D::ZeroVector; // 실제 몸체 기울기. 입력과 물리적 반응을 기반으로 계산됨.
 
     // 기울기 변화 속도.
@@ -74,7 +80,7 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Balance")
     float TiltRecoverySpeed = 1.5f;
 
-    UPROPERTY(BlueprintReadOnly, Category = "Balance")
+    UPROPERTY(Replicated, BlueprintReadOnly, Category = "Balance")
     bool bIsFallen = false;
 
     UPROPERTY(BlueprintReadOnly, Category = "Balance")
@@ -87,7 +93,7 @@ protected:
     void StartJumpCharge();
     void ExecuteJump();
 
-    UPROPERTY(BlueprintReadOnly, Category = "Jump")
+    UPROPERTY(Replicated, BlueprintReadOnly, Category = "Jump")
     float CurrentJumpPower = 0.f;
 
     UPROPERTY(EditAnywhere, Category = "Jump")
@@ -96,17 +102,17 @@ protected:
     UPROPERTY(EditAnywhere, Category = "Jump")
     float ChargeRate = 700.0f;
 
-    UPROPERTY(BlueprintReadOnly, Category = "Jump")
+    UPROPERTY(Replicated, BlueprintReadOnly, Category = "Jump")
     bool bIsCharging = false;
 
     // Gameplay owns the rebound delay; animation only visualizes it.
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement|Hopping", meta=(ClampMin="0.01", Units="s"))
     float LandingRecoveryTime = 0.2f;
 
-    UPROPERTY(BlueprintReadOnly, Category = "Animation")
+    UPROPERTY(Replicated, BlueprintReadOnly, Category = "Animation")
     bool bInLandingRecovery = false;
 
-    UPROPERTY(BlueprintReadOnly, Category = "Animation")
+    UPROPERTY(Replicated, BlueprintReadOnly, Category = "Animation")
     int32 TakeoffSerial = 0;
 
     float LandingRecoveryRemaining = 0.f;
@@ -117,13 +123,20 @@ protected:
     UPROPERTY(EditDefaultsOnly, Category="Movement|Hopping")
     bool bEnableAutoHop = true;
 
-    UPROPERTY(BlueprintReadOnly, Category="Chicken|Knockdown")
+    UPROPERTY(Replicated, BlueprintReadOnly, Category="Chicken|Knockdown")
     ECFKnockdownDirection KnockdownDirection = ECFKnockdownDirection::Forward;
 
-    UPROPERTY(BlueprintReadOnly, Category="Chicken|Knockdown")
+    UPROPERTY(Replicated, BlueprintReadOnly, Category="Chicken|Knockdown")
     bool bKnockdownPending = false;
 
     void BeginKnockdown();
+    UPROPERTY(ReplicatedUsing=OnRep_RoundInputEnabled, BlueprintReadOnly, Category="Chicken|Match")
+    bool bRoundInputEnabled = true;
+    UPROPERTY(ReplicatedUsing=OnRep_RoundInputEnabled)
+    bool bRoundFinished = false;
+    UFUNCTION() void OnRep_RoundInputEnabled();
+    UFUNCTION(Server, Reliable) void ServerSetTilt(FVector2D Tilt);
+    UFUNCTION(Server, Reliable) void ServerSetCharge(bool bPressed);
 
     // Capture the Blueprint mesh orientation before gameplay tilt starts.
     FRotator BaseMeshRotation = FRotator::ZeroRotator;
