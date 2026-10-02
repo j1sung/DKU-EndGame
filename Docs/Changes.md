@@ -2,6 +2,13 @@
 
 의미 있는 구현·이름·경로·설정 변경을 짧게 기록하고 관련 현재 문서로 연결한다. 기존 작업 전체의 이력을 소급 복원하지 않으며 과거 상세는 Git과 기존 문서 참고.
 
+<a id="change-20261002-match-integration"></a>
+### 2026-10-02 · 4인 경기 진행 및 dev 충돌 병합
+
+- 작업자: 경기 진행 @KyuminChung (`c8a7452`, `60d0b2f`, `99aeaf1`), dev 충돌·차징 @sunsi-game (`7ed2786`, `2ee4755`). 병합 정리: 이번 CKM 작업, 커밋 전.
+- 변경: 최대 4인·최소 2인 경기, 탈락·관전, 4R 점수·최종 MVP·같은 방 걷기 대기 복귀. 친구의 충돌·차징 코드와 통합하고 중복 UpdateBodyTilt 블록을 제거했다. 충돌 요청에 서버 권한·경기 입력 잠금 검사를 적용했다. dev 에셋과 문서 폴더 구조를 보존하고 이동된 문서 링크를 수정했다.
+- 문서: [경기 상태](Gameplay/Overview.md#match), [넘어짐·충돌](Gameplay/Overview.md#knockdown), [라운드](RoundProgression.md), [최종 결과](FinalResults.md).
+
 <a id="change-20261001-06"></a>
 ### 2026-10-01 · 문서 갱신 스킬 이름 단축
 

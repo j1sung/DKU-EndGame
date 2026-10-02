@@ -6,7 +6,7 @@
 |---|---|---|
 | Network | [개요](Network/Overview.md) | [LAN 세션·연결 종료](Network/ListenServerSessions.md) |
 | UI | [개요](UI/Overview.md) | [메인 메뉴](UI/MainMenu.md), [대기 UI](UI/WaitingRoomUI.md) |
-| Gameplay | [개요](Gameplay/Overview.md) | 넘어짐 표현은 Animation 상세 참조 |
+| Gameplay | [개요](Gameplay/Overview.md) | [경기 시작](MatchStart.md), [탈락·관전](RoundEnd.md), [라운드 점수](RoundProgression.md), [최종 결과·복귀](FinalResults.md) |
 | Animation | [개요](Animation/Overview.md) | [기본 상태](Animation/BasicAnimations.md), [서기·걷기](Animation/StandWalkAnimations.md), [넘어짐](Animation/DirectionalKnockdown.md) |
 
 ## 관리와 기록
@@ -15,6 +15,7 @@
 - [전체 문서 갱신 요청문](../.agents/prompts/refresh-project-docs.md)
 
 ## 최근 기록
+- [2026-10-02 · 4인 경기 진행 및 dev 충돌 병합](Changes.md#change-20261002-match-integration)
 - [2026-10-01 · 문서 갱신 스킬 이름 단축](Changes.md#change-20261001-06)
 - [2026-10-01 · 커밋 스킬 이름 단축](Changes.md#change-20261001-05)
 - [2026-10-01 · 커밋 스킬 자동 스테이징](Changes.md#change-20261001-04)

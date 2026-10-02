@@ -16,10 +16,11 @@
 
 <a id="waiting"></a>
 ## 대기방
-> 최근 기능 변경: 2026-09-29 · 작성자 GitHub ID 확인 필요 (Git 작성자: 정규민, `d13290b`)
 
-`CFWaitingRoomWidget`은 0.35초 월드 타이머로 PlayerArray와 복제된 GameState를 읽어 이름·정원·호스트·빈자리를 표시한다. 자동 조회 경로는 경기 시작을 허용하지 않아 시작 버튼이 비활성이다. 외부 `SetRoomDisplay`는 자동 조회를 끄고, `UseWorldRoster`는 복구한다. 시작 이벤트는 별도 서버 승인 구현이 필요하다.
-나가기는 기본 세션 퇴장 경로로 전달하며, `OnLeaveRequested`를 바인딩하면 외부 처리 뒤 연결 정리가 필요하다.
+> 최근 기능 변경: 2026-10-02 · @KyuminChung (`c8a7452`, `99aeaf1`)
+
+`CFWaitingRoomWidget`은 0.35초 타이머로 PlayerArray와 복제된 GameState를 읽어 이름·정원 4명·호스트·빈자리를 표시한다. 대기 중 최소 2명이면 호스트가 시작을 요청하며 서버에서 재검증한다. 외부 `SetRoomDisplay`는 자동 조회를 끄고 `UseWorldRoster`는 복구한다.
+나가기는 기본 세션 퇴장 경로로 전달하며, `OnLeaveRequested`를 바인딩하면 외부 처리 뒤 연결 정리가 필요하다. 최종 결과에서 대기로 복귀하면 같은 대기 UI와 걷기 입력을 복원한다.
 - 상세: [대기 UI](WaitingRoomUI.md).
 
 ## 수정 위치와 연결
@@ -29,5 +30,6 @@
 - 연결 처리: [Network 개요](../Network/Overview.md).
 - 대기 Pawn: [Gameplay](../Gameplay/Overview.md#waiting), [대기 애니메이션](../Animation/StandWalkAnimations.md).
 
-## 미구현
-경기 시작 승인·Waiting→Playing·전투 HUD 교체는 후속 구현. UI의 버튼과 이벤트가 존재한다는 이유로 경기 시작 기능 완료로 판단하지 않기.
+## 경기·결과 HUD
+
+`CFMatchStatusWidget`은 복제된 경기 상태에 따라 카운트다운, 라운드·생존 인원, 탈락·관전, 라운드 순위·점수, 최종 누적 순위·MVP를 표시한다. 호스트에게만 방 대기 복귀 버튼을 보여주며 서버도 권한을 검사한다. 상세는 [라운드 진행](../RoundProgression.md), [최종 결과](../FinalResults.md). 승자 클로즈업 연출은 후속 범위다.
