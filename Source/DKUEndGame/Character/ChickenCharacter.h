@@ -5,6 +5,8 @@
 #include "Character/CFKnockdownTypes.h"
 #include "ChickenCharacter.generated.h"
 
+class UPrimitiveComponent;
+
 UCLASS()
 class DKUENDGAME_API AChickenCharacter : public ACharacter
 {
@@ -89,10 +91,10 @@ protected:
     float CurrentJumpPower = 0.f;
 
     UPROPERTY(EditAnywhere, Category = "Jump")
-    float MaxJumpPower = 1500.0f;
+    float MaxJumpPower = 500.0f;
 
     UPROPERTY(EditAnywhere, Category = "Jump")
-    float ChargeRate = 1000.0f;
+    float ChargeRate = 700.0f;
 
     UPROPERTY(BlueprintReadOnly, Category = "Jump")
     bool bIsCharging = false;
@@ -130,4 +132,10 @@ protected:
     UPROPERTY(EditAnywhere, Category = "Camera")
     float RotationInterpSpeed = 7.0f;
 
+    // 닭끼리 충돌했을 때 호출.
+    UFUNCTION()
+    void OnChickenHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
+
+    // 충돌한 상대에게 전달할 넘어짐 방향 계산.
+    ECFKnockdownDirection GetKnockdownDirectionFor(const AActor* OtherActor) const;
 };
