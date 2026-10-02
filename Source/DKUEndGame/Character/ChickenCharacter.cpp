@@ -229,6 +229,19 @@ void AChickenCharacter::UpdateBodyTilt(float DeltaTime)
 		BodyTilt = FMath::Vector2DInterpTo(BodyTilt, FVector2D::ZeroVector, DeltaTime, TiltRecoverySpeed);
 	}
 
+void AChickenCharacter::UpdateBodyTilt(float DeltaTime)
+{
+	// 입력이 있으면 해당 방향으로 몸의 기울기 누적.
+	if (CurrentTilt.SizeSquared() > KINDA_SMALL_NUMBER)
+	{
+		BodyTilt += CurrentTilt * TiltSpeed * DeltaTime;
+	}
+	else
+	{
+		// 입력이 없으면 천천히 중심으로 복귀.
+		BodyTilt = FMath::Vector2DInterpTo(BodyTilt, FVector2D::ZeroVector, DeltaTime, TiltRecoverySpeed);
+	}
+
 	// 최대 기울기 제한.
 	BodyTilt.X = FMath::Clamp(BodyTilt.X, -MaxBodyTilt, MaxBodyTilt);
 	BodyTilt.Y = FMath::Clamp(BodyTilt.Y, -MaxBodyTilt, MaxBodyTilt);
