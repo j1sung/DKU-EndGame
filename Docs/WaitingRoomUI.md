@@ -16,9 +16,9 @@
 
 ## 현재 동작
 
-- 현재 GameState의 PlayerArray에서 실제 참가자 이름과 인원을 0.35초 간격으로 읽습니다. CFWaitingGameState가 복제하는 정원과 호스트 PlayerState로 양쪽 화면을 갱신합니다. 정원은 C++ CFSessionSubsystem::RoomCapacity의 2명이며 서버가 초과 참가를 거부합니다.
-- 혼자 Play하면 `참가자 1 / 2`, 호스트 배지, `참가 대기 중` 빈자리 표시가 나옵니다. 메인 메뉴 닉네임은 GameInstanceSubsystem에 보관하고 서버 RPC를 통해 PlayerState로 전달합니다.
-- 권한이 있는 로컬 컨트롤러에는 시작 버튼이 보입니다. 현재 자동 표시 모드에서는 경기 시작 처리가 연결되지 않았으므로 비활성 상태입니다.
+- 현재 GameState의 PlayerArray에서 실제 참가자 이름과 인원을 0.35초 간격으로 읽습니다. CFWaitingGameState가 복제하는 정원과 호스트 PlayerState로 양쪽 화면을 갱신합니다. 정원은 C++ CFSessionSubsystem::RoomCapacity의 4명이며 서버가 초과 참가를 거부합니다.
+- 혼자 Play하면 `참가자 1 / 4`, 호스트 배지, `참가 대기 중` 빈자리 표시가 나옵니다. 메인 메뉴 닉네임은 GameInstanceSubsystem에 보관하고 서버 RPC를 통해 PlayerState로 전달합니다.
+- 권한이 있는 로컬 컨트롤러에는 시작 버튼이 보입니다. 대기 상태에서 참가자 2명 이상이면 시작할 수 있으며, 서버가 호스트 권한과 인원을 다시 검사합니다.
 - 참가자 `나가기`는 로컬 세션을 정리하고 `Lvl_CF_MainMenu`로 돌아갑니다. 호스트 방은 유지됩니다. 호스트가 나가면 연결된 참가자에게 종료를 알리고 모두 메뉴로 복귀합니다. 호스트 강제 종료·연결 손실과 연결 시도 시간 초과도 메뉴 복귀 및 안내를 처리합니다.
 - UI를 로컬 플레이어 화면에 한 번만 추가합니다. 커서를 표시하고 Game and UI 입력을 사용합니다.
 
@@ -28,11 +28,11 @@
 
 - `SetRoomDisplay(PlayerNames, HostIndex, Capacity, bLocalHost, bCanStart)`: 외부에서 방 상태를 지정합니다. 호출하면 자동 PlayerArray 조회는 중단됩니다. HostIndex는 0부터 시작하며, 모르면 -1입니다. 기본 네트워크 경로는 CFWaitingGameState에서 호스트를 자동으로 찾으므로 별도 호출이 필요 없습니다.
 - `UseWorldRoster()`: 현재 월드와 복제된 GameState에서 참가자를 읽는 방식으로 복귀합니다.
-- `OnStartRequested`: 호스트 표시·시작 가능 상태·2명 이상일 때 버튼 클릭 이벤트를 전달합니다. 실제 시작 승인/경기 상태 변경은 서버가 검증해야 합니다.
+- `OnStartRequested`: 호스트 표시·시작 가능 상태·2명 이상일 때 버튼 클릭 이벤트를 전달합니다. CFWaitingPlayerController의 시작 RPC와 CFWaitingGameMode의 검증으로 연결했습니다.
 - `OnLeaveRequested`: 바인딩되어 있으면 기본 나가기 대신 이 이벤트를 호출합니다. 기본 동작은 CFSessionSubsystem::LeaveRoom이며, 향후 확인창 등으로 재정의할 때도 마지막에 이 함수를 호출해야 연결이 정리됩니다.
 - 위젯의 BindWidget 이름은 C++와 연결되어 있으므로 해당 이름은 유지합니다.
 
-경기 시작 시 이 위젯을 제거하고 경기 HUD로 교체하는 단계는 아직 구현하지 않았습니다. 현재 레벨을 그대로 사용해 Waiting → Playing 상태를 전환할 수도 있습니다.
+경기 시작 시 이 위젯을 제거하고 경기 HUD로 교체합니다. 같은 레벨에서 Waiting → Countdown → Playing으로 전환하며, 상세 내용은 [경기 시작 문서](MatchStart.md)를 참고하세요.
 
 ## 대기 중 서기·걷기
 
@@ -56,7 +56,7 @@
 
 기존 공용 `IMC_Default`의 WASD는 닭싸움용 `IA_Tilt`를 유지합니다. 대기 컨트롤러에서만 별도의 `IMC_CF_Waiting`을 사용하여 기존 `IA_Move` 입력 불일치를 해결했습니다. `BP_CF_Character`, `ABP_Chicken` 및 닭싸움 물리 코드는 수정하지 않았습니다.
 
-경기 시작 시 닭싸움 캐릭터와 전투용 입력으로 전환하는 작업, 탈락 후 관전용 캐릭터 배치는 게임 매니저 단계에서 연결해야 합니다. 게임패드 매핑은 포함했지만 실제 게임패드 장치 검증은 아직 수행하지 않았습니다.
+경기 시작 시 원본 닭싸움 캐릭터와 전투용 입력으로 전환합니다. 탈락 후 링 밖 걷기 캐릭터는 생성하지 않는 기획이며, 넘어짐 완료 후 제거는 후속 단계입니다. 게임패드 매핑은 포함했지만 실제 게임패드 장치 검증은 아직 수행하지 않았습니다.
 
 ## 검증
 
@@ -69,4 +69,4 @@
 
 확인 방법: `Content/Maps/Lvl_CF_Arena` 열기 → Play → 게임 화면 클릭 → WASD로 이동 → 키를 놓아 서기 확인 → 나가기. 디자인 수정은 `Content/UI/WaitingRoom/WBP_CF_WaitingRoom`의 Designer에서 진행합니다.
 
-방 생성부터 연결 종료까지의 흐름과 멀티플레이 테스트 방법은 [ListenServerSessions.md](ListenServerSessions.md)를 참고하세요. 경기 시작, 닭싸움 자세 전환, 탈락·관전 처리는 다음 게임 매니저 단계입니다.
+방 생성부터 연결 종료까지의 흐름과 멀티플레이 테스트 방법은 [ListenServerSessions.md](ListenServerSessions.md)를 참고하세요. 경기 시작과 닭싸움 자세 전환은 [경기 시작 문서](MatchStart.md)에 정리되어 있습니다. 탈락 후 제거와 결과 처리는 후속 단계입니다.

@@ -299,7 +299,7 @@ void UCFSessionSubsystem::OnNetworkFailure(UWorld* World,UNetDriver* Driver,ENet
         (Type==ENetworkFailure::ConnectionLost || Type==ENetworkFailure::ConnectionTimeout || Type==ENetworkFailure::NetGuidMismatch || Type==ENetworkFailure::NetChecksumMismatch)) return;
     if (State==ECFSessionState::Idle || State==ECFSessionState::Searching) return;
     UE_LOG(LogTemp,Warning,TEXT("CF_SESSION network failure %d: %s"),int32(Type),*Detail);
-    BeginReturn(CFSession::Text(Detail.Contains(TEXT("ROOM_FULL")) || Detail.Contains(TEXT("Server full")) ? TEXT("방이 가득 찼습니다.") : State==ECFSessionState::InRoom ? TEXT("호스트와의 연결이 끊겼습니다. 메인 메뉴로 돌아왔습니다.") : TEXT("호스트에 연결하지 못했습니다. 주소와 네트워크 상태를 확인해 주세요.")));
+    BeginReturn(CFSession::Text(Detail.Contains(TEXT("MATCH_IN_PROGRESS")) ? TEXT("이미 경기가 시작된 방입니다. 다음 대기에 접속해 주세요.") : Detail.Contains(TEXT("ROOM_FULL")) || Detail.Contains(TEXT("Server full")) ? TEXT("방이 가득 찼습니다.") : State==ECFSessionState::InRoom ? TEXT("호스트와의 연결이 끊겼습니다. 메인 메뉴로 돌아왔습니다.") : TEXT("호스트에 연결하지 못했습니다. 주소와 네트워크 상태를 확인해 주세요.")));
 }
 
 void UCFSessionSubsystem::OnTravelFailure(UWorld* World,ETravelFailure::Type Type,const FString& Detail)

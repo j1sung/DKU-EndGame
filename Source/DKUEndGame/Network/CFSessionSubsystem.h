@@ -16,7 +16,7 @@ struct FCFRoomInfo
     GENERATED_BODY()
     UPROPERTY(BlueprintReadOnly) FString Name;
     UPROPERTY(BlueprintReadOnly) int32 Players = 0;
-    UPROPERTY(BlueprintReadOnly) int32 Capacity = 2;
+    UPROPERTY(BlueprintReadOnly) int32 Capacity = 4;
     UPROPERTY(BlueprintReadOnly) int32 Ping = 0;
 };
 
@@ -28,7 +28,7 @@ class DKUENDGAME_API UCFSessionSubsystem : public UGameInstanceSubsystem
 {
     GENERATED_BODY()
 public:
-    static constexpr int32 RoomCapacity = 2;
+    static constexpr int32 RoomCapacity = 4;
     virtual void Initialize(FSubsystemCollectionBase& Collection) override;
     virtual void Deinitialize() override;
 

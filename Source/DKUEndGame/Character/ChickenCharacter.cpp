@@ -1,10 +1,14 @@
 #include "Character/ChickenCharacter.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "Network/CFWaitingNetwork.h"
+#include "Net/UnrealNetwork.h"
 
 AChickenCharacter::AChickenCharacter()
 {
 	PrimaryActorTick.bCanEverTick = true;
+    bReplicates = true;
+    SetReplicateMovement(true);
 
 	// 보간.
 	bUseControllerRotationYaw = false;
@@ -24,8 +28,10 @@ void AChickenCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+    if (!bRoundInputEnabled) return;
     if (bIsFallen)
     {
+        GetMesh()->SetRelativeRotation(BaseMeshRotation);
         GetCharacterMovement()->StopMovementImmediately();
         GetCharacterMovement()->DisableMovement();
         return;
@@ -36,23 +42,23 @@ void AChickenCharacter::Tick(float DeltaTime)
 	FRotator ControlRot = GetControlRotation();
 	FRotator TargetRot = FRotator(0.f, ControlRot.Yaw, 0.f);
 	FRotator NewRot = FMath::RInterpTo(GetActorRotation(), TargetRot, DeltaTime, RotationInterpSpeed);
-	SetActorRotation(NewRot);
+	if (HasAuthority() || IsLocallyControlled()) SetActorRotation(NewRot);
 
 	// 균형 시스템 처리.
-	if (!bIsFallen)
+	if (HasAuthority() && !bIsFallen)
 	{
 		UpdateBodyTilt(DeltaTime);
 	}
 	// Balance failure may have started a grounded or queued knockdown this frame.
-	if (bIsFallen || bKnockdownPending) return;
+	if (!bRoundInputEnabled || bIsFallen || bKnockdownPending) return;
 
 	// 차징 점프 게이지 채우기.
-	if (bIsCharging && !bIsFallen)
+	if (HasAuthority() && bIsCharging && !bIsFallen)
 	{
 		CurrentJumpPower = FMath::Clamp(CurrentJumpPower + (ChargeRate * DeltaTime), 0.0f, MaxJumpPower);
 	}
 
-	if (bInLandingRecovery)
+	if (HasAuthority() && bInLandingRecovery)
 	{
 		LandingRecoveryRemaining -= DeltaTime;
 		if (LandingRecoveryRemaining <= 0.f)
@@ -92,6 +98,7 @@ void AChickenCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 void AChickenCharacter::Landed(const FHitResult& Hit)
 {
 	Super::Landed(Hit);
+    if (!HasAuthority() || !bRoundInputEnabled) return;
     if (bKnockdownPending)
     {
         BeginKnockdown();
@@ -105,9 +112,11 @@ void AChickenCharacter::Landed(const FHitResult& Hit)
 // 카메라 방향 기준 상체 기울기.
 void AChickenCharacter::MoveForward(float Value)
 {
-	if (bIsFallen || bKnockdownPending) return;
+	if (!bRoundInputEnabled || bIsFallen || bKnockdownPending) return;
 
-	CurrentTilt.X = Value;
+	const float Previous = CurrentTilt.X;
+	CurrentTilt.X = FMath::Clamp(Value,-1.f,1.f);
+    if (!HasAuthority() && Previous!=CurrentTilt.X) ServerSetTilt(CurrentTilt);
 
 	// 공중에서 해당 방향으로 이동 입력 적용.
 	if (Value != 0.0f)
@@ -118,9 +127,11 @@ void AChickenCharacter::MoveForward(float Value)
 
 void AChickenCharacter::MoveRight(float Value)
 {
-	if (bIsFallen || bKnockdownPending) return;
+	if (!bRoundInputEnabled || bIsFallen || bKnockdownPending) return;
 
-	CurrentTilt.Y = -Value;
+	const float Previous = CurrentTilt.Y;
+	CurrentTilt.Y = FMath::Clamp(-Value,-1.f,1.f);
+    if (!HasAuthority() && Previous!=CurrentTilt.Y) ServerSetTilt(CurrentTilt);
 
 	// 위랑 같다.
 	if (Value != 0.0f)
@@ -137,8 +148,9 @@ void AChickenCharacter::FallOver()
 
 bool AChickenCharacter::StartKnockdown(ECFKnockdownDirection Direction)
 {
-    if (bIsFallen || bKnockdownPending || static_cast<uint8>(Direction) > 3) return false;
+    if (!HasAuthority() || !bRoundInputEnabled || bIsFallen || bKnockdownPending || static_cast<uint8>(Direction) > 3) return false;
     KnockdownDirection = Direction;
+    if (auto* Mode=GetWorld()->GetAuthGameMode<ACFWaitingGameMode>()) Mode->MarkPlayerEliminated(GetPlayerState());
     bIsCharging = false;
     bInLandingRecovery = false;
     LandingRecoveryRemaining = CurrentJumpPower = TiltAccumulator = 0.f;
@@ -171,7 +183,8 @@ void AChickenCharacter::BeginKnockdown()
 
 void AChickenCharacter::StartJumpCharge()
 {
-	if (bIsFallen || bKnockdownPending) return;
+    if (!HasAuthority()) { if (bRoundInputEnabled) ServerSetCharge(true); return; }
+	if (!bRoundInputEnabled || bIsFallen || bKnockdownPending) return;
 
 	// 차징 시작하면 자동으로 뛰는 걸 멈춤.
 	bIsCharging = true;
@@ -180,7 +193,8 @@ void AChickenCharacter::StartJumpCharge()
 
 void AChickenCharacter::ExecuteJump()
 {
-	if (!bIsCharging || bIsFallen || bKnockdownPending) return;
+    if (!HasAuthority()) { if (bRoundInputEnabled) ServerSetCharge(false); return; }
+	if (!bRoundInputEnabled || !bIsCharging || bIsFallen || bKnockdownPending) return;
 	bIsCharging = false;
 
 	//float TiltMagnitude = FMath::Clamp(CurrentTilt.Size(), 0.0f, 1.0f);
@@ -231,3 +245,56 @@ void AChickenCharacter::UpdateBodyTilt(float DeltaTime)
 	}
 }
 
+
+void AChickenCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+    Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+    DOREPLIFETIME(ThisClass,CurrentTilt);
+    DOREPLIFETIME(ThisClass,BodyTilt);
+    DOREPLIFETIME(ThisClass,bIsFallen);
+    DOREPLIFETIME(ThisClass,CurrentJumpPower);
+    DOREPLIFETIME(ThisClass,bIsCharging);
+    DOREPLIFETIME(ThisClass,bInLandingRecovery);
+    DOREPLIFETIME(ThisClass,TakeoffSerial);
+    DOREPLIFETIME(ThisClass,KnockdownDirection);
+    DOREPLIFETIME(ThisClass,bKnockdownPending);
+    DOREPLIFETIME(ThisClass,bRoundInputEnabled);
+}
+
+void AChickenCharacter::SetRoundInputEnabled(bool bEnabled)
+{
+    if (!HasAuthority()) return;
+    bRoundInputEnabled=bEnabled;
+    CurrentTilt=BodyTilt=FVector2D::ZeroVector;
+    bIsCharging=false; CurrentJumpPower=0;
+    bInLandingRecovery=bEnabled;
+    LandingRecoveryRemaining=FMath::Max(.01f,LandingRecoveryTime);
+    ConsumeMovementInputVector();
+    OnRep_RoundInputEnabled(); ForceNetUpdate();
+}
+
+void AChickenCharacter::OnRep_RoundInputEnabled()
+{
+    if (!bRoundInputEnabled)
+    {
+        GetCharacterMovement()->StopMovementImmediately();
+        GetCharacterMovement()->DisableMovement();
+        // Initial replication can arrive before BeginPlay captures the authored rotation.
+        if (HasActorBegunPlay()) GetMesh()->SetRelativeRotation(BaseMeshRotation);
+    }
+    else if (!bIsFallen) GetCharacterMovement()->SetMovementMode(MOVE_Walking);
+}
+
+void AChickenCharacter::ServerSetTilt_Implementation(FVector2D Tilt)
+{
+    if (!bRoundInputEnabled || bIsFallen || bKnockdownPending || Tilt.ContainsNaN()) return;
+    CurrentTilt.X=FMath::Clamp(Tilt.X,-1.0,1.0);
+    CurrentTilt.Y=FMath::Clamp(Tilt.Y,-1.0,1.0);
+}
+
+void AChickenCharacter::ServerSetCharge_Implementation(bool bPressed)
+{
+    if (!bRoundInputEnabled || bIsFallen || bKnockdownPending) return;
+    if (bPressed) StartJumpCharge(); else ExecuteJump();
+    ForceNetUpdate();
+}
