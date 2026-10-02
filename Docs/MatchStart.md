@@ -1,6 +1,8 @@
 # 경기 시작과 상태 관리
 
-현재는 탈락·관전·라운드 결과까지 연결되어 있다. 최신 흐름과 테스트 방법은 [RoundEnd.md](RoundEnd.md)를 참고한다. 아래는 경기 시작 기반을 만들었을 때의 구현 기록이다.
+> 라운드 점수·결과 UI·1~4R 자동 진행은 [RoundProgression.md](RoundProgression.md)를 참고한다. 아래는 해당 기능 이전 단계의 구현 기록이다.
+
+탈락·관전 기능의 구현 기록은 [RoundEnd.md](RoundEnd.md)에 정리되어 있다.
 
 ## 경기 시작 기반 구현 범위
 
