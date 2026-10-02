@@ -25,6 +25,9 @@ void UCFMatchStatusWidget::NativeOnInitialized()
     };
     RoundText=Text(TEXT("RoundText"),24,FVector2D(0,28),FAnchors(.5f,0),FVector2D(.5f,0));
     CountdownText=Text(TEXT("CountdownText"),64,FVector2D(0,-65),FAnchors(.5f,.5f),FVector2D(.5f,.5f));
+    ResultText=Text(TEXT("ResultText"),42,FVector2D(0,-65),FAnchors(.5f,.5f),FVector2D(.5f,.5f));
+    SpectatorText=Text(TEXT("SpectatorText"),20,FVector2D(0,-35),FAnchors(.5f,1),FVector2D(.5f,1));
+    SpectatorText->SetText(FText::FromString(TEXT("탈락 · 관전 중")));
     auto* Hint=Text(TEXT("MenuHint"),16,FVector2D(-24,28),FAnchors(1,0),FVector2D(1,0));
     Hint->SetText(FText::FromString(TEXT("Esc : 메뉴")));
     LeaveButton=WidgetTree->ConstructWidget<UButton>(UButton::StaticClass(),TEXT("LeaveButton"));
@@ -33,12 +36,18 @@ void UCFMatchStatusWidget::NativeOnInitialized()
     LeaveButton->OnClicked.AddUniqueDynamic(this,&ThisClass::LeaveRoom);
 }
 
-void UCFMatchStatusWidget::Refresh(const ACFWaitingGameState* State,bool bMenuOpen)
+void UCFMatchStatusWidget::Refresh(const ACFWaitingGameState* State,bool bMenuOpen,bool bEliminated)
 {
     RoundText->SetText(FText::FromString(FString::Printf(TEXT("ROUND %d / %d   ·   생존 %d / %d"),State->CurrentRound,State->TotalRounds,State->AlivePlayers.Num(),State->Participants.Num())));
     const bool bCountdown=State->Phase==ECFMatchPhase::Countdown;
     CountdownText->SetVisibility(bCountdown ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
     CountdownText->SetText(FText::FromString(FString::Printf(TEXT("경기 준비\n%d"),State->GetCountdownSeconds())));
+    const bool bResult=State->Phase==ECFMatchPhase::RoundResult;
+    ResultText->SetVisibility(bResult ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
+    const FString Result=State->bRoundDraw ? TEXT("라운드 종료\n무승부") :
+        State->RoundWinnerName.IsEmpty() ? TEXT("라운드 종료") : FString::Printf(TEXT("라운드 종료\n승자: %s"),*State->RoundWinnerName);
+    ResultText->SetText(FText::FromString(Result));
+    SpectatorText->SetVisibility(bEliminated ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
     LeaveButton->SetVisibility(bMenuOpen ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 }
 

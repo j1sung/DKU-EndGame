@@ -24,6 +24,10 @@ public:
     UPROPERTY(Replicated,BlueprintReadOnly,Category="CF|Match") ECFMatchPhase Phase = ECFMatchPhase::Waiting;
     UPROPERTY(Replicated,BlueprintReadOnly,Category="CF|Match") int32 CurrentRound = 0;
     UPROPERTY(Replicated,BlueprintReadOnly,Category="CF|Match") int32 TotalRounds = 4;
+    UPROPERTY(Replicated,BlueprintReadOnly,Category="CF|Match") TObjectPtr<APlayerState> RoundWinner;
+    // Snapshot survives the winner leaving while the result is displayed.
+    UPROPERTY(Replicated,BlueprintReadOnly,Category="CF|Match") FString RoundWinnerName;
+    UPROPERTY(Replicated,BlueprintReadOnly,Category="CF|Match") bool bRoundDraw = false;
     UPROPERTY(Replicated,BlueprintReadOnly,Category="CF|Match") double CountdownEndServerTime = 0;
     UPROPERTY(Replicated,BlueprintReadOnly,Category="CF|Match") TArray<TObjectPtr<APlayerState>> Participants;
     UPROPERTY(Replicated,BlueprintReadOnly,Category="CF|Match") TArray<TObjectPtr<APlayerState>> AlivePlayers;
@@ -40,12 +44,20 @@ public:
     virtual void PostLogin(APlayerController* NewPlayer) override;
     virtual void Logout(AController* Exiting) override;
     bool TryStartRound(class ACFWaitingPlayerController* Requester);
-    void MarkPlayerEliminated(APlayerState* Player);
+    bool MarkPlayerEliminated(APlayerState* Player);
+    void ScheduleEliminatedPawnRemoval(class AChickenCharacter* Pawn);
+    virtual void EndPlay(const EEndPlayReason::Type Reason) override;
 protected:
     UPROPERTY(EditDefaultsOnly,Category="CF|Match") TSubclassOf<class AChickenCharacter> CombatPawnClass;
     UPROPERTY(EditDefaultsOnly,Category="CF|Match",meta=(ClampMin="1",ClampMax="10")) float CountdownDuration = 3.f;
+    // Current fall clips are 1.4 s; allow their transition to complete as well.
+    UPROPERTY(EditDefaultsOnly,Category="CF|Match",meta=(ClampMin="1.4",Units="s")) float EliminationDisplayTime = 1.6f;
 private:
     FTimerHandle CountdownTimer;
+    FTimerHandle RoundResolutionTimer;
+    TSet<TWeakObjectPtr<class AChickenCharacter>> PendingRemovals;
+    void QueueRoundResolution();
+    void ResolveRound();
     void BeginRound();
     void CancelCountdown();
 };
@@ -58,6 +70,11 @@ public:
     virtual void BeginPlay() override;
     virtual void EndPlay(const EEndPlayReason::Type Reason) override;
     virtual void SetupInputComponent() override;
+    virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+    void SetRoundEliminated(bool bEliminated);
+    void StartRoundSpectating();
+    UFUNCTION(BlueprintPure,Category="CF|Match") bool IsRoundEliminated() const { return bRoundEliminated; }
+    UFUNCTION(BlueprintPure,Category="CF|Match") bool IsRoundSpectating() const { return bRoundSpectating; }
     UFUNCTION(BlueprintCallable,Category="CF|Match") void RequestStartGame();
     UFUNCTION(Client,Reliable) void ClientRoomClosed();
     UFUNCTION(Client,Reliable) void ClientStartRejected(const FText& Reason);
@@ -69,6 +86,12 @@ private:
     UPROPERTY() TObjectPtr<class UCFWaitingRoomWidget> WaitingWidget;
     UPROPERTY() TSubclassOf<class UCFWaitingRoomWidget> WaitingWidgetClass;
     UPROPERTY() TObjectPtr<class UCFMatchStatusWidget> MatchWidget;
+    UPROPERTY(ReplicatedUsing=OnRep_RoundParticipation) bool bRoundEliminated = false;
+    UPROPERTY(ReplicatedUsing=OnRep_RoundParticipation) bool bRoundSpectating = false;
+    UPROPERTY() TObjectPtr<class ACameraActor> RoundSpectatorCamera;
+    bool bOwnSpectatorCamera = false;
+    UFUNCTION() void OnRep_RoundParticipation();
+    void UpdateSpectatorCamera();
     TWeakObjectPtr<APawn> LastInputPawn;
     ECFMatchPhase LastPhase = ECFMatchPhase::FinalResult;
     bool bMatchMenuOpen = false;

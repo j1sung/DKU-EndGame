@@ -15,6 +15,7 @@ public:
 
     virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
     void SetRoundInputEnabled(bool bEnabled);
+    void FinishRound();
     UFUNCTION(BlueprintPure, Category="Chicken|Match")
     bool IsRoundInputEnabled() const { return bRoundInputEnabled; }
 
@@ -129,6 +130,8 @@ protected:
     void BeginKnockdown();
     UPROPERTY(ReplicatedUsing=OnRep_RoundInputEnabled, BlueprintReadOnly, Category="Chicken|Match")
     bool bRoundInputEnabled = true;
+    UPROPERTY(ReplicatedUsing=OnRep_RoundInputEnabled)
+    bool bRoundFinished = false;
     UFUNCTION() void OnRep_RoundInputEnabled();
     UFUNCTION(Server, Reliable) void ServerSetTilt(FVector2D Tilt);
     UFUNCTION(Server, Reliable) void ServerSetCharge(bool bPressed);

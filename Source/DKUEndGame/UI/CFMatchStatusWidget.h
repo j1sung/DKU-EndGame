@@ -9,12 +9,14 @@ class DKUENDGAME_API UCFMatchStatusWidget : public UUserWidget
 {
     GENERATED_BODY()
 public:
-    void Refresh(const class ACFWaitingGameState* State,bool bMenuOpen);
+    void Refresh(const class ACFWaitingGameState* State,bool bMenuOpen,bool bEliminated);
 protected:
     virtual void NativeOnInitialized() override;
 private:
     UPROPERTY() TObjectPtr<class UTextBlock> RoundText;
     UPROPERTY() TObjectPtr<class UTextBlock> CountdownText;
+    UPROPERTY() TObjectPtr<class UTextBlock> ResultText;
+    UPROPERTY() TObjectPtr<class UTextBlock> SpectatorText;
     UPROPERTY() TObjectPtr<class UButton> LeaveButton;
     UFUNCTION() void LeaveRoom();
 };

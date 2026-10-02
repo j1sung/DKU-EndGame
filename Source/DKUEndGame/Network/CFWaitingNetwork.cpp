@@ -1,6 +1,8 @@
 #include "Network/CFWaitingNetwork.h"
 #include "Network/CFSessionSubsystem.h"
 #include "Character/ChickenCharacter.h"
+#include "Camera/CameraActor.h"
+#include "Camera/CameraComponent.h"
 #include "UI/CFWaitingRoomWidget.h"
 #include "UI/CFMatchStatusWidget.h"
 #include "Engine/GameInstance.h"
@@ -25,6 +27,9 @@ void ACFWaitingGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& 
     DOREPLIFETIME(ThisClass,Phase);
     DOREPLIFETIME(ThisClass,CurrentRound);
     DOREPLIFETIME(ThisClass,TotalRounds);
+    DOREPLIFETIME(ThisClass,RoundWinner);
+    DOREPLIFETIME(ThisClass,RoundWinnerName);
+    DOREPLIFETIME(ThisClass,bRoundDraw);
     DOREPLIFETIME(ThisClass,CountdownEndServerTime);
     DOREPLIFETIME(ThisClass,Participants);
     DOREPLIFETIME(ThisClass,AlivePlayers);
@@ -123,12 +128,14 @@ bool ACFWaitingGameMode::TryStartRound(ACFWaitingPlayerController* Requester)
         NewPawns.Add(Pawn);
     }
     GS->Participants.Reset(); GS->AlivePlayers.Reset(); GS->CurrentRound=1;
+    GS->RoundWinner=nullptr; GS->RoundWinnerName.Reset(); GS->bRoundDraw=false;
     GS->Phase=ECFMatchPhase::Countdown;
     GS->CountdownEndServerTime=GS->GetServerWorldTimeSeconds()+FMath::Max(1.f,CountdownDuration);
     for (int32 I=0;I<Players.Num();++I)
     {
         auto* PC=Players[I]; APawn* Old=PC->GetPawn();
         PC->UnPossess(); PC->Possess(NewPawns[I]);
+        if (auto* MatchPC=Cast<ACFWaitingPlayerController>(PC)) MatchPC->SetRoundEliminated(false);
         PC->SetControlRotation(Starts[I]->GetActorRotation()); PC->ClientSetRotation(Starts[I]->GetActorRotation(),true);
         Old->Destroy(); GS->Participants.Add(PC->PlayerState); GS->AlivePlayers.Add(PC->PlayerState);
     }
@@ -161,6 +168,7 @@ void ACFWaitingGameMode::CancelCountdown()
         auto* PC=It->Get(); if (!PC || !PC->PlayerState || PC->PlayerState->IsInactive()) continue;
         if (APawn* Old=PC->GetPawn()) { PC->UnPossess(); Old->Destroy(); }
         RestartPlayer(PC);
+        if (auto* MatchPC=Cast<ACFWaitingPlayerController>(PC)) MatchPC->SetRoundEliminated(false);
     }
     GS->ForceNetUpdate();
     UE_LOG(LogTemp,Display,TEXT("CF_MATCH countdown cancelled"));
@@ -176,14 +184,79 @@ void ACFWaitingGameMode::Logout(AController* Exiting)
         if (GS->Phase==ECFMatchPhase::Countdown && GS->Participants.Num()<GS->MinimumPlayers)
             GetWorldTimerManager().SetTimerForNextTick(this,&ThisClass::CancelCountdown);
         GS->ForceNetUpdate();
+        QueueRoundResolution();
     }
 }
 
-void ACFWaitingGameMode::MarkPlayerEliminated(APlayerState* Player)
+bool ACFWaitingGameMode::MarkPlayerEliminated(APlayerState* Player)
 {
     auto* GS=GetGameState<ACFWaitingGameState>();
-    if (HasAuthority() && GS && GS->Phase==ECFMatchPhase::Playing && Player)
-    { GS->AlivePlayers.Remove(Player); GS->ForceNetUpdate(); }
+    if (!HasAuthority() || !GS || GS->Phase!=ECFMatchPhase::Playing || GS->bRoomClosing || !Player)
+        return false;
+    // Removing from the roster is the authoritative, idempotent elimination gate.
+    if (GS->AlivePlayers.Remove(Player)==0) return false;
+    if (auto* PC=Cast<ACFWaitingPlayerController>(Player->GetPlayerController())) PC->SetRoundEliminated(true);
+    GS->ForceNetUpdate();
+    QueueRoundResolution();
+    return true;
+}
+
+void ACFWaitingGameMode::QueueRoundResolution()
+{
+    const auto* GS=GetGameState<ACFWaitingGameState>();
+    if (!GS || GS->Phase!=ECFMatchPhase::Playing || GS->bRoomClosing || GS->AlivePlayers.Num()>1) return;
+    if (!GetWorldTimerManager().IsTimerActive(RoundResolutionTimer))
+        RoundResolutionTimer=GetWorldTimerManager().SetTimerForNextTick(this,&ThisClass::ResolveRound);
+}
+
+void ACFWaitingGameMode::ResolveRound()
+{
+    auto* GS=GetGameState<ACFWaitingGameState>();
+    if (!GS || GS->Phase!=ECFMatchPhase::Playing || GS->bRoomClosing || GS->AlivePlayers.Num()>1) return;
+    // Resolve after all elimination requests from this frame: zero survivors is a draw.
+    GS->RoundWinner=GS->AlivePlayers.Num()==1 ? GS->AlivePlayers[0] : nullptr;
+    GS->bRoundDraw=GS->RoundWinner==nullptr;
+    GS->RoundWinnerName=GS->RoundWinner ? GS->RoundWinner->GetPlayerName() : FString();
+    GS->Phase=ECFMatchPhase::RoundResult;
+    for (FConstPlayerControllerIterator It=GetWorld()->GetPlayerControllerIterator();It;++It)
+    {
+        auto* PC=It->Get();
+        if (PC && GS->AlivePlayers.Contains(PC->PlayerState))
+            if (auto* Pawn=Cast<AChickenCharacter>(PC->GetPawn())) Pawn->FinishRound();
+    }
+    // Eliminated pawns retain gravity until landing and finish their fall before removal.
+    GS->ForceNetUpdate();
+    UE_LOG(LogTemp,Display,TEXT("CF_MATCH round result winner=%s draw=%d"),*GS->RoundWinnerName,GS->bRoundDraw);
+}
+
+void ACFWaitingGameMode::ScheduleEliminatedPawnRemoval(AChickenCharacter* Pawn)
+{
+    const auto* GS=GetGameState<ACFWaitingGameState>();
+    if (!HasAuthority() || !IsValid(Pawn) || !Pawn->IsFallen() || !GS ||
+        !GS->Participants.Contains(Pawn->GetPlayerState()) || GS->AlivePlayers.Contains(Pawn->GetPlayerState())) return;
+    TWeakObjectPtr<AChickenCharacter> WeakPawn=Pawn;
+    if (PendingRemovals.Contains(WeakPawn)) return;
+    PendingRemovals.Add(WeakPawn);
+    FTimerHandle RemovalTimer;
+    GetWorldTimerManager().SetTimer(RemovalTimer,FTimerDelegate::CreateWeakLambda(this,[this,WeakPawn]()
+    {
+        PendingRemovals.Remove(WeakPawn);
+        auto* FallenPawn=WeakPawn.Get();
+        if (!FallenPawn) return;
+        if (auto* PC=Cast<ACFWaitingPlayerController>(FallenPawn->GetController()))
+        {
+            PC->StartRoundSpectating();
+            PC->UnPossess();
+        }
+        FallenPawn->Destroy();
+    }),FMath::Max(1.4f,EliminationDisplayTime),false);
+}
+
+void ACFWaitingGameMode::EndPlay(const EEndPlayReason::Type Reason)
+{
+    GetWorldTimerManager().ClearAllTimersForObject(this);
+    PendingRemovals.Reset();
+    Super::EndPlay(Reason);
 }
 
 void ACFWaitingPlayerController::BeginPlay()
@@ -205,6 +278,7 @@ void ACFWaitingPlayerController::EndPlay(const EEndPlayReason::Type Reason)
     GetWorldTimerManager().ClearTimer(DisplayTimer);
     if (WaitingWidget) WaitingWidget->RemoveFromParent();
     if (MatchWidget) MatchWidget->RemoveFromParent();
+    if (bOwnSpectatorCamera && IsValid(RoundSpectatorCamera)) RoundSpectatorCamera->Destroy();
     Super::EndPlay(Reason);
 }
 
@@ -235,7 +309,8 @@ void ACFWaitingPlayerController::SetMatchInputMode()
     if (bShowMouseCursor) { FInputModeGameAndUI Mode; Mode.SetHideCursorDuringCapture(false); SetInputMode(Mode); }
     else SetInputMode(FInputModeGameOnly());
     ResetIgnoreMoveInput(); ResetIgnoreLookInput();
-    if (LastPhase==ECFMatchPhase::Countdown) { SetIgnoreMoveInput(true); SetIgnoreLookInput(true); }
+    if (bRoundEliminated || (LastPhase!=ECFMatchPhase::Waiting && LastPhase!=ECFMatchPhase::Playing))
+    { SetIgnoreMoveInput(true); SetIgnoreLookInput(true); }
 }
 
 void ACFWaitingPlayerController::ToggleMatchMenu()
@@ -247,6 +322,7 @@ void ACFWaitingPlayerController::ToggleMatchMenu()
 void ACFWaitingPlayerController::UpdateMatchDisplay()
 {
     const auto* GS=GetWorld()->GetGameState<ACFWaitingGameState>(); if (!GS) return;
+    UpdateSpectatorCamera();
     if (LastPhase!=GS->Phase || LastInputPawn.Get()!=GetPawn())
     {
         LastPhase=GS->Phase; LastInputPawn=GetPawn(); bMatchMenuOpen=false;
@@ -271,8 +347,78 @@ void ACFWaitingPlayerController::UpdateMatchDisplay()
     {
         if (WaitingWidget) { WaitingWidget->RemoveFromParent(); WaitingWidget=nullptr; }
         if (!MatchWidget) { MatchWidget=CreateWidget<UCFMatchStatusWidget>(this,UCFMatchStatusWidget::StaticClass()); MatchWidget->AddToPlayerScreen(10); }
-        MatchWidget->Refresh(GS,bMatchMenuOpen);
+        MatchWidget->Refresh(GS,bMatchMenuOpen,bRoundEliminated);
     }
+}
+
+void ACFWaitingPlayerController::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+    Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+    DOREPLIFETIME_CONDITION(ThisClass,bRoundEliminated,COND_OwnerOnly);
+    DOREPLIFETIME_CONDITION(ThisClass,bRoundSpectating,COND_OwnerOnly);
+}
+
+void ACFWaitingPlayerController::SetRoundEliminated(bool bEliminated)
+{
+    if (!HasAuthority()) return;
+    bRoundEliminated=bEliminated;
+    if (!bEliminated) bRoundSpectating=false;
+    OnRep_RoundParticipation();
+    ForceNetUpdate();
+}
+
+void ACFWaitingPlayerController::StartRoundSpectating()
+{
+    if (!HasAuthority() || !bRoundEliminated) return;
+    bRoundSpectating=true;
+    OnRep_RoundParticipation();
+    ForceNetUpdate();
+}
+
+void ACFWaitingPlayerController::OnRep_RoundParticipation()
+{
+    if (!IsLocalController()) return;
+    SetMatchInputMode();
+    UpdateSpectatorCamera();
+}
+
+void ACFWaitingPlayerController::UpdateSpectatorCamera()
+{
+    if (!IsLocalController()) return;
+    if (!bRoundSpectating)
+    {
+        if (IsValid(RoundSpectatorCamera))
+        {
+            if (GetPawn()) SetViewTarget(GetPawn());
+            if (bOwnSpectatorCamera) RoundSpectatorCamera->Destroy();
+            RoundSpectatorCamera=nullptr;
+        }
+        bAutoManageActiveCameraTarget=true;
+        return;
+    }
+    bAutoManageActiveCameraTarget=false;
+    if (!IsValid(RoundSpectatorCamera))
+    {
+        // A level designer can supply an explicit camera later without code changes.
+        for (TActorIterator<ACameraActor> It(GetWorld());It;++It)
+            if (It->ActorHasTag(TEXT("ArenaSpectatorCamera"))) { RoundSpectatorCamera=*It; break; }
+        if (!RoundSpectatorCamera)
+        {
+            FVector Center=FVector::ZeroVector;
+            int32 Count=0;
+            for (TActorIterator<APlayerStart> It(GetWorld());It;++It)
+                if (It->ActorHasTag(TEXT("ArenaSpawn"))) { Center+=It->GetActorLocation(); ++Count; }
+            if (Count>0) Center/=Count;
+            const FVector Position=Center+FVector(-1400,-1400,1800);
+            FActorSpawnParameters Params;
+            Params.ObjectFlags|=RF_Transient;
+            Params.Owner=this;
+            RoundSpectatorCamera=GetWorld()->SpawnActor<ACameraActor>(Position,(Center-Position).Rotation(),Params);
+            bOwnSpectatorCamera=RoundSpectatorCamera!=nullptr;
+            if (RoundSpectatorCamera) RoundSpectatorCamera->GetCameraComponent()->SetFieldOfView(65.f);
+        }
+    }
+    if (RoundSpectatorCamera && GetViewTarget()!=RoundSpectatorCamera) SetViewTarget(RoundSpectatorCamera);
 }
 
 void ACFWaitingPlayerController::ServerSetNickname_Implementation(const FString& Nickname)

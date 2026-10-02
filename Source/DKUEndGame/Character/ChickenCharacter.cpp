@@ -3,6 +3,7 @@
 #include "Kismet/KismetMathLibrary.h"
 #include "Network/CFWaitingNetwork.h"
 #include "Net/UnrealNetwork.h"
+#include "Components/CapsuleComponent.h"
 
 AChickenCharacter::AChickenCharacter()
 {
@@ -31,6 +32,8 @@ void AChickenCharacter::Tick(float DeltaTime)
     if (!bRoundInputEnabled) return;
     if (bIsFallen)
     {
+        if (GetWorld()->GetGameState<ACFWaitingGameState>())
+            GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Pawn,ECR_Ignore);
         GetMesh()->SetRelativeRotation(BaseMeshRotation);
         GetCharacterMovement()->StopMovementImmediately();
         GetCharacterMovement()->DisableMovement();
@@ -149,8 +152,9 @@ void AChickenCharacter::FallOver()
 bool AChickenCharacter::StartKnockdown(ECFKnockdownDirection Direction)
 {
     if (!HasAuthority() || !bRoundInputEnabled || bIsFallen || bKnockdownPending || static_cast<uint8>(Direction) > 3) return false;
+    if (auto* Mode=GetWorld()->GetAuthGameMode<ACFWaitingGameMode>())
+        if (!Mode->MarkPlayerEliminated(GetPlayerState())) return false;
     KnockdownDirection = Direction;
-    if (auto* Mode=GetWorld()->GetAuthGameMode<ACFWaitingGameMode>()) Mode->MarkPlayerEliminated(GetPlayerState());
     bIsCharging = false;
     bInLandingRecovery = false;
     LandingRecoveryRemaining = CurrentJumpPower = TiltAccumulator = 0.f;
@@ -168,6 +172,7 @@ bool AChickenCharacter::StartKnockdown(ECFKnockdownDirection Direction)
     {
         BeginKnockdown();
     }
+    ForceNetUpdate();
     return true;
 }
 
@@ -179,6 +184,13 @@ void AChickenCharacter::BeginKnockdown()
     GetMesh()->SetRelativeRotation(BaseMeshRotation);
     GetCharacterMovement()->StopMovementImmediately();
     GetCharacterMovement()->DisableMovement();
+    if (auto* Mode=GetWorld()->GetAuthGameMode<ACFWaitingGameMode>())
+    {
+        // Keep the floor collision, but a fallen player must not obstruct survivors.
+        GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Pawn,ECR_Ignore);
+        Mode->ScheduleEliminatedPawnRemoval(this);
+    }
+    ForceNetUpdate();
 }
 
 void AChickenCharacter::StartJumpCharge()
@@ -259,11 +271,13 @@ void AChickenCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Ou
     DOREPLIFETIME(ThisClass,KnockdownDirection);
     DOREPLIFETIME(ThisClass,bKnockdownPending);
     DOREPLIFETIME(ThisClass,bRoundInputEnabled);
+    DOREPLIFETIME(ThisClass,bRoundFinished);
 }
 
 void AChickenCharacter::SetRoundInputEnabled(bool bEnabled)
 {
     if (!HasAuthority()) return;
+    bRoundFinished=false;
     bRoundInputEnabled=bEnabled;
     CurrentTilt=BodyTilt=FVector2D::ZeroVector;
     bIsCharging=false; CurrentJumpPower=0;
@@ -273,12 +287,34 @@ void AChickenCharacter::SetRoundInputEnabled(bool bEnabled)
     OnRep_RoundInputEnabled(); ForceNetUpdate();
 }
 
+void AChickenCharacter::FinishRound()
+{
+    if (!HasAuthority()) return;
+    bRoundFinished=true;
+    bRoundInputEnabled=false;
+    CurrentTilt=BodyTilt=FVector2D::ZeroVector;
+    bIsCharging=bInLandingRecovery=false;
+    CurrentJumpPower=0.f;
+    ConsumeMovementInputVector();
+    OnRep_RoundInputEnabled();
+    ForceNetUpdate();
+}
+
 void AChickenCharacter::OnRep_RoundInputEnabled()
 {
     if (!bRoundInputEnabled)
     {
-        GetCharacterMovement()->StopMovementImmediately();
-        GetCharacterMovement()->DisableMovement();
+        auto* Movement=GetCharacterMovement();
+        if (bRoundFinished && Movement->IsFalling())
+        {
+            // The winner may still be airborne. Disable combat but allow gravity to land them.
+            Movement->Velocity.X=Movement->Velocity.Y=0.f;
+        }
+        else
+        {
+            Movement->StopMovementImmediately();
+            Movement->DisableMovement();
+        }
         // Initial replication can arrive before BeginPlay captures the authored rotation.
         if (HasActorBegunPlay()) GetMesh()->SetRelativeRotation(BaseMeshRotation);
     }
