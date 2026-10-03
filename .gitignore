@@ -31,14 +31,24 @@ Saved/
 # Visual Studio database / cache
 *.VC.db
 *.VC.VC.opendb
+*.opensdf
+*.sdf
 
-
-
+# Engine-generated IDE projects
+*.sln
+*.slnx
+*.xcodeproj
+*.xcworkspace
 # =========================================================
 # Build / temporary files
 # =========================================================
 
-[Bb]uild/
+# Keep packaging icons and blacklist files available for tracking
+/Build/*
+!/Build/*/
+/Build/*/**
+!/Build/*/PakBlacklist*.txt
+!/Build/**/*.ico
 [Dd]ebug/
 [Rr]elease/
 x64/
@@ -47,6 +57,18 @@ x86/
 *.log
 *.tmp
 *.temp
+
+# Compiled objects and precompiled headers
+*.slo
+*.lo
+*.o
+*.obj
+*.gch
+*.pch
+
+# Plugin-generated output (keep authored/prebuilt plugin dependencies)
+Plugins/**/Binaries/
+Plugins/**/Intermediate/
 
 # =========================================================
 # OS

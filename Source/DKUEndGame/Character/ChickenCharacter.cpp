@@ -22,6 +22,13 @@ AChickenCharacter::AChickenCharacter()
 void AChickenCharacter::BeginPlay()
 {
     Super::BeginPlay();
+
+	/* 컨트롤러 디버깅 로그 */
+	//if (AController* CurrentController = GetController() )
+	//{
+	//	UE_LOG(LogTemp, Warning, TEXT("%s %s"), *CurrentController->GetName(), *CurrentController->GetClass()->GetName());
+	//}
+
     BaseMeshRotation = GetMesh()->GetRelativeRotation();
 
 	// 닭의 Capsule 충돌 이벤트 등록.
