@@ -129,6 +129,8 @@ protected:
     UPROPERTY(Replicated, BlueprintReadOnly, Category="Chicken|Knockdown")
     bool bKnockdownPending = false;
 
+	bool bLocalChargeHeld = false;
+
     void BeginKnockdown();
     UPROPERTY(ReplicatedUsing=OnRep_RoundInputEnabled, BlueprintReadOnly, Category="Chicken|Match")
     bool bRoundInputEnabled = true;

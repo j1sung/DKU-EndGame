@@ -26,6 +26,16 @@ void AChickenCharacter::BeginPlay()
 
 	// 닭의 Capsule 충돌 이벤트 등록.
 	GetCapsuleComponent()->OnComponentHit.AddDynamic(this, &AChickenCharacter::OnChickenHit);
+
+	// 카메라 상하 회전 제한.
+	if (APlayerController* PC = Cast<APlayerController>(GetController()))
+	{
+		if (PC->PlayerCameraManager)
+		{
+			PC->PlayerCameraManager->ViewPitchMin = -25.f;
+			PC->PlayerCameraManager->ViewPitchMax = 20.f;
+		}
+	}
 }
 
 void AChickenCharacter::Tick(float DeltaTime)
@@ -96,6 +106,9 @@ void AChickenCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 	PlayerInputComponent->BindAxis("MoveForward", this, &AChickenCharacter::MoveForward);
 	PlayerInputComponent->BindAxis("MoveRight", this, &AChickenCharacter::MoveRight);
 
+	PlayerInputComponent->BindAxis("Turn", this, &APawn::AddControllerYawInput);
+	PlayerInputComponent->BindAxis("LookUp", this, &APawn::AddControllerPitchInput);
+
 	PlayerInputComponent->BindAction("JumpCharge", IE_Pressed, this, &AChickenCharacter::StartJumpCharge);
 	PlayerInputComponent->BindAction("JumpCharge", IE_Released, this, &AChickenCharacter::ExecuteJump);
 }
@@ -122,6 +135,7 @@ void AChickenCharacter::MoveForward(float Value)
 
 	const float Previous = CurrentTilt.X;
 	CurrentTilt.X = FMath::Clamp(Value,-1.f,1.f);
+
     if (!HasAuthority() && Previous!=CurrentTilt.X) ServerSetTilt(CurrentTilt);
 
 	if (bIsCharging) return;
@@ -139,6 +153,7 @@ void AChickenCharacter::MoveRight(float Value)
 	//if (!GetCharacterMovement()->IsMovingOnGround()) return;
 
 	const float Previous = CurrentTilt.Y;
+	
 	CurrentTilt.Y = FMath::Clamp(-Value,-1.f,1.f);
     if (!HasAuthority() && Previous!=CurrentTilt.Y) ServerSetTilt(CurrentTilt);
 
@@ -203,6 +218,12 @@ void AChickenCharacter::BeginKnockdown()
 
 void AChickenCharacter::StartJumpCharge()
 {
+	// 입력하자마자 로컬에서 잠금.
+	bLocalChargeHeld = true;
+
+	GetCharacterMovement()->StopMovementImmediately();
+	ConsumeMovementInputVector();
+
     if (!HasAuthority()) { if (bRoundInputEnabled) ServerSetCharge(true); return; }
 	if (!bRoundInputEnabled || bIsFallen || bKnockdownPending) return;
 
