@@ -47,7 +47,7 @@
 - [ ] 단위 테스트 도구 결정
 - [ ] 코드 검사와 서식 도구 결정
 - [ ] 로컬 실행·테스트 방법 결정
-- [ ] 개발 환경에서 사용할 AWS 리전 결정
+- [x] 개발 환경에서 사용할 AWS 리전 결정
 - [ ] AWS 리소스 이름 규칙 결정
 - [ ] 개발·발표 환경 구분 방식 결정
 - [ ] 환경 변수와 비밀 정보 관리 방식 결정
@@ -202,7 +202,16 @@
 - [ ] CloudWatch Logs 권한 확인
 - [ ] 개발 환경 변수 주입 방식 확인
 - [ ] 저장소에 비밀 정보가 포함되지 않도록 확인
-- [ ] 배포에 필요한 AWS 자격 증명 사용 방법 문서화
+- [x] 배포에 필요한 AWS 자격 증명 사용 방법 문서화
+
+### AWS 개발 자격 증명 사용 방법
+
+- 루트 계정의 Access Key는 생성하거나 사용하지 않는다.
+- 개발자는 IAM Identity Center 사용자로 로그인하고 임시 자격 증명을 사용한다.
+- 로컬 AWS CLI 프로필 이름은 `dku-dev`로 통일한다.
+- 기본 AWS 리전은 서울 리전인 `ap-northeast-2`를 사용한다.
+- 로그인 세션이 만료되면 `aws sso login --profile dku-dev`로 다시 인증한다.
+- 연결 상태는 `aws sts get-caller-identity --profile dku-dev`로 확인한다.
 
 ## 7. EOS 개발 환경 준비
 
@@ -281,19 +290,22 @@
 | EOS 인증 증명과 백엔드 검증 방식 미확정 | 인증 구현 지연 | Sprint 1 초기에 공식 문서와 실제 토큰으로 검증 | 확인 필요 |
 | DynamoDB 접근 패턴 누락 | 스키마 재설계 | API별 읽기·쓰기 패턴을 먼저 검토 | 확인 필요 |
 | 클라이언트 계약 지연 | 통합 일정 지연 | API 초안을 조기에 공유하고 검토 일정 고정 | 확인 필요 |
-| AWS 또는 Epic 권한 부족 | 환경 구축 중단 | 스프린트 시작 시 계정과 권한 먼저 확인 | 확인 필요 |
+| AWS 또는 Epic 권한 부족 | 환경 구축 중단 | 스프린트 시작 시 계정과 권한 먼저 확인 | AWS 확인 완료, Epic 확인 필요 |
 
 ## 12. 결정 기록
 
 | 날짜 | 결정 사항 | 선택 내용 | 이유 | 영향 범위 |
 |---|---|---|---|---|
-| YYYY-MM-DD | 예: 인프라 코드화 도구 | 미정 | 미정 | AWS 인프라 전체 |
+| 2026-10-06 | AWS 개발 리전 | `ap-northeast-2`(서울) | 개발 인력과 시연 환경에 가까운 리전을 사용 | AWS 인프라 전체 |
+| 2026-10-06 | AWS 개발자 인증 | IAM Identity Center의 `dku-dev` SSO 프로필과 임시 자격 증명 사용 | 루트 계정과 장기 Access Key의 일상 사용 방지 | 로컬 개발·배포 |
+| 2026-10-06 | 초기 개발 권한 | `AdministratorAccess`, 세션 기간 1시간 | 초기 인프라 구축 후 최소 권한으로 축소 예정 | AWS 개발 계정 |
 
 ## 13. 검증 결과
 
 | 날짜 | 검증 항목 | 결과 | 증거 또는 참고 자료 |
 |---|---|---|---|
-| YYYY-MM-DD | 예: API Gateway에서 테스트 Lambda 호출 | 미실행 | 로그 또는 명령 기록 |
+| 2026-10-06 | IAM Identity Center 활성화와 개발자 권한 할당 | 성공 | `chickengame-dev-admin` 사용자 및 `AdministratorAccess` 권한 세트 할당 완료 |
+| 2026-10-06 | AWS CLI SSO 연결 | 성공 | `aws sts get-caller-identity --profile dku-dev`에서 `AWSReservedSSO_AdministratorAccess` 역할 확인 |
 
 ## 14. Sprint 2 인계
 
