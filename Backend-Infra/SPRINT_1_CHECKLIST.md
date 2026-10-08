@@ -215,20 +215,40 @@
 
 ## 7. EOS 개발 환경 준비
 
-- [ ] Epic Developer Portal 접근 권한 확인
-- [ ] EOS Product 생성 또는 기존 Product 확인
-- [ ] 개발용 Sandbox 확인
-- [ ] 개발용 Deployment 확인
-- [ ] 클라이언트 정책과 권한 확인
-- [ ] EAS 로그인 설정 확인
-- [ ] EOS Connect 설정 확인
-- [ ] 내부 사용자 식별에 PUID를 사용한다는 계약 확인
-- [ ] 백엔드에 전달할 인증 증명 후보 확인
-- [ ] 백엔드 검증 방법과 필요한 공개 정보 확인
-- [ ] 토큰 만료와 갱신 책임 구분
-- [ ] 개발용 Epic 계정 준비
+- [x] Epic Developer Portal 접근 권한 확인
+- [x] EOS Product 생성 또는 기존 Product 확인
+- [x] 개발용 Sandbox 확인
+- [x] 개발용 Deployment 확인
+- [x] 클라이언트 정책과 권한 확인
+- [x] EAS 로그인 설정 확인
+- [x] EOS Connect 설정 확인
+- [x] 내부 사용자 식별에 PUID를 사용한다는 계약 확인
+- [x] 백엔드에 전달할 인증 증명 후보 확인
+- [x] 백엔드 검증 방법과 필요한 공개 정보 확인
+- [x] 토큰 만료와 갱신 책임 구분
+- [x] 개발용 Epic 계정 준비
 - [ ] 최종 4인 시연에 사용할 서로 다른 계정 4개의 준비 방법 확인
 - [ ] Product·Sandbox·Deployment 식별자의 공유·보관 방법 결정
+
+### EOS 개발 로그인과 Connect 흐름
+
+- Epic 계정 로그인은 EAS Auth Interface를 사용한다.
+- Auth Interface에서 발급받은 Epic ID Token으로 EOS Connect 로그인을 수행한다.
+- 첫 로그인에서 `EOS_InvalidUser`가 반환되면 사용자 동의 흐름 뒤 `EOS_Connect_CreateUser`로 Product User ID(PUID)를 생성한다.
+- 내부 `playerId`는 Epic Account ID가 아니라 제품별 PUID를 사용한다.
+- Epic 계정으로 Connect를 사용하는 경우 별도의 외부 ID 제공자 설정은 필요하지 않다.
+- 클라이언트는 인증 만료 알림을 처리하고 만료 전에 다시 로그인한다. 백엔드는 만료되거나 검증되지 않은 인증 증명을 거부한다.
+- 참고: [Epic 계정으로 EOS Connect 로그인](https://dev.epicgames.com/docs/epic-online-services/eos-fundamentals/connect-interface/connect-guide/log-in-with-an-epic-games-account), [Dev Auth Tool 로그인](https://dev.epicgames.com/docs/epic-online-services/accounts-and-social/eos-epic-account-services/auth-interface/auth-guide/log-in-with-the-dev-auth-tool)
+
+### EOS 인증 증명과 백엔드 검증 결정
+
+- Unreal 클라이언트는 Connect 로그인 후 `EOS_Connect_CopyIdToken`으로 Connect ID Token을 발급받아 AWS API 요청의 `Authorization: Bearer <token>` 헤더로 전달한다.
+- API Gateway 뒤의 TypeScript/Node.js Lambda는 일반 요청 처리와 권한 흐름을 담당한다.
+- Connect ID Token 검증은 Linux EOS SDK의 `EOS_Connect_VerifyIdToken`을 호출하는 격리된 네이티브 검증 계층에서 수행한다.
+- 검증 성공 결과의 PUID만 내부 `playerId`로 사용하고, 클라이언트가 별도로 보낸 사용자 ID는 신뢰하지 않는다.
+- 검증 시 서명·만료뿐 아니라 Client ID, Product ID, Sandbox ID, Deployment ID 일치 여부를 확인한다.
+- Client Secret과 원본 토큰은 코드·문서·로그에 남기지 않으며 배포 환경의 비밀 저장소에서 주입한다.
+- Epic OAuth 공개 JWKS는 EAS OAuth 액세스 토큰용이다. 실제 Connect ID Token은 해당 JWKS에 일치하는 키가 없으므로 순수 Node.js JWKS 검증 경로를 사용하지 않는다.
 
 ## 8. 클라이언트팀 협의
 
@@ -279,7 +299,7 @@
 - [ ] AWS 개발 환경이 인프라 코드로 배포된다.
 - [ ] API Gateway → Lambda → DynamoDB 경로가 동작한다.
 - [ ] `requestId`로 CloudWatch 로그를 조회할 수 있다.
-- [ ] EOS Product·Sandbox·Deployment 준비 상태를 확인했다.
+- [x] EOS Product·Sandbox·Deployment 준비 상태를 확인했다.
 - [ ] 인증·버전·세션 정보에 관한 클라이언트 계약이 정리되었다.
 - [ ] 남은 위험과 Sprint 2 인계 항목이 기록되었다.
 
@@ -287,10 +307,10 @@
 
 | 위험 요소 | 영향 | 대응 방안 | 상태 |
 |---|---|---|---|
-| EOS 인증 증명과 백엔드 검증 방식 미확정 | 인증 구현 지연 | Sprint 1 초기에 공식 문서와 실제 토큰으로 검증 | 확인 필요 |
+| EOS 인증 증명과 백엔드 검증 방식 미확정 | 인증 구현 지연 | 실제 Connect ID Token으로 OAuth JWKS 부적합을 확인하고 EOS SDK 네이티브 검증으로 확정 | 대응 완료 |
 | DynamoDB 접근 패턴 누락 | 스키마 재설계 | API별 읽기·쓰기 패턴을 먼저 검토 | 확인 필요 |
 | 클라이언트 계약 지연 | 통합 일정 지연 | API 초안을 조기에 공유하고 검토 일정 고정 | 확인 필요 |
-| AWS 또는 Epic 권한 부족 | 환경 구축 중단 | 스프린트 시작 시 계정과 권한 먼저 확인 | AWS 확인 완료, Epic 확인 필요 |
+| AWS 또는 Epic 권한 부족 | 환경 구축 중단 | 스프린트 시작 시 계정과 권한 먼저 확인 | AWS·Epic 확인 완료 |
 
 ## 12. 결정 기록
 
@@ -299,6 +319,14 @@
 | 2026-10-06 | AWS 개발 리전 | `ap-northeast-2`(서울) | 개발 인력과 시연 환경에 가까운 리전을 사용 | AWS 인프라 전체 |
 | 2026-10-06 | AWS 개발자 인증 | IAM Identity Center의 `dku-dev` SSO 프로필과 임시 자격 증명 사용 | 루트 계정과 장기 Access Key의 일상 사용 방지 | 로컬 개발·배포 |
 | 2026-10-06 | 초기 개발 권한 | `AdministratorAccess`, 세션 기간 1시간 | 초기 인프라 구축 후 최소 권한으로 축소 예정 | AWS 개발 계정 |
+| 2026-10-06 | EOS 개발 환경 | Product `chicken_game`의 기본 `Live` Sandbox·Deployment 사용 | 초기 통합 경로를 단순하게 유지 | EOS 개발·통합 |
+| 2026-10-06 | EOS 게임 클라이언트 정책 | `Peer2Peer` 템플릿 사용 | 인증된 사용자 기반 리슨 서버와 EOS Lobby·Session 구조에 부합 | Windows 게임 클라이언트 |
+| 2026-10-06 | EAS 개발 권한 | `Basic Profile`만 활성화하고 추가 권한은 비활성화 | 로그인에 필요한 최소 권한만 사용 | EAS 개발 로그인 |
+| 2026-10-06 | EOS 사용자 식별 | EAS Auth의 Epic ID Token으로 Connect 로그인 후 발급되는 PUID를 내부 `playerId`로 사용 | EOS Game Services의 제품별 사용자 식별자와 일치 | 인증·프로필·매칭 |
+| 2026-10-06 | EOS 인증 갱신 책임 | 클라이언트가 만료 전에 Auth·Connect 재로그인, 백엔드는 만료된 증명 거부 | SDK 인증 수명과 서버 접근 제어 책임을 분리 | Unreal 클라이언트·백엔드 |
+| 2026-10-06 | 백엔드 기본 런타임 | TypeScript/Node.js Lambda | 팀 개발성과 AWS 관리형 서비스 연동성을 우선 | AWS API 백엔드 |
+| 2026-10-06 | 백엔드 인증 증명 | Unreal이 발급받은 EOS Connect ID Token | PUID와 Product·Sandbox·Deployment·Client 범위를 한 증명으로 전달 | Unreal·AWS 인증 경계 |
+| 2026-10-06 | Connect 토큰 검증 | TypeScript 요청 계층과 Linux EOS SDK 네이티브 검증 계층을 분리하고 `EOS_Connect_VerifyIdToken` 사용 | 실제 토큰의 `kid`가 Epic OAuth JWKS와 일치하지 않아 순수 Node.js 오프라인 검증 불가 | Lambda 패키징·인증 구현 |
 
 ## 13. 검증 결과
 
@@ -306,6 +334,14 @@
 |---|---|---|---|
 | 2026-10-06 | IAM Identity Center 활성화와 개발자 권한 할당 | 성공 | `chickengame-dev-admin` 사용자 및 `AdministratorAccess` 권한 세트 할당 완료 |
 | 2026-10-06 | AWS CLI SSO 연결 | 성공 | `aws sts get-caller-identity --profile dku-dev`에서 `AWSReservedSSO_AdministratorAccess` 역할 확인 |
+| 2026-10-06 | Epic Developer Portal과 EOS Product | 성공 | 조직 `chicken_game`, Product `chicken_game`, 기본 `Live` Sandbox·Deployment 확인 |
+| 2026-10-06 | EOS Client Policy와 Client | 성공 | `chickengame-p2p-client-policy`와 `chickengame-windows-client` 생성 및 연결 완료; Client Secret은 문서화하지 않음 |
+| 2026-10-06 | EAS 개발 애플리케이션 | 성공 | 초안 애플리케이션에 `Basic Profile` 권한과 Windows Client 연결 완료; 공개 배포용 브랜드 리뷰는 미완료 |
+| 2026-10-06 | EOS Connect 로그인 흐름 검토 | 성공 | Epic 공식 문서에서 Auth ID Token → Connect Login → PUID 흐름과 Epic 계정 사용 시 외부 ID 제공자 설정 불필요 확인 |
+| 2026-10-06 | 실제 EOS Auth·Connect 로그인 | 성공 | Dev Auth Tool로 EAS 동의 후 Connect 로그인과 신규 PUID 생성 완료 |
+| 2026-10-06 | Connect ID Token 구조 | 성공 | RS256 JWT, 만료 1시간, `sub` PUID와 `aud` Client ID 및 `pfpid`·`pfsid`·`pfdid` 범위 일치 확인; 토큰 원문은 저장하지 않음 |
+| 2026-10-06 | 순수 Node.js OAuth JWKS 검증 | 부적합 확인 | Epic OAuth JWKS에 실제 Connect ID Token의 `kid`와 일치하는 키가 없어 `ERR_JWKS_NO_MATCHING_KEY` 발생 |
+| 2026-10-06 | EOS SDK Lambda 배포 가능성 | 확인 | SDK 패키지에서 Linux x64·ARM64 공유 라이브러리를 확인하여 네이티브 검증 계층 패키징 가능 |
 
 ## 14. Sprint 2 인계
 
