@@ -57,6 +57,14 @@ Thumbs.db
 Desktop.ini
 
 # =========================================================
+# Backend TypeScript build output
+# =========================================================
+
+Backend-Infra/backend/node_modules/
+Backend-Infra/backend/dist/
+Backend-Infra/backend/coverage/
+
+# =========================================================
 # Unreal generated files
 # =========================================================
 
