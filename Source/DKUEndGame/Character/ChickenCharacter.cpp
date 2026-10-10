@@ -188,8 +188,11 @@ bool AChickenCharacter::StartKnockdown(ECFKnockdownDirection Direction)
     bIsCharging = false;
     bInLandingRecovery = false;
     LandingRecoveryRemaining = CurrentJumpPower = TiltAccumulator = 0.f;
-    CurrentTilt = FVector2D::ZeroVector;
+    
+	CurrentTilt = FVector2D::ZeroVector;
     BodyTilt = FVector2D::ZeroVector;
+	TiltVelocity = FVector2D::ZeroVector;
+
     ConsumeMovementInputVector();
     if (GetCharacterMovement()->IsFalling())
     {
@@ -270,25 +273,93 @@ void AChickenCharacter::ExecuteJump()
 
 void AChickenCharacter::UpdateBodyTilt(float DeltaTime)
 {
-	// 입력이 있으면 해당 방향으로 몸의 기울기 누적.
-	if (CurrentTilt.SizeSquared() > KINDA_SMALL_NUMBER)
+	//// 입력이 있으면 해당 방향으로 몸의 기울기 누적.
+	//if (CurrentTilt.SizeSquared() > KINDA_SMALL_NUMBER)
+	//{
+	//	BodyTilt += CurrentTilt * TiltSpeed * DeltaTime;
+	//}
+	//else
+	//{
+	//	// 입력이 없으면 천천히 중심으로 복귀.
+	//	BodyTilt = FMath::Vector2DInterpTo(BodyTilt, FVector2D::ZeroVector, DeltaTime, TiltRecoverySpeed);
+	//}
+
+	//// 최대 기울기 제한.
+	//BodyTilt.X = FMath::Clamp(BodyTilt.X, -MaxBodyTilt, MaxBodyTilt);
+	//BodyTilt.Y = FMath::Clamp(BodyTilt.Y, -MaxBodyTilt, MaxBodyTilt);
+
+	//// 어느 한 축이라도 한계를 넘으면 넘어짐 처리.
+	//if (bEnableBalanceFailure && (FMath::Abs(BodyTilt.X) >= MaxBodyTilt || FMath::Abs(BodyTilt.Y) >= MaxBodyTilt))
+	//{
+	//	FallOver();
+	//}
+	if (DeltaTime <= 0.f || MaxBodyTilt <= 0.f)
 	{
-		BodyTilt += CurrentTilt * TiltSpeed * DeltaTime;
-	}
-	else
-	{
-		// 입력이 없으면 천천히 중심으로 복귀.
-		BodyTilt = FMath::Vector2DInterpTo(BodyTilt, FVector2D::ZeroVector, DeltaTime, TiltRecoverySpeed);
+		return;
 	}
 
-	// 최대 기울기 제한.
-	BodyTilt.X = FMath::Clamp(BodyTilt.X, -MaxBodyTilt, MaxBodyTilt);
-	BodyTilt.Y = FMath::Clamp(BodyTilt.Y, -MaxBodyTilt, MaxBodyTilt);
+	// 대각선 입력이 단일 방향보다 강해지지 않도록 제한.
+	FVector2D BalanceInput = CurrentTilt;
 
-	// 어느 한 축이라도 한계를 넘으면 넘어짐 처리.
-	if (bEnableBalanceFailure && (FMath::Abs(BodyTilt.X) >= MaxBodyTilt || FMath::Abs(BodyTilt.Y) >= MaxBodyTilt))
+	if (BalanceInput.SizeSquared() > 1.0f)
 	{
-		FallOver();
+		BalanceInput.Normalize();
+	}
+
+	// 프레임 시간이 길 때 계산이 튀지 않도록 나누어 계산.
+	const float MaxStep = 1.0f / 120.0f;
+	const int32 StepCount = FMath::Max(
+		1,
+		FMath::CeilToInt(DeltaTime / MaxStep)
+	);
+
+	const float StepTime = DeltaTime / StepCount;
+
+	for (int32 Step = 0; Step < StepCount; ++Step)
+	{
+		// 입력: 누른 방향으로 기울어지는 속도를 변경.
+		const FVector2D InputAcceleration =
+			BalanceInput * TiltInputAcceleration;
+
+		// 중력 효과: 이미 기울어진 방향으로 더 넘어가게 함.
+		// 기울기가 클수록 힘도 커짐.
+		const FVector2D GravityAcceleration =
+			BodyTilt * TiltGravityStrength;
+
+		// 가속도 -> 속도.
+		TiltVelocity +=
+			(InputAcceleration + GravityAcceleration) * StepTime;
+
+		// 속도에 저항 적용. 중심으로 당기지는 않음.
+		TiltVelocity *= FMath::Exp(-TiltDamping * StepTime);
+
+		// 속도 -> 기울기.
+		BodyTilt += TiltVelocity * StepTime;
+
+		// 기존 코드와 같은 축별 한계 판정.
+		const bool bReachedLimit =
+			FMath::Abs(BodyTilt.X) >= MaxBodyTilt ||
+			FMath::Abs(BodyTilt.Y) >= MaxBodyTilt;
+
+		BodyTilt.X = FMath::Clamp(
+			BodyTilt.X, -MaxBodyTilt, MaxBodyTilt
+		);
+
+		BodyTilt.Y = FMath::Clamp(
+			BodyTilt.Y, -MaxBodyTilt, MaxBodyTilt
+		);
+
+		if (bReachedLimit)
+		{
+			TiltVelocity = FVector2D::ZeroVector;
+
+			if (bEnableBalanceFailure)
+			{
+				FallOver();
+			}
+
+			return;
+		}
 	}
 }
 
@@ -314,7 +385,10 @@ void AChickenCharacter::SetRoundInputEnabled(bool bEnabled)
     if (!HasAuthority()) return;
     bRoundFinished=false;
     bRoundInputEnabled=bEnabled;
+
     CurrentTilt=BodyTilt=FVector2D::ZeroVector;
+	TiltVelocity = FVector2D::ZeroVector;
+
     bIsCharging=false; CurrentJumpPower=0;
     bInLandingRecovery=bEnabled;
     LandingRecoveryRemaining=FMath::Max(.01f,LandingRecoveryTime);
@@ -328,6 +402,7 @@ void AChickenCharacter::FinishRound()
     bRoundFinished=true;
     bRoundInputEnabled=false;
     CurrentTilt=BodyTilt=FVector2D::ZeroVector;
+	TiltVelocity = FVector2D::ZeroVector;
     bIsCharging=bInLandingRecovery=false;
     CurrentJumpPower=0.f;
     ConsumeMovementInputVector();
