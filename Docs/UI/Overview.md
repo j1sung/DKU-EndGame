@@ -33,3 +33,7 @@
 ## 경기·결과 HUD
 
 `CFMatchStatusWidget`은 복제된 경기 상태에 따라 카운트다운, 라운드·생존 인원, 탈락·관전, 라운드 순위·점수, 최종 누적 순위·MVP를 표시한다. 호스트에게만 방 대기 복귀 버튼을 보여주며 서버도 권한을 검사한다. 상세는 [라운드 진행](../RoundProgression.md), [최종 결과](../FinalResults.md). 승자 클로즈업 연출은 후속 범위다.
+
+## 튜토리얼 팝업
+
+`/Game/UI/GameLevel/BP_TutorialPopup`의 Widget Component는 `WBP_TutorialPopup`을 월드에 표시한다. 제목과 그림을 묶은 Vertical Box, 그림의 Size Box(1600 × 702.58), Down Only Scale Box 구성을 사용한다. 2026-10-06에는 컴포넌트의 Draw Size를 기본 500 × 500에서 1920 × 1080으로 맞춰 제목과 축소된 그림 사이의 빈 공간을 해소했다. 에디터 액터 미리보기와 Blueprint 컴파일·저장으로 확인했으며 게임 실행 검증은 하지 않았다. WBP의 별도 미저장 디자인 변경은 이번 수정에서 저장하지 않았다.
