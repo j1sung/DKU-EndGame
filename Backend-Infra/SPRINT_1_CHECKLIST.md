@@ -233,7 +233,7 @@
 ### EOS 개발 로그인과 Connect 흐름
 
 - Epic 계정 로그인은 EAS Auth Interface를 사용한다.
-- Auth Interface에서 발급받은 Epic ID Token으로 EOS Connect 로그인을 수행한다.
+- Auth 로그인 후 `EOS_Auth_CopyUserAuthToken`으로 얻은 EAS access token을 `EOS_ECT_EPIC` 자격 증명으로 전달해 EOS Connect 로그인을 수행한다.
 - 첫 로그인에서 `EOS_InvalidUser`가 반환되면 사용자 동의 흐름 뒤 `EOS_Connect_CreateUser`로 Product User ID(PUID)를 생성한다.
 - 내부 `playerId`는 Epic Account ID가 아니라 제품별 PUID를 사용한다.
 - Epic 계정으로 Connect를 사용하는 경우 별도의 외부 ID 제공자 설정은 필요하지 않다.
@@ -322,7 +322,7 @@
 | 2026-10-06 | EOS 개발 환경 | Product `chicken_game`의 기본 `Live` Sandbox·Deployment 사용 | 초기 통합 경로를 단순하게 유지 | EOS 개발·통합 |
 | 2026-10-06 | EOS 게임 클라이언트 정책 | `Peer2Peer` 템플릿 사용 | 인증된 사용자 기반 리슨 서버와 EOS Lobby·Session 구조에 부합 | Windows 게임 클라이언트 |
 | 2026-10-06 | EAS 개발 권한 | `Basic Profile`만 활성화하고 추가 권한은 비활성화 | 로그인에 필요한 최소 권한만 사용 | EAS 개발 로그인 |
-| 2026-10-06 | EOS 사용자 식별 | EAS Auth의 Epic ID Token으로 Connect 로그인 후 발급되는 PUID를 내부 `playerId`로 사용 | EOS Game Services의 제품별 사용자 식별자와 일치 | 인증·프로필·매칭 |
+| 2026-10-06 | EOS 사용자 식별 | EAS Auth의 access token으로 Connect 로그인 후 발급되는 PUID를 내부 `playerId`로 사용 | 실제 SDK Probe에서 `EOS_Auth_CopyUserAuthToken` → `EOS_Connect_Login` 흐름을 확인했고 EOS Game Services의 제품별 사용자 식별자와 일치 | 인증·프로필·매칭 |
 | 2026-10-06 | EOS 인증 갱신 책임 | 클라이언트가 만료 전에 Auth·Connect 재로그인, 백엔드는 만료된 증명 거부 | SDK 인증 수명과 서버 접근 제어 책임을 분리 | Unreal 클라이언트·백엔드 |
 | 2026-10-06 | 백엔드 기본 런타임 | TypeScript/Node.js Lambda | 팀 개발성과 AWS 관리형 서비스 연동성을 우선 | AWS API 백엔드 |
 | 2026-10-06 | 백엔드 인증 증명 | Unreal이 발급받은 EOS Connect ID Token | PUID와 Product·Sandbox·Deployment·Client 범위를 한 증명으로 전달 | Unreal·AWS 인증 경계 |
@@ -342,6 +342,7 @@
 | 2026-10-06 | Connect ID Token 구조 | 성공 | RS256 JWT, 만료 1시간, `sub` PUID와 `aud` Client ID 및 `pfpid`·`pfsid`·`pfdid` 범위 일치 확인; 토큰 원문은 저장하지 않음 |
 | 2026-10-06 | 순수 Node.js OAuth JWKS 검증 | 부적합 확인 | Epic OAuth JWKS에 실제 Connect ID Token의 `kid`와 일치하는 키가 없어 `ERR_JWKS_NO_MATCHING_KEY` 발생 |
 | 2026-10-06 | EOS SDK Lambda 배포 가능성 | 확인 | SDK 패키지에서 Linux x64·ARM64 공유 라이브러리를 확인하여 네이티브 검증 계층 패키징 가능 |
+| 2026-10-09 | Amazon Linux 네이티브 Connect ID Token 검증 | 성공 | Amazon Linux 2023 컨테이너와 EOS SDK 1.19.2.1의 `EOS_Connect_VerifyIdToken`에서 `EOS_Success` 반환, 검증 결과 PUID와 토큰 `sub` 일치 확인; 토큰 원문은 저장하지 않음 |
 
 ## 14. Sprint 2 인계
 
