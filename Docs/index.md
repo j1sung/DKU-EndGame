@@ -16,6 +16,7 @@
 
 ## 최근 기록
 
+- [2026-10-11 · PR 생성 및 머지 스킬 추가](Changes.md#change-20261011-ship)
 - [2026-10-04 · 생성 파일 제외와 솔루션 추적 해제](Changes.md#change-20261004-gitignore)
 - [2026-10-02 · 4인 경기 진행 및 dev 충돌 병합](Changes.md#change-20261002-match-integration)
 - [2026-10-01 · 문서 갱신 스킬 이름 단축](Changes.md#change-20261001-06)

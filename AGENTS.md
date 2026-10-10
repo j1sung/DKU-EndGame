@@ -23,3 +23,5 @@ Use [.agents/skills/docs/SKILL.md](.agents/skills/docs/SKILL.md) for requested i
 [AI workflow design](Docs/Guides/AI-Workflow-Design.md) is human reference, not a mandatory task read. Read relevant portions only when changing this management system.
 
 Use [.agents/skills/commit/SKILL.md](.agents/skills/commit/SKILL.md) for explicitly invoked current-change staging and commits, or message drafts. Default commit mode reviews and stages eligible current changes; explicit staged-only mode preserves partial staging. Skill creation/editing does not authorize executing commits.
+
+Use [.agents/skills/ship/SKILL.md](.agents/skills/ship/SKILL.md) for an authorized ship request: run the commit skill for eligible current changes, push the current branch, open/reuse a PR to the user-specified target, and merge. Honor explicit staged-only, existing-commits-only and PR-only limits. Leave conflicting PRs open without resolving conflicts. Skill creation/editing does not authorize shipping.

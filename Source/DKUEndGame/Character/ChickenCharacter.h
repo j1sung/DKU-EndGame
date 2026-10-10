@@ -153,4 +153,26 @@ protected:
 
     // 충돌한 상대에게 전달할 넘어짐 방향 계산.
     ECFKnockdownDirection GetKnockdownDirectionFor(const AActor* OtherActor) const;
+
+protected :
+    // 기울어지는 속도.
+    // X: 전후, Y: 좌우. 기존 BodyTilt 좌표 규칙을 그대로 사용.
+    FVector2D TiltVelocity = FVector2D::ZeroVector;
+
+    // 입력으로 기울어지는 속도를 바꾸는 힘.
+    UPROPERTY(EditAnywhere, Category = "Balance",
+        meta = (ClampMin = "0.0"))
+    float TiltInputAcceleration = 3.0f;
+
+    // 기울어진 방향으로 더 넘어가게 하는 힘.
+    // 실제 물리 중력이 아니라, 균형 게임용 중력 효과.
+    UPROPERTY(EditAnywhere, Category = "Balance",
+        meta = (ClampMin = "0.0"))
+    float TiltGravityStrength = 2.0f;
+
+    // 기울어지는 속도를 완화하는 저항.
+    // 자세를 중심으로 복원하는 힘은 아님.
+    UPROPERTY(EditAnywhere, Category = "Balance",
+        meta = (ClampMin = "0.0"))
+    float TiltDamping = 1.5f;
 };
