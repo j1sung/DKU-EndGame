@@ -63,6 +63,7 @@ Desktop.ini
 Backend-Infra/backend/node_modules/
 Backend-Infra/backend/dist/
 Backend-Infra/backend/coverage/
+Backend-Infra/vendor/eos-sdk/
 
 # =========================================================
 # Unreal generated files
