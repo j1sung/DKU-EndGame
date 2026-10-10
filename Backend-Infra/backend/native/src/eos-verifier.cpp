@@ -79,6 +79,9 @@ public:
 
         handle_ = dlopen(libraryPath.c_str(), RTLD_NOW | RTLD_LOCAL);
         if (handle_ == nullptr) {
+            handle_ = dlopen("/opt/lib/libEOSSDK-Linux-Shipping.so", RTLD_NOW | RTLD_LOCAL);
+        }
+        if (handle_ == nullptr) {
             diagnostic_ = "EOS_LIBRARY_LOAD_FAILED";
             return;
         }

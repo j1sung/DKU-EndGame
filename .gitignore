@@ -63,7 +63,13 @@ Desktop.ini
 Backend-Infra/backend/node_modules/
 Backend-Infra/backend/dist/
 Backend-Infra/backend/coverage/
-Backend-Infra/vendor/eos-sdk/
+Backend-Infra/vendor/eos-sdk/*
+!Backend-Infra/vendor/eos-sdk/README.md
+Backend-Infra/backend/native/build/
+Backend-Infra/.aws-sam/
+Backend-Infra/.sam-local/
+Backend-Infra/.env*
+Backend-Infra/backend/.env*
 
 # =========================================================
 # Unreal generated files
