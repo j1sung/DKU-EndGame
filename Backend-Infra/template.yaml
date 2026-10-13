@@ -1,0 +1,126 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: ChickenGame development backend with EOS Connect token verification
+
+Parameters:
+  EosProductId:
+    Type: String
+    MinLength: 1
+    Description: Epic Online Services Product ID
+  EosSandboxId:
+    Type: String
+    MinLength: 1
+    Description: Epic Online Services Sandbox ID
+  EosDeploymentId:
+    Type: String
+    MinLength: 1
+    Description: Epic Online Services Deployment ID
+  EosClientId:
+    Type: String
+    MinLength: 1
+    Description: Epic Online Services server Client ID
+  VerifierTimeoutMs:
+    Type: Number
+    Default: 8000
+    MinValue: 1
+  VerifierMaxOutputBytes:
+    Type: Number
+    Default: 65536
+    MinValue: 1024
+
+Resources:
+  HttpApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      StageName: $default
+      Tags:
+        Project: chickengame
+        Environment: dev
+
+  EosClientSecret:
+    Type: AWS::SecretsManager::Secret
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      Name: chickengame/dev/eos-client-secret
+      Description: EOS server Client Secret for the ChickenGame development backend
+      Tags:
+        - Key: Project
+          Value: chickengame
+        - Key: Environment
+          Value: dev
+
+  AuthFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      DockerContext: .
+      Dockerfile: backend/Dockerfile
+      DockerTag: nodejs24-v1
+    Properties:
+      PackageType: Image
+      Architectures:
+        - x86_64
+      FunctionName: chickengame-dev-api
+      MemorySize: 512
+      Timeout: 15
+      PropagateTags: true
+      Tags:
+        Project: chickengame
+        Environment: dev
+      Environment:
+        Variables:
+          EOS_PRODUCT_ID:
+            Ref: EosProductId
+          EOS_SANDBOX_ID:
+            Ref: EosSandboxId
+          EOS_DEPLOYMENT_ID:
+            Ref: EosDeploymentId
+          EOS_CLIENT_ID:
+            Ref: EosClientId
+          EOS_CLIENT_SECRET_ARN:
+            Ref: EosClientSecret
+          EOS_VERIFIER_TIMEOUT_MS:
+            Ref: VerifierTimeoutMs
+          EOS_VERIFIER_MAX_OUTPUT_BYTES:
+            Ref: VerifierMaxOutputBytes
+      Policies:
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action: secretsmanager:GetSecretValue
+              Resource:
+                Ref: EosClientSecret
+      Events:
+        Me:
+          Type: HttpApi
+          Properties:
+            ApiId:
+              Ref: HttpApi
+            Path: /v1/me
+            Method: GET
+
+  AuthFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName:
+        Fn::Sub: /aws/lambda/${AuthFunction}
+      RetentionInDays: 14
+      Tags:
+        - Key: Project
+          Value: chickengame
+        - Key: Environment
+          Value: dev
+
+Outputs:
+  ApiUrl:
+    Description: Development HTTP API base URL
+    Value:
+      Fn::Sub: https://${HttpApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}
+  ClientSecretArn:
+    Description: ARN of the retained EOS Client Secret
+    Value:
+      Ref: EosClientSecret
+  FunctionName:
+    Description: Lambda function name
+    Value:
+      Ref: AuthFunction

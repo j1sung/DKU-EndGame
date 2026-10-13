@@ -14,10 +14,12 @@ RUN cmake -S native -B /tmp/eos-build \
 
 FROM node:24-bookworm-slim AS node-build
 
-WORKDIR /workspace
+WORKDIR /workspace/backend
 COPY backend/package.json backend/package-lock.json ./
 RUN npm ci
 COPY backend/ ./
+COPY template.yaml /workspace/template.yaml
+COPY samconfig.toml /workspace/samconfig.toml
 RUN npm test \
     && npm run typecheck \
     && npm run build
@@ -26,7 +28,8 @@ FROM public.ecr.aws/lambda/nodejs:24 AS runtime
 
 RUN dnf -y install json-c \
     && dnf clean all
-COPY --from=node-build /workspace/dist ${LAMBDA_TASK_ROOT}/dist
+COPY --from=node-build /workspace/backend/dist ${LAMBDA_TASK_ROOT}/dist
+COPY --from=node-build /workspace/backend/package.json ${LAMBDA_TASK_ROOT}/package.json
 COPY --from=native-build /tmp/eos-build/eos-token-verifier /opt/bin/eos-token-verifier
 COPY --from=native-build /opt/eos/lib/libEOSSDK-Linux-Shipping.so /opt/lib/libEOSSDK-Linux-Shipping.so
 

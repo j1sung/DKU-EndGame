@@ -11,7 +11,7 @@ docker build --platform linux/amd64 --file $dockerfile --tag $Image $backendInfr
 if ($LASTEXITCODE -ne 0) { throw 'Lambda image build failed.' }
 
 docker run --rm --platform linux/amd64 --entrypoint /bin/sh $Image -c `
-    'test -f /var/task/dist/handler.js && test -x /opt/bin/eos-token-verifier && test -f /opt/lib/libEOSSDK-Linux-Shipping.so'
+    'test -f /var/task/dist/handler.js && test -f /var/task/package.json && test -x /opt/bin/eos-token-verifier && test -f /opt/lib/libEOSSDK-Linux-Shipping.so'
 if ($LASTEXITCODE -ne 0) { throw 'Required runtime artifact is missing.' }
 
 $dependencyOutput = docker run --rm --platform linux/amd64 --entrypoint /usr/bin/ldd `
