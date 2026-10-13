@@ -79,6 +79,24 @@ sam build --template-file template.yaml --use-container
 sam deploy --config-env dev --resolve-image-repos --profile dku-dev --region ap-northeast-2
 ```
 
+Windows에 SAM CLI를 설치할 수 없어 공식 컨테이너로 배포할 때는 AWS SSO 캐시 갱신을 위해 `.aws`를 읽기/쓰기로 마운트한다. 읽기 전용 마운트는 세션 토큰 갱신 시 실패한다. 컨테이너에서 `samconfig.toml`을 읽지 못하는 환경을 피하기 위해 비밀이 아닌 배포 값을 명시한다.
+
+```powershell
+$infra = (Resolve-Path .).Path
+$awsDir = (Resolve-Path "$env:USERPROFILE\.aws").Path
+$parameters = @(
+  'EosProductId=16646f3bec4d46d1a546820856e47486'
+  'EosSandboxId=f4a9863af26845ac90dbcaae53c6375f'
+  'EosDeploymentId=f9dbca2f19ea4980b305355ff3bdbcea'
+  'EosClientId=xyza7891MHpvCZ6hgPhGFHQwn6KZNTp9'
+  'VerifierTimeoutMs=8000'
+  'VerifierMaxOutputBytes=65536'
+)
+docker run --rm --platform linux/amd64 -e SAM_CLI_TELEMETRY=0 --mount "type=bind,source=$infra,target=/workspace" --mount "type=bind,source=$awsDir,target=/root/.aws" --mount "type=bind,source=//var/run/docker.sock,target=/var/run/docker.sock" -w /workspace public.ecr.aws/sam/build-nodejs24.x:1.168.0 sam deploy --template-file .aws-sam/build/template.yaml --stack-name chickengame-backend-dev --capabilities CAPABILITY_IAM --resolve-s3 --resolve-image-repos --profile dku-dev --region ap-northeast-2 --parameter-overrides $parameters --no-confirm-changeset --no-fail-on-empty-changeset
+```
+
+`$parameters`에는 공개 식별자와 제한값만 두며 Client Secret을 넣지 않는다. `dev-timeout` 검증은 동일 명령에서 `VerifierTimeoutMs=1`만 사용하고, 확인 직후 반드시 `8000`으로 다시 배포한다.
+
 변경 세트를 확인하고 승인한다. 완료 후 출력 세 값을 PowerShell 변수로 읽는다.
 
 ```powershell

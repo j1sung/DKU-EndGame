@@ -16,13 +16,13 @@
 
 ### 포함
 
-- [ ] 백엔드 개발 언어와 Lambda 런타임 결정
-- [ ] AWS 인프라 코드화 도구 결정
+- [x] 백엔드 개발 언어와 Lambda 런타임 결정
+- [x] AWS 인프라 코드화 도구 결정
 - [ ] DynamoDB 접근 패턴과 상세 구조 설계
 - [ ] 티켓·매치 상태와 만료·복구 원칙 설계
 - [ ] 매칭 워커의 실행·재시도 방식 설계
 - [ ] API 요청·응답·오류 형식 초안 작성
-- [ ] AWS 개발 환경 구축
+- [x] AWS 개발 환경 구축
 - [ ] EOS 개발 환경 준비 상태 확인
 - [ ] Unreal 클라이언트팀과 연동 계약 초안 합의
 - [ ] API Gateway부터 DynamoDB와 CloudWatch까지 최소 통합 검증
@@ -40,22 +40,22 @@
 
 ### 개발 환경과 기술 스택
 
-- [ ] Lambda 구현 언어 결정
-- [ ] Lambda 런타임 버전 결정
-- [ ] AWS SAM과 AWS CDK 중 인프라 코드화 도구 결정
-- [ ] 패키지 관리자와 의존성 관리 방식 결정
-- [ ] 단위 테스트 도구 결정
+- [x] Lambda 구현 언어 결정
+- [x] Lambda 런타임 버전 결정
+- [x] AWS SAM과 AWS CDK 중 인프라 코드화 도구 결정
+- [x] 패키지 관리자와 의존성 관리 방식 결정
+- [x] 단위 테스트 도구 결정
 - [ ] 코드 검사와 서식 도구 결정
-- [ ] 로컬 실행·테스트 방법 결정
+- [x] 로컬 실행·테스트 방법 결정
 - [x] 개발 환경에서 사용할 AWS 리전 결정
-- [ ] AWS 리소스 이름 규칙 결정
-- [ ] 개발·발표 환경 구분 방식 결정
-- [ ] 환경 변수와 비밀 정보 관리 방식 결정
+- [x] AWS 리소스 이름 규칙 결정
+- [x] 개발·발표 환경 구분 방식 결정
+- [x] 환경 변수와 비밀 정보 관리 방식 결정
 
 ### 식별자와 공통 규칙
 
-- [ ] `requestId` 생성 주체와 형식 결정
-- [ ] `playerId`에 EOS PUID를 사용하는 규칙 명시
+- [x] `requestId` 생성 주체와 형식 결정
+- [x] `playerId`에 EOS PUID를 사용하는 규칙 명시
 - [ ] `ticketId` 형식과 생성 주체 결정
 - [ ] `matchId` 형식과 생성 주체 결정
 - [ ] 모든 시간 값의 기준을 UTC로 통일
@@ -133,21 +133,21 @@
 
 ### 공통 계약
 
-- [ ] API 기본 경로와 버전 관리 방식 결정
-- [ ] 인증 헤더 형식 결정
-- [ ] 요청과 응답의 `Content-Type` 결정
-- [ ] 공통 성공 응답 원칙 결정
-- [ ] 공통 오류 응답 구조 정의
-- [ ] 오류 코드 목록 초안 작성
-- [ ] 입력 검증 실패와 인증·권한 실패를 구분
-- [ ] 응답에 `requestId`를 포함하도록 정의
+- [x] API 기본 경로와 버전 관리 방식 결정
+- [x] 인증 헤더 형식 결정
+- [x] 요청과 응답의 `Content-Type` 결정
+- [x] 공통 성공 응답 원칙 결정
+- [x] 공통 오류 응답 구조 정의
+- [x] 오류 코드 목록 초안 작성
+- [x] 입력 검증 실패와 인증·권한 실패를 구분
+- [x] 응답에 `requestId`를 포함하도록 정의
 - [ ] 중복 요청 또는 멱등성 키 처리 방식 결정
 - [ ] 매칭 상태 폴링 주기와 백오프 원칙 정의
 - [ ] 클라이언트 버전 불일치 처리 방식 정의
 
 ### 프로필 API
 
-- [ ] `GET /me` 요청·응답 정의
+- [x] `GET /me` 요청·응답 정의
 - [ ] `POST /me/nickname` 요청·응답 정의
 - [ ] 닉네임 길이와 허용 문자 초안 정의
 - [ ] 닉네임 정규화 규칙 초안 정의
@@ -175,33 +175,33 @@
 
 ### 인프라 코드
 
-- [ ] `Backend-Infra` 아래 백엔드·인프라 프로젝트 구조 생성
-- [ ] 선택한 인프라 코드화 도구 초기화
-- [ ] 개발 환경 설정 파일 구조 작성
-- [ ] API Gateway 정의
-- [ ] 테스트 Lambda 정의
+- [x] `Backend-Infra` 아래 백엔드·인프라 프로젝트 구조 생성
+- [x] 선택한 인프라 코드화 도구 초기화
+- [x] 개발 환경 설정 파일 구조 작성
+- [x] API Gateway 정의
+- [x] 테스트 Lambda 정의
 - [ ] DynamoDB 리소스 정의
-- [ ] Lambda 실행 역할과 최소 권한 정책 정의
-- [ ] CloudWatch 로그 그룹과 보존 기간 정의
-- [ ] 리소스 태그 규칙 적용
-- [ ] 배포 명령과 제거 방법 문서화
+- [x] Lambda 실행 역할과 최소 권한 정책 정의
+- [x] CloudWatch 로그 그룹과 보존 기간 정의
+- [x] 리소스 태그 규칙 적용
+- [x] 배포 명령과 제거 방법 문서화
 
 ### 테스트 Lambda
 
 - [ ] 상태 확인 응답 구현
-- [ ] `requestId` 생성 또는 전달 구현
-- [ ] 구조화 로그 출력 구현
+- [x] `requestId` 생성 또는 전달 구현
+- [x] 구조화 로그 출력 구현
 - [ ] DynamoDB 테스트 항목 쓰기 구현
 - [ ] DynamoDB 테스트 항목 읽기 구현
-- [ ] 오류 발생 시 공통 오류 형식으로 응답
-- [ ] 로그에 토큰이나 비밀 정보가 포함되지 않는지 확인
+- [x] 오류 발생 시 공통 오류 형식으로 응답
+- [x] 로그에 토큰이나 비밀 정보가 포함되지 않는지 확인
 
 ### 권한과 설정
 
 - [ ] Lambda에 필요한 DynamoDB 권한만 부여
-- [ ] CloudWatch Logs 권한 확인
-- [ ] 개발 환경 변수 주입 방식 확인
-- [ ] 저장소에 비밀 정보가 포함되지 않도록 확인
+- [x] CloudWatch Logs 권한 확인
+- [x] 개발 환경 변수 주입 방식 확인
+- [x] 저장소에 비밀 정보가 포함되지 않도록 확인
 - [x] 배포에 필요한 AWS 자격 증명 사용 방법 문서화
 
 ### AWS 개발 자격 증명 사용 방법
@@ -228,7 +228,7 @@
 - [x] 토큰 만료와 갱신 책임 구분
 - [x] 개발용 Epic 계정 준비
 - [ ] 최종 4인 시연에 사용할 서로 다른 계정 4개의 준비 방법 확인
-- [ ] Product·Sandbox·Deployment 식별자의 공유·보관 방법 결정
+- [x] Product·Sandbox·Deployment 식별자의 공유·보관 방법 결정
 
 ### EOS 개발 로그인과 Connect 흐름
 
@@ -268,15 +268,15 @@
 
 ### 인프라 검증
 
-- [ ] 빈 환경에서 인프라 배포 성공
-- [ ] API Gateway 엔드포인트 호출 성공
-- [ ] 테스트 Lambda 정상 응답 확인
+- [x] 빈 환경에서 인프라 배포 성공
+- [x] API Gateway 엔드포인트 호출 성공
+- [x] 테스트 Lambda 정상 응답 확인
 - [ ] Lambda에서 DynamoDB 테스트 항목 쓰기 성공
 - [ ] Lambda에서 DynamoDB 테스트 항목 읽기 성공
-- [ ] `requestId`로 CloudWatch 로그 검색 성공
-- [ ] Lambda 오류가 공통 오류 형식으로 반환되는지 확인
-- [ ] 로그에 인증 토큰과 비밀 정보가 없는지 확인
-- [ ] 배포한 개발 리소스의 제거 또는 롤백 절차 확인
+- [x] `requestId`로 CloudWatch 로그 검색 성공
+- [x] Lambda 오류가 공통 오류 형식으로 반환되는지 확인
+- [x] 로그에 인증 토큰과 비밀 정보가 없는지 확인
+- [x] 배포한 개발 리소스의 제거 또는 롤백 절차 확인
 
 ### 문서 검증
 
@@ -290,15 +290,15 @@
 
 ## 10. Sprint 1 완료 기준
 
-- [ ] 기술 스택과 인프라 코드화 도구가 결정되었다.
+- [x] 기술 스택과 인프라 코드화 도구가 결정되었다.
 - [ ] DynamoDB 접근 패턴과 상세 구조가 문서화되었다.
 - [ ] PK·SK·GSI·조건식·트랜잭션·TTL 정책이 정의되었다.
 - [ ] 티켓과 매치의 상태 및 수명 정책이 정의되었다.
 - [ ] 매칭 워커의 실행·충돌·재시도 방식이 정의되었다.
 - [ ] API 요청·응답·오류 명세 초안이 준비되었다.
-- [ ] AWS 개발 환경이 인프라 코드로 배포된다.
+- [x] AWS 개발 환경이 인프라 코드로 배포된다.
 - [ ] API Gateway → Lambda → DynamoDB 경로가 동작한다.
-- [ ] `requestId`로 CloudWatch 로그를 조회할 수 있다.
+- [x] `requestId`로 CloudWatch 로그를 조회할 수 있다.
 - [x] EOS Product·Sandbox·Deployment 준비 상태를 확인했다.
 - [ ] 인증·버전·세션 정보에 관한 클라이언트 계약이 정리되었다.
 - [ ] 남은 위험과 Sprint 2 인계 항목이 기록되었다.
@@ -311,6 +311,7 @@
 | DynamoDB 접근 패턴 누락 | 스키마 재설계 | API별 읽기·쓰기 패턴을 먼저 검토 | 확인 필요 |
 | 클라이언트 계약 지연 | 통합 일정 지연 | API 초안을 조기에 공유하고 검토 일정 고정 | 확인 필요 |
 | AWS 또는 Epic 권한 부족 | 환경 구축 중단 | 스프린트 시작 시 계정과 권한 먼저 확인 | AWS·Epic 확인 완료 |
+| 실제 만료 Connect ID Token 거부 미검증 | 만료 경계 회귀를 실환경에서 놓칠 수 있음 | 동일 토큰을 발급 후 약 1시간 보관하지 않고 만료 시점에 다시 입력해 `401 AUTH_INVALID` 확인 | 확인 필요 |
 
 ## 12. 결정 기록
 
@@ -327,6 +328,9 @@
 | 2026-10-06 | 백엔드 기본 런타임 | TypeScript/Node.js Lambda | 팀 개발성과 AWS 관리형 서비스 연동성을 우선 | AWS API 백엔드 |
 | 2026-10-06 | 백엔드 인증 증명 | Unreal이 발급받은 EOS Connect ID Token | PUID와 Product·Sandbox·Deployment·Client 범위를 한 증명으로 전달 | Unreal·AWS 인증 경계 |
 | 2026-10-06 | Connect 토큰 검증 | TypeScript 요청 계층과 Linux EOS SDK 네이티브 검증 계층을 분리하고 `EOS_Connect_VerifyIdToken` 사용 | 실제 토큰의 `kid`가 Epic OAuth JWKS와 일치하지 않아 순수 Node.js 오프라인 검증 불가 | Lambda 패키징·인증 구현 |
+| 2026-10-13 | AWS 인프라 코드화 | AWS SAM과 TypeScript/Node.js 24 Lambda 컨테이너 이미지 사용 | 로컬 컨테이너 검증과 API Gateway·Lambda·Secrets Manager 배포를 동일 템플릿으로 관리 | 백엔드 빌드·배포 |
+| 2026-10-13 | 개발 리소스 이름과 비밀 관리 | 스택 `chickengame-backend-dev`, 함수 `chickengame-dev-api`, 리전 `ap-northeast-2`; Client Secret은 Secrets Manager에서 런타임 주입 | 비밀을 Git·이미지·명령행·로그에서 분리하고 개발 환경을 식별 가능하게 유지 | AWS 개발 환경 |
+| 2026-10-13 | 인증 API 계약 | `GET /v1/me`, `Authorization: Bearer <Connect ID Token>`, 성공 시 검증된 PUID를 `playerId`로 반환 | 클라이언트 제공 식별자를 신뢰하지 않고 EOS SDK 검증 결과만 권한 판단에 사용 | Unreal·API Gateway·Lambda |
 
 ## 13. 검증 결과
 
@@ -343,6 +347,13 @@
 | 2026-10-06 | 순수 Node.js OAuth JWKS 검증 | 부적합 확인 | Epic OAuth JWKS에 실제 Connect ID Token의 `kid`와 일치하는 키가 없어 `ERR_JWKS_NO_MATCHING_KEY` 발생 |
 | 2026-10-06 | EOS SDK Lambda 배포 가능성 | 확인 | SDK 패키지에서 Linux x64·ARM64 공유 라이브러리를 확인하여 네이티브 검증 계층 패키징 가능 |
 | 2026-10-09 | Amazon Linux 네이티브 Connect ID Token 검증 | 성공 | Amazon Linux 2023 컨테이너와 EOS SDK 1.19.2.1의 `EOS_Connect_VerifyIdToken`에서 `EOS_Success` 반환, 검증 결과 PUID와 토큰 `sub` 일치 확인; 토큰 원문은 저장하지 않음 |
+| 2026-10-13 | SAM 개발 스택 최초 배포 | 성공 | CloudFormation `chickengame-backend-dev` `CREATE_COMPLETE`; API `https://qkhdjnpmd9.execute-api.ap-northeast-2.amazonaws.com`, Lambda `chickengame-dev-api`, Secret은 Secrets Manager에 저장 |
+| 2026-10-13 | 배포 API 인증 계약 | 성공 | 무토큰 `401 AUTH_MISSING`, 서명 변조 `401 AUTH_INVALID`, 실제 Connect ID Token `200`; 성공 응답의 `playerId`가 32자리 검증 PUID이며 모든 응답에 `requestId` 확인 |
+| 2026-10-13 | 검증기 장애와 복구 | 성공 | `VerifierTimeoutMs=1` 통제 배포에서 `503 AUTH_VERIFIER_UNAVAILABLE` 확인 후 `VerifierTimeoutMs=8000`으로 즉시 재배포; 최종 스택 `UPDATE_COMPLETE`, Lambda `Active` 및 업데이트 성공 확인 |
+| 2026-10-13 | 정상 복구 후 냉간·웜 호출 | 성공 | 배포 직후 정상 요청 `5192.5ms`, 재호출 `2261.8ms`; 후속 안정 구간 두 요청 `1716.4ms`, `1865.1ms` |
+| 2026-10-13 | Lambda 자원과 이미지 | 확인 | 메모리 설정 512MB, 관측 최대 사용량 126MB, ECR 이미지 digest `sha256:0760fe3f34203dd9a2034bc5894c15ee93363561342500c637e19ccc749239e3`, 이미지 크기 153,127,387 bytes |
+| 2026-10-13 | CloudWatch 민감정보 비노출 | 성공 | 정상 요청 ID `FLqLHhGWIE0EP4g=`, `FLqLyjhBIE0EPWQ=` 로그에서 Connect ID Token·Client Secret 원문과 SHA-256 전체/12자리 지문 없음; 503 요청 로그에도 `Bearer`·JWT 접두 문자열 없음 |
+| 2026-10-13 | 실제 만료 토큰 | 미검증 | Connect ID Token 수명이 약 1시간이므로 만료된 동일 토큰의 `401 AUTH_INVALID` 실환경 확인은 후속 수행 필요; 토큰 원문은 보관하지 않음 |
 
 ## 14. Sprint 2 인계
 
