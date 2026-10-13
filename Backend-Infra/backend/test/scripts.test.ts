@@ -253,17 +253,25 @@ describe("operations scripts", () => {
 
   it("passes safe CloudWatch logs and avoids AWS calls on empty input", async () => {
     const safeClient = {
-      send: vi.fn(async () => ({ events: [{ message: "request-123 safe" }] })),
+      send: vi.fn(async () => ({ events: [{ message: "FLoZUjt0IE0EMOQ= safe" }] })),
     };
     const prompts = ["header.payload.signature", "client-secret-value"];
     await expect(
       runCloudWatchRedactionCheck({
-        argv: ["--request-id", "request-123", "--function-name", "function-name"],
+        argv: [
+          "--request-id",
+          "FLoZUjt0IE0EMOQ=",
+          "--function-name",
+          "function-name",
+        ],
         prompt: async () => prompts.shift() ?? null,
         client: safeClient,
         output: outputCollector(),
       }),
     ).resolves.toBe(0);
+    expect(safeClient.send.mock.calls[0]?.[0].input).toMatchObject({
+      filterPattern: '"FLoZUjt0IE0EMOQ="',
+    });
 
     const untouchedClient = { send: vi.fn() };
     await expect(

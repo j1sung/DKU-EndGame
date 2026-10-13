@@ -35,7 +35,7 @@ export async function runCloudWatchRedactionCheck({
     return 1;
   }
   if (
-    !/^[A-Za-z0-9-]{1,128}$/.test(requestId) ||
+    !/^[A-Za-z0-9+/_=-]{1,128}$/.test(requestId) ||
     !/^[A-Za-z0-9-_]{1,64}$/.test(functionName)
   ) {
     output.write("Request ID or function name is invalid.\n");
