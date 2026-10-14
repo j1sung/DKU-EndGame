@@ -20,7 +20,7 @@
 ## 이동과 균형
 > 최근 기능 변경: 2026-09-29 · @sunsi-game (`87afe94`의 GitHub noreply ID 근거)
 
-`AChickenCharacter`는 MoveForward/MoveRight 축 입력을 캐릭터 방향 이동과 기울기에 사용한다. 입력이 있으면 `BodyTilt`를 TiltSpeed 0.8로 누적하고 입력이 없으면 TiltRecoverySpeed 1.5로 회복한다. 어느 축이 MaxBodyTilt 1에 도달하면 균형 실패를 요청한다. `MaxTiltTime` 필드는 남아 있지만 현재 판정은 2초 유지 방식이 아니다.
+`AChickenCharacter`는 MoveForward/MoveRight 축 입력을 캐릭터 방향 이동과 기울기에 사용한다. 현재 구현은 입력 가속도와 기울어진 방향의 중력 효과를 `TiltVelocity`에 누적하고 감쇠한 뒤 `BodyTilt`를 갱신한다. 입력을 놓아도 자동으로 중심에 복귀하지 않으며 반대 방향 입력으로 균형을 잡는다. 대각 입력은 정규화하고 최대 1/120초 간격으로 계산을 나눈다. 어느 축이 MaxBodyTilt 1에 도달하면 균형 실패를 요청한다. `TiltSpeed`, `TiltRecoverySpeed`, `MaxTiltTime` 필드는 남아 있지만 현재 계산에는 사용하지 않는다. 이 설명은 이번 충돌 변경과 연결되는 기존 구현을 대조해 정정했다.
 
 <a id="jump"></a>
 ## 차징 점프와 자동 홉
@@ -36,7 +36,11 @@ JumpCharge 누름은 충전을 시작하고 해제는 누적 BodyTilt 방향으�
 
 `StartKnockdown`은 서버에서 상태 중복·입력 잠금을 검사하고 아레나의 생존자 목록을 갱신한다. 충전·회복·기울기를 정리하며 지상은 즉시 넘어짐, 공중은 수평 속도를 멈추고 중력을 유지하여 착지 후 넘어짐. 방향과 상태를 복제하며 아레나에서는 1.6초 후 캐릭터 제거·고정 관전으로 전환한다. 독립 테스트에서는 자세를 유지한다. R 초기화는 전용 테스트 GameMode/HUD가 필요하며 현재 dev 맵은 해당 설정과 4구역을 제거한 상태다.
 
-캡슐 `OnChickenHit`는 공격자가 공중이고 수평 속도 100cm/s 이상일 때 상대의 `StartKnockdown`을 요청한다. 이번 병합에서 서버 권한과 양쪽 라운드 입력 상태 검사를 결합했다. 상대 위치를 피격자 로컬 축으로 변환해 방향을 고르는 dev 구현은 유지한다. 이 방향을 실제 밀려나는 방향으로 반전할지는 별도 기획·피격 후속 검증 대상이다. 균형 실패의 임시 방향은 여전히 Forward다.
+충돌 반응 변경: 2026-10-14 · Codex 수행, 사용자 GitHub ID 확인 필요 · 미커밋.
+
+캡슐 `OnChickenHit`는 서버에서 두 생존자의 수평 상대속도를 충돌 방향에 투영해 접근 속도를 계산한다. 지상·공중 모두 접근 속도 30cm/s 이상이면 양쪽에 반대 방향의 `CharacterMovement::AddImpulse`를 적용한다. 밀림 속도 변화는 접근 속도의 0.65배이며 최대 500cm/s다. 수직 속도와 충전 상태는 유지한다. 같은 쌍은 0.2초 동안 중복 충격을 막고, 스치거나 멀어지는 접촉은 무시한다.
+
+충격을 각 캐릭터의 로컬 균형 좌표로 변환해 `TiltVelocity`에 더한다(속도 변화 × 0.004, 충격당 최대 1.2). 충돌 자체는 탈락시키지 않으며, 기존 균형 계산에서 한계를 넘을 때만 `FallOver()`가 `StartKnockdown()`을 호출한다. 반대 방향 입력으로 버틸 수 있고 넘어짐 방향은 현재 `BodyTilt`의 우세 축으로 결정한다. `Chicken|Collision` 기본값은 플레이 조정용 초기값이며 실제 2인 플레이·지연 환경 검증은 아직 수행하지 않았다.
 - 코드: `Source/DKUEndGame/Character/ChickenCharacter.h/.cpp`.
 - 표현·시험 맵: [4방향 넘어짐 상세](../Animation/DirectionalKnockdown.md).
 
@@ -50,4 +54,4 @@ JumpCharge 누름은 충전을 시작하고 해제는 누적 BodyTilt 방향으�
 
 ## 후속 범위와 제약
 
-HP·피해량·실제 충격 벡터 기반 방향 보정·인터넷 서비스 연결은 후속 범위다. 로컬 리슨 서버 검증을 외부 인터넷·패키징 검증으로 해석하지 않는다. 병합 시 dev의 `ABP_Chicken`·`Test_CF_Knockdown` 변경을 그대로 유지한다.
+HP·피해량·인터넷 서비스 연결은 후속 범위다. 로컬 리슨 서버 검증을 외부 인터넷·패키징 검증으로 해석하지 않는다. 병합 시 dev의 `ABP_Chicken`·`Test_CF_Knockdown` 변경을 그대로 유지한다.
