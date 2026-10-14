@@ -15,6 +15,7 @@
 - [전체 문서 갱신 요청문](../.agents/prompts/refresh-project-docs.md)
 
 ## 최근 기록
+- [2026-10-14 · 충돌 밀림과 균형 반응](Changes.md#change-20261014-collision-balance)
 - [2026-10-02 · 4인 경기 진행 및 dev 충돌 병합](Changes.md#change-20261002-match-integration)
 - [2026-10-01 · 문서 갱신 스킬 이름 단축](Changes.md#change-20261001-06)
 - [2026-10-01 · 커밋 스킬 이름 단축](Changes.md#change-20261001-05)

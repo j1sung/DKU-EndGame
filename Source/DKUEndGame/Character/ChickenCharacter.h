@@ -131,6 +131,27 @@ protected:
 
 	bool bLocalChargeHeld = false;
 
+    void ApplyCollisionResponse(const FVector& VelocityChange);
+    TMap<TWeakObjectPtr<AChickenCharacter>, double> RecentCollisionTimes;
+
+    UPROPERTY(EditDefaultsOnly, Category="Chicken|Collision", meta=(ClampMin="0.01", Units="s"))
+    float CollisionCooldown = 0.2f;
+
+    UPROPERTY(EditDefaultsOnly, Category="Chicken|Collision", meta=(ClampMin="1.0"))
+    float MinCollisionSpeed = 30.f;
+
+    UPROPERTY(EditDefaultsOnly, Category="Chicken|Collision", meta=(ClampMin="0.0", ClampMax="1.0"))
+    float CollisionPushScale = 0.8f;
+
+    UPROPERTY(EditDefaultsOnly, Category="Chicken|Collision", meta=(ClampMin="0.0"))
+    float MaxCollisionPushSpeed = 600.f;
+
+    UPROPERTY(EditDefaultsOnly, Category="Chicken|Collision", meta=(ClampMin="0.0"))
+    float CollisionTiltScale = 0.004f;
+
+    UPROPERTY(EditDefaultsOnly, Category="Chicken|Collision", meta=(ClampMin="0.0"))
+    float MaxCollisionTiltImpulse = 1.2f;
+
     void BeginKnockdown();
     UPROPERTY(ReplicatedUsing=OnRep_RoundInputEnabled, BlueprintReadOnly, Category="Chicken|Match")
     bool bRoundInputEnabled = true;
@@ -151,8 +172,6 @@ protected:
     UFUNCTION()
     void OnChickenHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
 
-    // 충돌한 상대에게 전달할 넘어짐 방향 계산.
-    ECFKnockdownDirection GetKnockdownDirectionFor(const AActor* OtherActor) const;
 
 protected :
     // 기울어지는 속도.

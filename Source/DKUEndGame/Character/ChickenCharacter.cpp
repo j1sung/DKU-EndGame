@@ -168,8 +168,11 @@ void AChickenCharacter::MoveRight(float Value)
 
 void AChickenCharacter::FallOver()
 {
-    // TODO: derive a direction from balance/hit data in the combat system.
-    StartKnockdown(ECFKnockdownDirection::Forward);
+    // BodyTilt.Y uses the opposite sign to the character's local right axis.
+    const ECFKnockdownDirection Direction = FMath::Abs(BodyTilt.X) >= FMath::Abs(BodyTilt.Y)
+        ? (BodyTilt.X >= 0.f ? ECFKnockdownDirection::Forward : ECFKnockdownDirection::Back)
+        : (BodyTilt.Y >= 0.f ? ECFKnockdownDirection::Left : ECFKnockdownDirection::Right);
+    StartKnockdown(Direction);
 }
 
 bool AChickenCharacter::StartKnockdown(ECFKnockdownDirection Direction)
@@ -376,6 +379,7 @@ void AChickenCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Ou
 void AChickenCharacter::SetRoundInputEnabled(bool bEnabled)
 {
     if (!HasAuthority()) return;
+    RecentCollisionTimes.Reset();
     bRoundFinished=false;
     bRoundInputEnabled=bEnabled;
 
@@ -438,96 +442,199 @@ void AChickenCharacter::ServerSetCharge_Implementation(bool bPressed)
     ForceNetUpdate();
 }
 
-void AChickenCharacter::OnChickenHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
+//void AChickenCharacter::OnChickenHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
+//{
+//	AChickenCharacter* DebugOther =
+//		Cast<AChickenCharacter>(OtherActor);
+//
+//	if (DebugOther && DebugOther != this)
+//	{
+//		UE_LOG(LogTemp, Warning,
+//			TEXT("[ChickenHit] %s -> %s | Server=%d | Capsule=%d | "
+//				"Round=%d/%d | Fallen=%d/%d | Pending=%d/%d"),
+//			*GetName(),
+//			*DebugOther->GetName(),
+//			HasAuthority() ? 1 : 0,
+//			OtherComp == DebugOther->GetCapsuleComponent() ? 1 : 0,
+//			bRoundInputEnabled ? 1 : 0,
+//			DebugOther->bRoundInputEnabled ? 1 : 0,
+//			bIsFallen ? 1 : 0,
+//			DebugOther->bIsFallen ? 1 : 0,
+//			bKnockdownPending ? 1 : 0,
+//			DebugOther->bKnockdownPending ? 1 : 0
+//		);
+//	}
+//    if (!HasAuthority() || !bRoundInputEnabled || bIsFallen || bKnockdownPending) return;
+//    auto* Other = Cast<AChickenCharacter>(OtherActor);
+//    if (!Other || Other == this || OtherComp != Other->GetCapsuleComponent() ||
+//        !Other->bRoundInputEnabled || Other->bIsFallen || Other->bKnockdownPending) return;
+//
+//    // Resolve each pair once, even when both capsules report the same contact.
+//    const double Now = GetWorld()->GetTimeSeconds();
+//    for (auto It = RecentCollisionTimes.CreateIterator(); It; ++It)
+//    {
+//        if (!It.Key().IsValid() || Now - It.Value() >= CollisionCooldown) It.RemoveCurrent();
+//    }
+//    const TWeakObjectPtr<AChickenCharacter> OtherKey(Other);
+//    if (RecentCollisionTimes.Contains(OtherKey)) return;
+//
+//    FVector Direction = (Other->GetActorLocation() - GetActorLocation()).GetSafeNormal2D();
+//    if (Direction.IsNearlyZero()) Direction = (-Hit.ImpactNormal).GetSafeNormal2D();
+//    if (Direction.IsNearlyZero()) return;
+//
+//    // Tangential contacts and separating characters must not gain another impulse.
+//    const float ClosingSpeed = FVector::DotProduct(GetVelocity() - Other->GetVelocity(), Direction);
+//    if (ClosingSpeed < MinCollisionSpeed) return;
+//    RecentCollisionTimes.Add(OtherKey, Now);
+//    Other->RecentCollisionTimes.Add(TWeakObjectPtr<AChickenCharacter>(this), Now);
+//
+//    const float PushSpeed = FMath::Clamp(ClosingSpeed * CollisionPushScale, 0.f, MaxCollisionPushSpeed);
+//    ApplyCollisionResponse(-Direction * PushSpeed);
+//    Other->ApplyCollisionResponse(Direction * PushSpeed);
+//}
+
+void AChickenCharacter::OnChickenHit(
+    UPrimitiveComponent* HitComponent,
+    AActor* OtherActor,
+    UPrimitiveComponent* OtherComp,
+    FVector NormalImpulse,
+    const FHitResult& Hit)
 {
-    // Hits are authoritative and only active combatants can eliminate others.
-    if (!HasAuthority() || !bRoundInputEnabled) return;
+    if (!HasAuthority())
+    {
+        return;
+    }
 
-	if (!OtherActor || OtherActor == this)
-	{
-		return;
-	}
+    AChickenCharacter* Other =
+        Cast<AChickenCharacter>(OtherActor);
 
-	AChickenCharacter* OtherChicken =
-		Cast<AChickenCharacter>(OtherActor);
+    if (!Other || Other == this)
+    {
+        return;
+    }
 
-	if (!OtherChicken || !OtherChicken->IsRoundInputEnabled())
-	{
-		return;
-	}
+    if (!bRoundInputEnabled || bIsFallen || bKnockdownPending ||
+        !Other->bRoundInputEnabled ||
+        Other->bIsFallen || Other->bKnockdownPending)
+    {
+        UE_LOG(LogTemp, Warning,
+            TEXT("[PushStop] State: %s -> %s"),
+            *GetName(), *Other->GetName());
+        return;
+    }
 
-	// 이미 넘어졌거나 넘어지는 중이면 무시
-	if (bIsFallen || bKnockdownPending)
-	{
-		return;
-	}
+    if (OtherComp != Other->GetCapsuleComponent())
+    {
+        UE_LOG(LogTemp, Warning,
+            TEXT("[PushStop] NotCapsule: %s"),
+            *GetNameSafe(OtherComp));
+        return;
+    }
 
-	if (OtherChicken->IsFallen() ||
-		OtherChicken->IsKnockdownPending())
-	{
-		return;
-	}
+    const double Now = GetWorld()->GetTimeSeconds();
 
-	// 점프 중일 때만 공격 판정
-	if (!GetCharacterMovement()->IsFalling())
-	{
-		return;
-	}
+    for (auto It = RecentCollisionTimes.CreateIterator(); It; ++It)
+    {
+        if (!It.Key().IsValid() ||
+            Now - It.Value() >= CollisionCooldown)
+        {
+            It.RemoveCurrent();
+        }
+    }
 
-	// 현재 수평 속도가 충분하지 않으면 공격으로 인정하지 않음
-	const FVector Velocity = GetVelocity();
+    const TWeakObjectPtr<AChickenCharacter> OtherKey(Other);
 
-	if (Velocity.Size2D() < 100.f)
-	{
-		return;
-	}
+    if (const double* LastTime = RecentCollisionTimes.Find(OtherKey))
+    {
+        UE_LOG(LogTemp, Warning,
+            TEXT("[PushStop] Cooldown: Elapsed=%.3f / Limit=%.3f"),
+            Now - *LastTime,
+            CollisionCooldown);
+        return;
+    }
 
-	// 상대가 어느 방향에서 맞았는지 계산
-	const ECFKnockdownDirection HitDirection =
-		OtherChicken->GetKnockdownDirectionFor(this);
+    FVector Direction =
+        (Other->GetActorLocation() - GetActorLocation())
+        .GetSafeNormal2D();
 
-	// 상대를 넘어뜨림
-	if (!OtherChicken->StartKnockdown(HitDirection)) return;
+    if (Direction.IsNearlyZero())
+    {
+        Direction = (-Hit.ImpactNormal).GetSafeNormal2D();
+    }
 
-	UE_LOG(
-		LogTemp,
-		Warning,
-		TEXT("%s hit %s"),
-		*GetName(),
-		*OtherChicken->GetName()
+    if (Direction.IsNearlyZero())
+    {
+        UE_LOG(LogTemp, Warning,
+            TEXT("[PushStop] ZeroDirection: Self=%s Other=%s Normal=%s"),
+            *GetActorLocation().ToString(),
+            *Other->GetActorLocation().ToString(),
+            *Hit.ImpactNormal.ToString());
+        return;
+    }
+
+	// 진단용: 접근 속도와 무관하게 일정한 충격 적용.
+	// 기존 쿨다운 검사와 Direction 계산 다음에 위치.
+	constexpr float TestPushSpeed = 300.f;
+
+	RecentCollisionTimes.Add(OtherKey, Now);
+	Other->RecentCollisionTimes.Add(
+		TWeakObjectPtr<AChickenCharacter>(this),
+		Now
 	);
+
+	UE_LOG(LogTemp, Warning,
+		TEXT("[PushDispatch] %s <-> %s | TestPush=%.1f"),
+		*GetName(),
+		*Other->GetName(),
+		TestPushSpeed
+	);
+
+	ApplyCollisionResponse(-Direction * TestPushSpeed);
+	Other->ApplyCollisionResponse(Direction * TestPushSpeed);
 }
 
-ECFKnockdownDirection AChickenCharacter::GetKnockdownDirectionFor(const AActor* OtherActor) const
+void AChickenCharacter::ApplyCollisionResponse(
+    const FVector& VelocityChange)
 {
-	if (!OtherActor)
-	{
-		return ECFKnockdownDirection::Forward;
-	}
+    if (!HasAuthority() ||
+        !bRoundInputEnabled ||
+        bIsFallen ||
+        bKnockdownPending)
+    {
+        return;
+    }
 
-	const FVector ToOther =
-		OtherActor->GetActorLocation() - GetActorLocation();
+    const FVector HorizontalImpulse(
+        VelocityChange.X,
+        VelocityChange.Y,
+        0.f
+    );
 
-	const FVector LocalDirection =
-		GetActorTransform().InverseTransformVectorNoScale(ToOther);
+    // 1. 캐릭터 위치를 밀어냄.
+    GetCharacterMovement()->AddImpulse(
+        HorizontalImpulse,
+        true
+    );
 
-	const float ForwardAmount = LocalDirection.X;
-	const float RightAmount = LocalDirection.Y;
+    // 2. 월드 기준 충격 방향을 캐릭터 기준으로 변환.
+    const FVector LocalImpulse =
+        GetActorTransform().InverseTransformVectorNoScale(
+            HorizontalImpulse
+        );
 
-	if (FMath::Abs(ForwardAmount) >= FMath::Abs(RightAmount))
-	{
-		if (ForwardAmount > 0.f)
-		{
-			return ECFKnockdownDirection::Forward;
-		}
+    // 기존 BodyTilt 규칙: X는 전후, Y는 오른쪽의 반대 부호.
+    const FVector2D BalanceImpulse(
+        LocalImpulse.X,
+        -LocalImpulse.Y
+    );
 
-		return ECFKnockdownDirection::Back;
-	}
+    // 3. 충격 방향으로 몸이 기울어지는 속도를 추가.
+    // 한 번의 충돌로 추가되는 양만 제한.
+    const FVector2D TiltKick =
+        (BalanceImpulse * CollisionTiltScale)
+        .GetClampedToMaxSize(MaxCollisionTiltImpulse);
 
-	if (RightAmount > 0.f)
-	{
-		return ECFKnockdownDirection::Right;
-	}
+    TiltVelocity += TiltKick;
 
-	return ECFKnockdownDirection::Left;
+    ForceNetUpdate();
 }
