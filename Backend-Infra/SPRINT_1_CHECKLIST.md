@@ -356,7 +356,9 @@
 | 2026-10-13 | 실제 만료 토큰 | 미검증 | Connect ID Token 수명이 약 1시간이므로 만료된 동일 토큰의 `401 AUTH_INVALID` 실환경 확인은 후속 수행 필요; 토큰 원문은 보관하지 않음 |
 | 2026-10-27 | DynamoDB 프로필·닉네임 로컬 구현 | 로컬 검증 성공 | 테이블 3개와 인증된 프로필 조회·최초 닉네임 등록 코드를 추가; 깨끗한 `npm ci` 후 테스트 106개, 타입 검사, 빌드, `sam validate --lint` 통과. 트랜잭션 IAM 권한과 재시도 원 응답 검사를 보강함 |
 | 2026-10-27 | 프로필 확장 컨테이너 검증 | 성공 | `container-smoke.ps1`가 Lambda 이미지와 EOS 검증기·공유 라이브러리를 확인했고, 이미지 안에서 테스트 106개와 타입 검사·빌드가 통과함. `sam build --template-file template.yaml --use-container` 성공 |
-| 2026-10-27 | 프로필 확장 AWS 검증 | 미검증 | `dku-dev` SSO 토큰이 만료되어 변경 세트를 조회하지 못함. 새 테이블·API는 개발 스택에 아직 배포하지 않았고 API Gateway → Lambda → DynamoDB 실환경 경로도 확인 전 |
+| 2026-10-27 | 프로필 확장 개발 스택 배포 | 성공 | `dku-dev` SSO 로그인 후 변경 세트 `samcli-deploy1793076887` 검토: 테이블 3개와 닉네임 경로 권한 추가, Lambda·API·IAM 역할 교체 없는 수정, Secret 변경·리소스 삭제 없음. 실행 후 `UPDATE_COMPLETE`; 세 DynamoDB 테이블 모두 `ACTIVE`, Lambda `Active`·`Successful` 및 `PLAYER_PROFILES_TABLE=chickengame-dev-player-profiles` 확인 |
+| 2026-10-27 | 프로필 API 인증 차단 | 성공 | 무토큰 `GET /v1/me`와 `POST /v1/me/nickname`에서 각각 `401 AUTH_MISSING`과 `requestId` 확인 (`F4xLqjiJIE0EMvg=`, `F4xMVjRIoE0EMIg=`) |
+| 2026-10-27 | 프로필·닉네임 실환경 쓰기와 로그 검사 | 미검증 | 서로 다른 EOS 테스트 계정 2개의 새 Connect ID Token이 필요함. 인증된 프로필 조회, 최초 등록, 재시도 원 응답, 전역 닉네임 충돌, DynamoDB 항목 및 CloudWatch 민감정보 검사 전 |
 
 ## 14. Sprint 2 인계
 
