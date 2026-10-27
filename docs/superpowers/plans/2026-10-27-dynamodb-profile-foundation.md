@@ -51,7 +51,7 @@
 
 **파일:** `Backend-Infra/template.yaml`, `Backend-Infra/backend/package.json`, `package-lock.json`, `src/config.ts`, `test/config.test.ts`, `test/infra/template.test.ts` 수정.
 
-**인터페이스:** `RuntimeConfig.profileTableName: string`을 추가한다. 프로필 테이블은 문자열 `pk`/`sk`와 TTL 속성 `expiresAtSeconds`, 티켓 테이블은 문자열 `ticketId`와 `queueKey`/`queueSortKey`를 사용하는 `QueueIndex` 및 TTL, 매치 테이블은 문자열 `pk`/`sk`와 TTL을 갖는다. Lambda에 `PLAYER_PROFILES_TABLE`을 전달하고, 이번 단계의 IAM 권한은 프로필 테이블의 `GetItem`과 `TransactWriteItems`로 제한한다. 기존 EOS 리소스 계약은 유지한다.
+**인터페이스:** `RuntimeConfig.profileTableName: string`을 추가한다. 프로필 테이블은 문자열 `pk`/`sk`와 TTL 속성 `expiresAtSeconds`, 티켓 테이블은 문자열 `ticketId`와 `queueKey`/`queueSortKey`를 사용하는 `QueueIndex` 및 TTL, 매치 테이블은 문자열 `pk`/`sk`와 TTL을 갖는다. Lambda에 `PLAYER_PROFILES_TABLE`을 전달하고, 이번 단계의 IAM 권한은 프로필 테이블의 `GetItem`, `UpdateItem`, `PutItem`으로 제한한다. 기존 EOS 리소스 계약은 유지한다.
 
 - [ ] **1단계: 실패하는 설정·템플릿 테스트 작성.** 세 테이블의 키와 TTL, `QueueIndex`, 프로필 환경 변수, 프로필 전용 IAM 작업, 테이블 이름 누락 시 `loadRuntimeConfig` 오류를 검사한다.
 - [ ] **2단계: 실패 확인.** `Backend-Infra/backend`에서 `npm test -- test/config.test.ts test/infra/template.test.ts` 실행. 예상: 테이블·설정이 없어 실패한다.
@@ -75,7 +75,7 @@
 
 **파일:** `Backend-Infra/backend/src/profile/profile-store.ts`, `src/profile/dynamo-profile-store.ts`, `test/profile/dynamo-profile-store.test.ts` 생성.
 
-**인터페이스:** `ProfileStore.get(playerId: string): Promise<{ playerId: string; nickname?: string }>`와 `ProfileStore.registerNickname(input: { playerId: string; nickname: string; nicknameKey: string; idempotencyKey: string; requestHash: string }): Promise<{ playerId: string; nickname: string; created: boolean }>`를 제공한다. `DynamoProfileStore`는 `DynamoDBDocumentClient`, 테이블 이름, 주입 가능한 시계를 받는다. 저장소 오류는 `NICKNAME_TAKEN`, `NICKNAME_ALREADY_SET`, `IDEMPOTENCY_KEY_REUSED`를 구분한다.
+**인터페이스:** `ProfileStore.get(playerId: string): Promise<{ playerId: string; nickname?: string }>`와 `ProfileStore.registerNickname(input: { playerId: string; nickname: string; nicknameKey: string; idempotencyKey: string; requestHash: string; requestId: string }): Promise<{ playerId: string; nickname: string; requestId: string; created: boolean }>`를 제공한다. `DynamoProfileStore`는 `DynamoDBDocumentClient`, 테이블 이름, 주입 가능한 시계를 받는다. 저장소 오류는 `NICKNAME_TAKEN`, `NICKNAME_ALREADY_SET`, `IDEMPOTENCY_KEY_REUSED`를 구분한다.
 
 - [ ] **1단계: 명령 인식형 가짜 DocumentClient로 실패하는 테스트 작성.** `PLAYER#p/PROFILE`을 일관 읽기로 조회하는지, 한 `TransactWriteCommand`가 프로필·`NICK#key/CLAIM`·24시간 멱등성 기록을 조건부로 쓰는지 검사한다. 서로 다른 사용자의 동시 점유는 한 명만 성공해야 한다. 같은 키·같은 해시 재시도는 원 응답, 같은 키·다른 해시는 재사용 오류다. 트랜잭션 결과가 불명확하면 새 쓰기 전에 멱등성 기록을 일관 읽기로 조회한다.
 - [ ] **2단계: 실패 확인.** `npm test -- test/profile/dynamo-profile-store.test.ts` 실행. 예상: 저장소가 없어 실패한다.

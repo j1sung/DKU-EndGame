@@ -9,11 +9,13 @@ export interface NicknameRegistration {
   nicknameKey: string;
   idempotencyKey: string;
   requestHash: string;
+  requestId: string;
 }
 
 export interface NicknameRegistrationResult {
   playerId: string;
   nickname: string;
+  requestId: string;
   created: boolean;
 }
 

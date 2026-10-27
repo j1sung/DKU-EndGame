@@ -176,7 +176,8 @@ Resources:
             - Effect: Allow
               Action:
                 - dynamodb:GetItem
-                - dynamodb:TransactWriteItems
+                - dynamodb:UpdateItem
+                - dynamodb:PutItem
               Resource:
                 Fn::GetAtt:
                   - PlayerProfiles

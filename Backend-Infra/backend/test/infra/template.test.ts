@@ -137,14 +137,14 @@ describe("SAM authentication stack", () => {
     }
   });
 
-  it("grants only profile read and transactional writes", () => {
+  it("grants the DynamoDB actions used by profile transactions", () => {
     const template = loadTemplate();
     const statements = template.Resources.AuthFunction.Properties.Policies.flatMap(
       (policy: any) => policy.Statement ?? [],
     );
     expect(statements).toContainEqual({
       Effect: "Allow",
-      Action: ["dynamodb:GetItem", "dynamodb:TransactWriteItems"],
+      Action: ["dynamodb:GetItem", "dynamodb:UpdateItem", "dynamodb:PutItem"],
       Resource: { "Fn::GetAtt": ["PlayerProfiles", "Arn"] },
     });
   });

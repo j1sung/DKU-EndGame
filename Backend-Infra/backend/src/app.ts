@@ -167,13 +167,14 @@ export function createHandler(
           const input = nicknameRequest(event);
           const registered = await dependencies.profileStore.registerNickname({
             playerId: verified.playerId,
+            requestId,
             ...input,
           });
           statusCode = 201;
           response = jsonResponse(201, {
             playerId: registered.playerId,
             nickname: registered.nickname,
-            requestId,
+            requestId: registered.requestId,
           });
         } else {
           statusCode = 404;

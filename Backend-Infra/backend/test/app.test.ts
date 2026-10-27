@@ -75,9 +75,10 @@ function makeDependencies() {
   };
   const profileStore: ProfileStore = {
     get: vi.fn().mockImplementation(async (playerId: string) => ({ playerId })),
-    registerNickname: vi.fn().mockImplementation(async ({ playerId, nickname }) => ({
+    registerNickname: vi.fn().mockImplementation(async ({ playerId, nickname, requestId }) => ({
       playerId,
       nickname,
+      requestId,
       created: true,
     })),
   };
@@ -202,8 +203,25 @@ describe("createHandler", () => {
         nicknameKey: "chicken 1",
         idempotencyKey: "123e4567-e89b-42d3-a456-426614174000",
         requestHash: expect.stringMatching(/^[a-f0-9]{64}$/),
+        requestId: "api-request-id",
       }),
     );
+  });
+
+  it("replays the original request ID on a same-key retry", async () => {
+    const dependencies = makeDependencies();
+    vi.mocked(dependencies.profileStore.registerNickname).mockResolvedValue({
+      playerId: PLAYER_ID,
+      nickname: "닭싸움왕",
+      requestId: "original-request-id",
+      created: false,
+    });
+    const result = await invoke(createHandler(dependencies), nicknameEvent({ nickname: "닭싸움왕" }));
+    expect(parseBody(result)).toEqual({
+      playerId: PLAYER_ID,
+      nickname: "닭싸움왕",
+      requestId: "original-request-id",
+    });
   });
 
   it.each([

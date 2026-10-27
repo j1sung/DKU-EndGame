@@ -10,6 +10,7 @@ const INPUT = {
   nicknameKey: "닭싸움왕",
   idempotencyKey: "123e4567-e89b-42d3-a456-426614174000",
   requestHash: "body-hash",
+  requestId: "original-request-id",
 };
 
 function store(send: ReturnType<typeof vi.fn>) {
@@ -44,6 +45,7 @@ describe("DynamoProfileStore", () => {
     expect(await store(send).registerNickname(INPUT)).toEqual({
       playerId: PLAYER_ID,
       nickname: "닭싸움왕",
+      requestId: "original-request-id",
       created: true,
     });
     const command = send.mock.calls[1][0];
@@ -66,6 +68,7 @@ describe("DynamoProfileStore", () => {
         sk: `IDEMP#POST /v1/me/nickname#${INPUT.idempotencyKey}`,
         requestHash: "body-hash",
         statusCode: 201,
+        response: { playerId: PLAYER_ID, nickname: "닭싸움왕", requestId: "original-request-id" },
         expiresAtSeconds: 1_800_086_400,
       },
       ConditionExpression: "attribute_not_exists(pk)",
@@ -74,11 +77,12 @@ describe("DynamoProfileStore", () => {
 
   it("returns the original result on a same-key same-body retry", async () => {
     const send = vi.fn().mockResolvedValueOnce({
-      Item: { requestHash: "body-hash", response: { playerId: PLAYER_ID, nickname: "닭싸움왕" } },
+      Item: { requestHash: "body-hash", response: { playerId: PLAYER_ID, nickname: "닭싸움왕", requestId: "original-request-id" } },
     });
     expect(await store(send).registerNickname(INPUT)).toEqual({
       playerId: PLAYER_ID,
       nickname: "닭싸움왕",
+      requestId: "original-request-id",
       created: false,
     });
     expect(send).toHaveBeenCalledTimes(1);
@@ -97,7 +101,7 @@ describe("DynamoProfileStore", () => {
       .mockResolvedValueOnce({})
       .mockRejectedValueOnce(new Error("response lost"))
       .mockResolvedValueOnce({
-        Item: { requestHash: "body-hash", response: { playerId: PLAYER_ID, nickname: "닭싸움왕" } },
+        Item: { requestHash: "body-hash", response: { playerId: PLAYER_ID, nickname: "닭싸움왕", requestId: "original-request-id" } },
       });
     expect(await store(send).registerNickname(INPUT)).toMatchObject({ created: false });
     expect(send).toHaveBeenCalledTimes(3);

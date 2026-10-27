@@ -53,7 +53,7 @@ export class DynamoProfileStore implements ProfileStore {
       return this.replay(existing, input.requestHash);
     }
 
-    const response = { playerId: input.playerId, nickname: input.nickname };
+    const response = { playerId: input.playerId, nickname: input.nickname, requestId: input.requestId };
     const timestamp = this.now();
     try {
       await this.client.send(new TransactWriteCommand({
@@ -132,7 +132,7 @@ export class DynamoProfileStore implements ProfileStore {
     if (item.requestHash !== requestHash) {
       throw new ProfileStoreError("IDEMPOTENCY_KEY_REUSED");
     }
-    const response = item.response as { playerId: string; nickname: string };
+    const response = item.response as { playerId: string; nickname: string; requestId: string };
     return { ...response, created: false };
   }
 }
