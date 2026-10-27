@@ -354,8 +354,9 @@
 | 2026-10-13 | Lambda 자원과 이미지 | 확인 | 메모리 설정 512MB, 관측 최대 사용량 126MB, ECR 이미지 digest `sha256:0760fe3f34203dd9a2034bc5894c15ee93363561342500c637e19ccc749239e3`, 이미지 크기 153,127,387 bytes |
 | 2026-10-13 | CloudWatch 민감정보 비노출 | 성공 | 정상 요청 ID `FLqLHhGWIE0EP4g=`, `FLqLyjhBIE0EPWQ=` 로그에서 Connect ID Token·Client Secret 원문과 SHA-256 전체/12자리 지문 없음; 503 요청 로그에도 `Bearer`·JWT 접두 문자열 없음 |
 | 2026-10-13 | 실제 만료 토큰 | 미검증 | Connect ID Token 수명이 약 1시간이므로 만료된 동일 토큰의 `401 AUTH_INVALID` 실환경 확인은 후속 수행 필요; 토큰 원문은 보관하지 않음 |
-| 2026-10-27 | DynamoDB 프로필·닉네임 로컬 구현 | 로컬 검증 성공 | 테이블 3개와 인증된 프로필 조회·최초 닉네임 등록 코드를 추가; 깨끗한 `npm ci` 후 테스트 105개, 타입 검사, 빌드, `sam validate --lint` 통과 |
-| 2026-10-27 | 프로필 확장 컨테이너·AWS 검증 | 미검증 | 현재 호스트의 Docker 엔진 연결이 응답하지 않아 이미지 빌드와 `sam build --use-container`를 실행하지 못함. 새 테이블·API는 개발 스택에 아직 배포하지 않았고 API Gateway → Lambda → DynamoDB 실환경 경로도 확인 전 |
+| 2026-10-27 | DynamoDB 프로필·닉네임 로컬 구현 | 로컬 검증 성공 | 테이블 3개와 인증된 프로필 조회·최초 닉네임 등록 코드를 추가; 깨끗한 `npm ci` 후 테스트 106개, 타입 검사, 빌드, `sam validate --lint` 통과. 트랜잭션 IAM 권한과 재시도 원 응답 검사를 보강함 |
+| 2026-10-27 | 프로필 확장 컨테이너 검증 | 성공 | `container-smoke.ps1`가 Lambda 이미지와 EOS 검증기·공유 라이브러리를 확인했고, 이미지 안에서 테스트 106개와 타입 검사·빌드가 통과함. `sam build --template-file template.yaml --use-container` 성공 |
+| 2026-10-27 | 프로필 확장 AWS 검증 | 미검증 | `dku-dev` SSO 토큰이 만료되어 변경 세트를 조회하지 못함. 새 테이블·API는 개발 스택에 아직 배포하지 않았고 API Gateway → Lambda → DynamoDB 실환경 경로도 확인 전 |
 
 ## 14. Sprint 2 인계
 
