@@ -55,6 +55,14 @@ describe("SAM authentication stack", () => {
             Method: "GET",
           },
         },
+        Nickname: {
+          Type: "HttpApi",
+          Properties: {
+            ApiId: { Ref: "HttpApi" },
+            Path: "/v1/me/nickname",
+            Method: "POST",
+          },
+        },
       },
     });
     expect(JSON.stringify(template.Resources.HttpApi)).not.toMatch(
@@ -138,6 +146,18 @@ describe("SAM authentication stack", () => {
       Effect: "Allow",
       Action: ["dynamodb:GetItem", "dynamodb:TransactWriteItems"],
       Resource: { "Fn::GetAtt": ["PlayerProfiles", "Arn"] },
+    });
+  });
+
+  it("exposes authenticated nickname registration through the Lambda", () => {
+    const template = loadTemplate();
+    expect(template.Resources.AuthFunction.Properties.Events.Nickname).toEqual({
+      Type: "HttpApi",
+      Properties: {
+        ApiId: { Ref: "HttpApi" },
+        Path: "/v1/me/nickname",
+        Method: "POST",
+      },
     });
   });
 

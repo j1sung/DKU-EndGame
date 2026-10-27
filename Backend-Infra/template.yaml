@@ -189,6 +189,13 @@ Resources:
               Ref: HttpApi
             Path: /v1/me
             Method: GET
+        Nickname:
+          Type: HttpApi
+          Properties:
+            ApiId:
+              Ref: HttpApi
+            Path: /v1/me/nickname
+            Method: POST
 
   AuthFunctionLogGroup:
     Type: AWS::Logs::LogGroup

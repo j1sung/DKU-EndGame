@@ -13,6 +13,8 @@ import {
   type TokenVerifier,
 } from "../src/auth/token-verifier.js";
 import type { SafeLogger } from "../src/logging.js";
+import type { ProfileStore } from "../src/profile/profile-store.js";
+import { ProfileStoreError } from "../src/profile/dynamo-profile-store.js";
 
 const PLAYER_ID = "0123456789abcdef0123456789abcdef";
 const OTHER_PLAYER_ID = "fedcba9876543210fedcba9876543210";
@@ -71,8 +73,29 @@ function makeDependencies() {
   const logger: SafeLogger = {
     write: vi.fn(),
   };
+  const profileStore: ProfileStore = {
+    get: vi.fn().mockImplementation(async (playerId: string) => ({ playerId })),
+    registerNickname: vi.fn().mockImplementation(async ({ playerId, nickname }) => ({
+      playerId,
+      nickname,
+      created: true,
+    })),
+  };
 
-  return { verifier, secretProvider, logger };
+  return { verifier, secretProvider, logger, profileStore };
+}
+
+function nicknameEvent(body: unknown, headers: Record<string, string> = {}) {
+  return makeEvent({
+    routeKey: "POST /v1/me/nickname",
+    rawPath: "/v1/me/nickname",
+    headers: {
+      authorization: `Bearer ${makeToken()}`,
+      "idempotency-key": "123e4567-e89b-42d3-a456-426614174000",
+      ...headers,
+    },
+    body: JSON.stringify(body),
+  });
 }
 
 async function invoke(
@@ -144,6 +167,69 @@ describe("createHandler", () => {
     );
 
     expect(parseBody(result)).toMatchObject({ playerId: PLAYER_ID });
+  });
+
+  it("includes an existing nickname in the authenticated profile response", async () => {
+    const dependencies = makeDependencies();
+    vi.mocked(dependencies.profileStore.get).mockResolvedValue({
+      playerId: PLAYER_ID,
+      nickname: "닭싸움왕",
+    });
+    const result = await invoke(createHandler(dependencies), makeEvent());
+    expect(parseBody(result)).toEqual({
+      playerId: PLAYER_ID,
+      nickname: "닭싸움왕",
+      requestId: "api-request-id",
+    });
+  });
+
+  it("registers a nickname for the verified player and returns 201", async () => {
+    const dependencies = makeDependencies();
+    const result = await invoke(
+      createHandler(dependencies),
+      nicknameEvent({ nickname: "  ＣＨＩＣＫＥＮ   1 ", playerId: OTHER_PLAYER_ID }),
+    );
+    expect(result.statusCode).toBe(201);
+    expect(parseBody(result)).toEqual({
+      playerId: PLAYER_ID,
+      nickname: "CHICKEN 1",
+      requestId: "api-request-id",
+    });
+    expect(dependencies.profileStore.registerNickname).toHaveBeenCalledWith(
+      expect.objectContaining({
+        playerId: PLAYER_ID,
+        nickname: "CHICKEN 1",
+        nicknameKey: "chicken 1",
+        idempotencyKey: "123e4567-e89b-42d3-a456-426614174000",
+        requestHash: expect.stringMatching(/^[a-f0-9]{64}$/),
+      }),
+    );
+  });
+
+  it.each([
+    [nicknameEvent({ nickname: "!" }), 400, "INVALID_NICKNAME"],
+    [nicknameEvent({ nickname: "닭싸움왕" }, { "idempotency-key": "bad" }), 400, "INVALID_IDEMPOTENCY_KEY"],
+    [nicknameEvent({ nickname: "닭싸움왕" }, { "idempotency-key": "" }), 400, "INVALID_IDEMPOTENCY_KEY"],
+  ])("rejects invalid nickname requests before a write", async (event, status, code) => {
+    const dependencies = makeDependencies();
+    const result = await invoke(createHandler(dependencies), event);
+    expect(result.statusCode).toBe(status);
+    expect(parseBody(result)).toMatchObject({ error: { code } });
+    expect(dependencies.profileStore.registerNickname).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["NICKNAME_TAKEN", 409],
+    ["NICKNAME_ALREADY_SET", 409],
+    ["IDEMPOTENCY_KEY_REUSED", 409],
+  ] as const)("maps %s to a safe conflict response", async (code, status) => {
+    const dependencies = makeDependencies();
+    vi.mocked(dependencies.profileStore.registerNickname).mockRejectedValue(
+      new ProfileStoreError(code),
+    );
+    const result = await invoke(createHandler(dependencies), nicknameEvent({ nickname: "닭싸움왕" }));
+    expect(result.statusCode).toBe(status);
+    expect(parseBody(result)).toMatchObject({ error: { code }, requestId: "api-request-id" });
   });
 
   it.each([
