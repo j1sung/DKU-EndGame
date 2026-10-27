@@ -8,6 +8,7 @@ import {
   runSetClientSecret,
 } from "../scripts/set-client-secret.mjs";
 import { runAuthSmoke } from "../scripts/invoke-auth-smoke.mjs";
+import { runProfileSmoke } from "../scripts/invoke-profile-smoke.mjs";
 import { runCloudWatchRedactionCheck } from "../scripts/check-cloudwatch-redaction.mjs";
 
 function outputCollector() {
@@ -19,6 +20,67 @@ function outputCollector() {
     value: () => value,
   };
 }
+
+describe("profile smoke script", () => {
+  it("confirms a second player's nickname collision without printing the token", async () => {
+    const token = "secret-second-player";
+    const responses = [
+      { status: 200, body: { playerId: "p2", requestId: "r1" } },
+      { status: 409, body: { error: { code: "NICKNAME_TAKEN" }, requestId: "r2" } },
+    ];
+    const fetchImpl = vi.fn(async () => {
+      const next = responses.shift();
+      return { status: next!.status, json: async () => next!.body };
+    });
+    const output = outputCollector();
+    const result = await runProfileSmoke({
+      argv: ["--url", "https://example.test", "--nickname", "닭싸움왕", "--expect-taken"],
+      prompt: vi.fn(async () => token),
+      fetchImpl,
+      output,
+    });
+    expect(result).toBe(0);
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+    expect(output.value()).toContain("PASS nickname collision");
+    expect(output.value()).not.toContain(token);
+  });
+
+  it("registers and retries a nickname without printing the token", async () => {
+    const token = "secret-jwt-value";
+    const responses = [
+      { status: 200, body: { playerId: "p1", requestId: "r1" } },
+      { status: 201, body: { playerId: "p1", nickname: "닭싸움왕", requestId: "r2" } },
+      { status: 201, body: { playerId: "p1", nickname: "닭싸움왕", requestId: "r2" } },
+      { status: 200, body: { playerId: "p1", nickname: "닭싸움왕", requestId: "r3" } },
+    ];
+    const requests: Array<{ url: string; init: any }> = [];
+    const fetchImpl = vi.fn(async (url: string, init: any) => {
+      requests.push({ url, init });
+      const next = responses.shift();
+      return { status: next!.status, json: async () => next!.body };
+    });
+    const output = outputCollector();
+
+    const result = await runProfileSmoke({
+      argv: ["--url", "https://example.test", "--nickname", "닭싸움왕"],
+      prompt: vi.fn(async () => token),
+      fetchImpl,
+      output,
+    });
+
+    expect(result).toBe(0);
+    expect(requests.map(({ url }) => url)).toEqual([
+      "https://example.test/v1/me",
+      "https://example.test/v1/me/nickname",
+      "https://example.test/v1/me/nickname",
+      "https://example.test/v1/me",
+    ]);
+    expect(requests[1].init.headers["idempotency-key"]).toBe(requests[2].init.headers["idempotency-key"]);
+    expect(requests[1].init.headers.authorization).toBe(`Bearer ${token}`);
+    expect(output.value()).toContain("PASS profile smoke checks");
+    expect(output.value()).not.toContain(token);
+  });
+});
 
 describe("operations scripts", () => {
   it("reads sensitive input without echoing it", async () => {

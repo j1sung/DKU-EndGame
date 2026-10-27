@@ -13,6 +13,7 @@
     "build": "esbuild src/handler.ts --bundle --platform=node --target=node24 --format=esm --sourcemap --outfile=dist/handler.js --external:@aws-sdk/*",
     "secret:set": "node scripts/set-client-secret.mjs",
     "smoke:auth": "node scripts/invoke-auth-smoke.mjs",
+    "smoke:profile": "node scripts/invoke-profile-smoke.mjs",
     "logs:check": "node scripts/check-cloudwatch-redaction.mjs"
   },
   "dependencies": {

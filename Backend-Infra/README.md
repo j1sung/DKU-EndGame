@@ -193,3 +193,21 @@ aws secretsmanager delete-secret --secret-id $secretArn --recovery-window-in-day
 ```
 
 `--force-delete-without-recovery`는 사용하지 않는다. 스택 삭제와 Secret 삭제는 비용과 복구 가능성에 영향을 주는 별도 작업이다.
+
+## 9. 프로필·닉네임 확장 검증
+
+이번 확장은 `PlayerProfiles`, `MatchmakingTickets`, `Matches` 테이블을 정의한다. 현재 API가 사용하는 테이블은 `PlayerProfiles`뿐이다. `GET /v1/me`는 검증된 PUID로 프로필을 조회하고, `POST /v1/me/nickname`은 전역 고유 닉네임을 최초 등록한다. 쓰기 요청에는 UUID 형식의 `Idempotency-Key`가 필요하다.
+
+배포 전에 `Backend-Infra/backend`에서 `npm ci`, `npm test`, `npm run typecheck`, `npm run build`를 실행한다. 저장소 루트에서 `pwsh -NoProfile -File Backend-Infra/backend/test/container-smoke.ps1`로 이미지에 네이티브 검증기와 EOS 공유 라이브러리가 들어 있는지 확인한다. 이어 `Backend-Infra`에서 `sam validate --template-file template.yaml --lint --profile dku-dev --region ap-northeast-2`와 `sam build --template-file template.yaml --use-container`를 실행한다. 로컬 SDK는 Git 제외 경로 `Backend-Infra/vendor/eos-sdk/`에 준비해야 한다.
+
+개발 스택에 반영하기 전 CloudFormation 변경 세트를 확인한다. 예상 변경은 새 테이블 3개, 닉네임 경로, 프로필 테이블에 대한 Lambda 권한·환경 변수, Lambda 이미지다. 기존 EOS Secret이 교체되거나 다른 리소스가 삭제되는 변경 세트라면 배포를 멈추고 원인을 확인한다. 승인된 변경이면 기존 `dev` 설정으로 배포하고 `UPDATE_COMPLETE`를 확인한다.
+
+배포 후 **새 프로필을 가진 테스트 계정 A**와 아직 닉네임이 없는 다른 **계정 B**를 준비한다. 둘 다 같은 신규 닉네임으로 검사한다. Connect ID Token은 스크립트의 마스킹 입력에만 넣고, 파일·셸 변수·명령행 인수에 저장하지 않는다.
+
+```powershell
+Set-Location Backend-Infra/backend
+npm run smoke:profile -- --url $apiUrl --nickname 닭싸움왕
+npm run smoke:profile -- --url $apiUrl --nickname 닭싸움왕 --expect-taken
+```
+
+첫 실행은 프로필 조회, 닉네임 등록 `201`, 같은 멱등성 키로 재시도한 원 응답, 다시 조회한 영속 닉네임을 확인한다. 두 번째 실행은 다른 계정에서 `409 NICKNAME_TAKEN`을 확인한다. 실행마다 출력된 `requestId`를 사용해 `npm run logs:check -- --request-id <request-id> --function-name $functionName`으로 토큰·Secret 비노출을 확인한다. AWS 콘솔에서 프로필과 닉네임 점유 항목을 확인하되 실제 PUID와 닉네임은 공개 기록에 남기지 않는다. 무토큰 `GET /v1/me`가 `401 AUTH_MISSING`인지도 재확인한다.
