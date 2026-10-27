@@ -86,9 +86,59 @@ describe("SAM authentication stack", () => {
       EOS_CLIENT_SECRET_ARN: { Ref: "EosClientSecret" },
       EOS_VERIFIER_TIMEOUT_MS: { Ref: "VerifierTimeoutMs" },
       EOS_VERIFIER_MAX_OUTPUT_BYTES: { Ref: "VerifierMaxOutputBytes" },
+      PLAYER_PROFILES_TABLE: { Ref: "PlayerProfiles" },
     });
     expect(parameters.VerifierTimeoutMs.Default).toBe(8000);
     expect(parameters.VerifierMaxOutputBytes.Default).toBe(65536);
+  });
+
+  it("defines profile, ticket, and match tables with the designed keys", () => {
+    const template = loadTemplate();
+    const profiles = template.Resources.PlayerProfiles.Properties;
+    const tickets = template.Resources.MatchmakingTickets.Properties;
+    const matches = template.Resources.Matches.Properties;
+
+    expect(profiles.KeySchema).toEqual([
+      { AttributeName: "pk", KeyType: "HASH" },
+      { AttributeName: "sk", KeyType: "RANGE" },
+    ]);
+    expect(tickets.KeySchema).toEqual([
+      { AttributeName: "ticketId", KeyType: "HASH" },
+    ]);
+    expect(tickets.GlobalSecondaryIndexes[0]).toMatchObject({
+      IndexName: "QueueIndex",
+      KeySchema: [
+        { AttributeName: "queueKey", KeyType: "HASH" },
+        { AttributeName: "queueSortKey", KeyType: "RANGE" },
+      ],
+    });
+    expect(matches.KeySchema).toEqual([
+      { AttributeName: "pk", KeyType: "HASH" },
+      { AttributeName: "sk", KeyType: "RANGE" },
+    ]);
+    for (const table of [profiles, tickets, matches]) {
+      expect(table.BillingMode).toBe("PAY_PER_REQUEST");
+      expect(table.TimeToLiveSpecification).toEqual({
+        AttributeName: "expiresAtSeconds",
+        Enabled: true,
+      });
+      expect(table.Tags).toEqual(expect.arrayContaining([
+        { Key: "Project", Value: "chickengame" },
+        { Key: "Environment", Value: "dev" },
+      ]));
+    }
+  });
+
+  it("grants only profile read and transactional writes", () => {
+    const template = loadTemplate();
+    const statements = template.Resources.AuthFunction.Properties.Policies.flatMap(
+      (policy: any) => policy.Statement ?? [],
+    );
+    expect(statements).toContainEqual({
+      Effect: "Allow",
+      Action: ["dynamodb:GetItem", "dynamodb:TransactWriteItems"],
+      Resource: { "Fn::GetAtt": ["PlayerProfiles", "Arn"] },
+    });
   });
 
   it("grants only GetSecretValue for the retained secret", () => {

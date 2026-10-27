@@ -50,6 +50,87 @@ Resources:
         - Key: Environment
           Value: dev
 
+  PlayerProfiles:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: chickengame-dev-player-profiles
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: pk
+          AttributeType: S
+        - AttributeName: sk
+          AttributeType: S
+      KeySchema:
+        - AttributeName: pk
+          KeyType: HASH
+        - AttributeName: sk
+          KeyType: RANGE
+      TimeToLiveSpecification:
+        AttributeName: expiresAtSeconds
+        Enabled: true
+      Tags:
+        - Key: Project
+          Value: chickengame
+        - Key: Environment
+          Value: dev
+
+  MatchmakingTickets:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: chickengame-dev-matchmaking-tickets
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: ticketId
+          AttributeType: S
+        - AttributeName: queueKey
+          AttributeType: S
+        - AttributeName: queueSortKey
+          AttributeType: S
+      KeySchema:
+        - AttributeName: ticketId
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: QueueIndex
+          KeySchema:
+            - AttributeName: queueKey
+              KeyType: HASH
+            - AttributeName: queueSortKey
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+      TimeToLiveSpecification:
+        AttributeName: expiresAtSeconds
+        Enabled: true
+      Tags:
+        - Key: Project
+          Value: chickengame
+        - Key: Environment
+          Value: dev
+
+  Matches:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: chickengame-dev-matches
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: pk
+          AttributeType: S
+        - AttributeName: sk
+          AttributeType: S
+      KeySchema:
+        - AttributeName: pk
+          KeyType: HASH
+        - AttributeName: sk
+          KeyType: RANGE
+      TimeToLiveSpecification:
+        AttributeName: expiresAtSeconds
+        Enabled: true
+      Tags:
+        - Key: Project
+          Value: chickengame
+        - Key: Environment
+          Value: dev
+
   AuthFunction:
     Type: AWS::Serverless::Function
     Metadata:
@@ -79,6 +160,8 @@ Resources:
             Ref: EosClientId
           EOS_CLIENT_SECRET_ARN:
             Ref: EosClientSecret
+          PLAYER_PROFILES_TABLE:
+            Ref: PlayerProfiles
           EOS_VERIFIER_TIMEOUT_MS:
             Ref: VerifierTimeoutMs
           EOS_VERIFIER_MAX_OUTPUT_BYTES:
@@ -90,6 +173,14 @@ Resources:
               Action: secretsmanager:GetSecretValue
               Resource:
                 Ref: EosClientSecret
+            - Effect: Allow
+              Action:
+                - dynamodb:GetItem
+                - dynamodb:TransactWriteItems
+              Resource:
+                Fn::GetAtt:
+                  - PlayerProfiles
+                  - Arn
       Events:
         Me:
           Type: HttpApi

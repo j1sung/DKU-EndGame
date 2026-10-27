@@ -6,6 +6,7 @@ const REQUIRED_ENV = {
   EOS_DEPLOYMENT_ID: "deployment-id",
   EOS_CLIENT_ID: "client-id",
   EOS_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:ap-northeast-2:123456789012:secret:eos",
+  PLAYER_PROFILES_TABLE: "chickengame-dev-player-profiles",
 };
 
 describe("production handler", () => {
@@ -15,6 +16,7 @@ describe("production handler", () => {
     vi.stubEnv("EOS_DEPLOYMENT_ID", REQUIRED_ENV.EOS_DEPLOYMENT_ID);
     vi.stubEnv("EOS_CLIENT_ID", REQUIRED_ENV.EOS_CLIENT_ID);
     vi.stubEnv("EOS_CLIENT_SECRET_ARN", REQUIRED_ENV.EOS_CLIENT_SECRET_ARN);
+    vi.stubEnv("PLAYER_PROFILES_TABLE", REQUIRED_ENV.PLAYER_PROFILES_TABLE);
 
     const module = await import("../src/handler.js");
 
