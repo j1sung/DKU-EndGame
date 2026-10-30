@@ -1,5 +1,39 @@
 # 변경 이력
 
+<a id="change-20261030-collision-timing"></a>
+### 2026-10-30 · 충돌 속도 판정 시점 보완
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+- 배경: 간헐적으로만 충돌 반응이 발생한다는 보고. 로컬 UE 5.8.2 소스에서 캡슐 BlockingHit 지연 전달과 HandleImpact → MoveBlockedBy → 슬라이드 처리 순서를 확인했다. 기존 플레이 로그에는 충격 성공 사례만 있고 반복 충돌·거절 로그가 없어 증상의 직접 원인은 미확정이다.
+- 변경: 서버 MoveBlockedBy에서도 속도 보정 전 공통 충돌 처리를 호출한다. 기존 캡슐 이벤트와 쌍별 쿨다운을 공유하고 MovementBlocked 진단 로그를 추가했다. 속도 비례 파워와 최소 접근 속도는 유지한다.
+- 문서: [충돌 처리](Gameplay/Overview.md#knockdown), [검증 절차](Gameplay/DebugLogging.md). 코드·엔진 호출 순서 정적 검토, 변경 후 빌드·PIE 미실행.
+
+
+<a id="change-20261030-counter-tilt"></a>
+### 2026-10-30 · 반대 방향 입력의 균형 회복 개선
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+- 변경: 축별 반대 입력에만 가속도 2배 적용. 바깥쪽으로 기우는 관성에는 추가 제동 6을 적용하고 중심 통과·입력 해제 시 기본 계산으로 복귀한다. 자동 중심 복원은 추가하지 않았다.
+- 문서: [이동과 균형](Gameplay/Overview.md#balance), [로그·확인 절차](Gameplay/DebugLogging.md). 빌드·PIE 검증 미실행.
+
+
+<a id="change-20261030-character-tuning"></a>
+### 2026-10-30 · 이동·차징·기울기 한계와 충돌 반응 조정
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+- 변경: 전투 MaxWalkSpeed 275, 점프 파워 200~700, 축별 기울기 한계 60도 상당으로 완화. 고정 수평 충격을 접근 속도 비례 충격으로 바꾸고 작은 수직 충격을 추가했다. 기존 기울기 속도 누적·전체 메시 보간과 디버깅 로그를 유지한다.
+- 문서: [이동·균형](Gameplay/Overview.md#balance), [차징 점프](Gameplay/Overview.md#jump), [충돌](Gameplay/Overview.md#knockdown), [로그·플레이 확인 절차](Gameplay/DebugLogging.md).
+- 검증 범위: 코드 정적 검토. 빌드·PIE·Blueprint 별도 기본값 확인은 미실행.
+
+
+<a id="change-20261023-character-debug"></a>
+### 2026-10-23 · 캐릭터 충돌·기울기·이동 디버깅 로그
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+- 변경: UE_LOG 카테고리 3개와 사건/반복 출력 콘솔 설정 추가. 충돌 쿨다운·밀치기 요청/후속 속도, 기울기 계산·입력 해제·넘어짐, 이동 차단·점프·착지·모드 전환을 관측한다. 기존 활성 PushStop/PushDispatch 로그를 통합하고 물리 계산은 유지했다.
+- 문서: [Gameplay 로그](Gameplay/Overview.md#debug-logging), [설정과 테스트](Gameplay/DebugLogging.md). 기존 충돌 진단 경로·차징 즉시 정지에 맞게 개요를 정정했다.
+
+
 <a id="change-20261006-tutorial-popup"></a>
 ### 2026-10-06 · 튜토리얼 팝업 표시 영역 수정
 

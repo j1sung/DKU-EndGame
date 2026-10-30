@@ -16,6 +16,7 @@ public:
 	AChickenCharacter();
 
     virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+    virtual void MoveBlockedBy(const FHitResult& Impact) override;
     void SetRoundInputEnabled(bool bEnabled);
     void FinishRound();
     UFUNCTION(BlueprintPure, Category="Chicken|Match")
@@ -36,7 +37,7 @@ public:
     bool IsRecoveringFromLanding() const { return bInLandingRecovery; }
     int32 GetTakeoffSerial() const { return TakeoffSerial; }
     float GetLandingRecoveryTime() const { return LandingRecoveryTime; }
-    float GetNormalizedJumpCharge() const { return MaxJumpPower > 0.f ? CurrentJumpPower / MaxJumpPower : 0.f; }
+    float GetNormalizedJumpCharge() const { return MaxJumpPower > MinJumpPower ? FMath::Clamp((CurrentJumpPower - MinJumpPower) / (MaxJumpPower - MinJumpPower), 0.f, 1.f) : 0.f; }
 
 protected:
     virtual void BeginPlay() override;
@@ -45,6 +46,28 @@ protected:
 
     // 착지 시 자동으로 다시 뛰도록 Landed 이벤트 오버라이드.
     virtual void Landed(const FHitResult& Hit) override;
+    virtual void OnMovementModeChanged(EMovementMode PrevMovementMode, uint8 PreviousCustomMode = 0) override;
+
+private:
+    FString DebugContext() const;
+    void DebugInput(bool bForward, float Value);
+    void DebugState();
+    void DebugPostPush(const TCHAR* Observation);
+    UFUNCTION()
+    void DebugMovementUpdated(float DeltaSeconds, FVector OldLocation, FVector OldVelocity);
+
+    float DebugForwardInput = 0.f;
+    float DebugRightInput = 0.f;
+    uint8 DebugForwardBlock = 0;
+    uint8 DebugRightBlock = 0;
+    uint8 DebugPreviousState = 255;
+    bool bDebugTiltAtLimit = false;
+    uint64 DebugPushFrame = 0;
+    int32 DebugPendingPushCount = 0;
+    FVector DebugPendingImpulse = FVector::ZeroVector;
+    FVector DebugPushVelocity = FVector::ZeroVector;
+
+protected:
 
     // 기본 점프.
     UPROPERTY(EditAnywhere, Category = "Movement|Hopping")
@@ -74,7 +97,7 @@ protected:
 
     //넘어지는 최대 기울기.
 	UPROPERTY(EditAnywhere, Category = "Balance")
-    float MaxBodyTilt = 1.0f;
+    float MaxBodyTilt = 60.0f / 35.0f;
 
     // 입력이 없을 때 중심으로 돌아오는 속도.
 	UPROPERTY(EditAnywhere, Category = "Balance")
@@ -97,7 +120,10 @@ protected:
     float CurrentJumpPower = 0.f;
 
     UPROPERTY(EditAnywhere, Category = "Jump")
-    float MaxJumpPower = 500.0f;
+    float MinJumpPower = 200.0f;
+
+    UPROPERTY(EditAnywhere, Category = "Jump")
+    float MaxJumpPower = 700.0f;
 
     UPROPERTY(EditAnywhere, Category = "Jump")
     float ChargeRate = 700.0f;
@@ -146,6 +172,13 @@ protected:
     UPROPERTY(EditDefaultsOnly, Category="Chicken|Collision", meta=(ClampMin="0.0"))
     float MaxCollisionPushSpeed = 600.f;
 
+    // Small upward velocity change proportional to the horizontal push.
+    UPROPERTY(EditDefaultsOnly, Category="Chicken|Collision", meta=(ClampMin="0.0"))
+    float CollisionLiftScale = 0.35f;
+
+    UPROPERTY(EditDefaultsOnly, Category="Chicken|Collision", meta=(ClampMin="0.0"))
+    float MaxCollisionLiftSpeed = 200.f;
+
     UPROPERTY(EditDefaultsOnly, Category="Chicken|Collision", meta=(ClampMin="0.0"))
     float CollisionTiltScale = 0.004f;
 
@@ -182,6 +215,14 @@ protected :
     UPROPERTY(EditAnywhere, Category = "Balance",
         meta = (ClampMin = "0.0"))
     float TiltInputAcceleration = 3.0f;
+
+    // Assist only player input directed back toward the center, per axis.
+    UPROPERTY(EditAnywhere, Category = "Balance", meta = (ClampMin = "1.0"))
+    float CounterTiltInputMultiplier = 2.0f;
+
+    // Extra braking only while counter-steering against outward tilt velocity.
+    UPROPERTY(EditAnywhere, Category = "Balance", meta = (ClampMin = "0.0"))
+    float CounterTiltBraking = 6.0f;
 
     // 기울어진 방향으로 더 넘어가게 하는 힘.
     // 실제 물리 중력이 아니라, 균형 게임용 중력 효과.
