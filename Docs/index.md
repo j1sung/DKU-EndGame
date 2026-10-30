@@ -16,6 +16,14 @@
 
 ## 최근 기록
 
+- [2026-10-30 · 충돌 판정 시점 보완](Changes.md#change-20261030-collision-timing)
+
+- [2026-10-30 · 역입력 균형 회복 개선](Changes.md#change-20261030-counter-tilt)
+
+- [2026-10-30 · 이동·차징·기울기·충돌 조정](Changes.md#change-20261030-character-tuning)
+
+- [2026-10-23 · 캐릭터 디버깅 로그](Changes.md#change-20261023-character-debug)
+
 - [2026-10-11 · PR 생성 및 머지 스킬 추가](Changes.md#change-20261011-ship)
 - [2026-10-04 · 생성 파일 제외와 솔루션 추적 해제](Changes.md#change-20261004-gitignore)
 - [2026-10-02 · 4인 경기 진행 및 dev 충돌 병합](Changes.md#change-20261002-match-integration)
