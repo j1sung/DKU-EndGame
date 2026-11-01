@@ -214,6 +214,6 @@ npm run smoke:profile -- --url $apiUrl --nickname 닭싸움왕 --expect-taken
 
 ## 10. 매칭 티켓 API 개발 상태
 
-`POST /v1/matchmaking/tickets`, `GET/DELETE /v1/matchmaking/tickets/current`의 로컬 구현과 SAM 정의가 준비되었다. 티켓 수명은 3분이며 취소는 본인의 `WAITING` 티켓에만 적용된다. [Unreal 연동 계약](../docs/unreal-matchmaking-ticket-api.md)에 요청·응답과 UI 흐름을 기록했다.
+`POST /v1/matchmaking/tickets`, `GET/DELETE /v1/matchmaking/tickets/current`, 매치 상태 보고 API, 4인 배정·기한 복구 워커의 로컬 구현과 SAM 정의가 준비되었다. 티켓 수명은 3분이며 취소는 본인의 `WAITING` 티켓에만 적용된다. 배정 뒤 준비·참가·시작 단계는 각각 최대 60초이고, 필요한 보고가 오면 즉시 다음 단계로 넘어간다. [Unreal 연동 계약](../docs/unreal-matchmaking-ticket-api.md)에 요청·응답과 UI 흐름을 기록했다.
 
-**이 변경이 포함된 SAM 템플릿을 현재 개발 스택에 단독 배포하지 않는다.** 아직 4인 배정 워커와 `ASSIGNED` 이후의 매치 종료·복구 경로가 없어 새 API를 실제 사용자에게 열면 대기나 활동 가드가 남을 수 있다. 배포 명령을 실행하기 전에 이 경로와 4계정 검증을 완료한다.
+**이 변경이 포함된 SAM 템플릿을 현재 개발 스택에 배포하지 않았다.** Docker Linux 엔진이 없어 컨테이너 빌드를 완료하지 못했고, 현재 확보된 서로 다른 Epic 계정은 2개라 4인 실제 흐름을 검증할 수 없다. 엔진과 네 계정이 준비되면 `sam build --use-container`, 스택 변경 세트 검토, 4계정 배정·취소·만료·종료 스모크를 마친 뒤 배포한다.

@@ -66,6 +66,12 @@ describe("SAM authentication stack", () => {
         CreateTicket: { Type: "HttpApi", Properties: { ApiId: { Ref: "HttpApi" }, Path: "/v1/matchmaking/tickets", Method: "POST" } },
         CurrentTicket: { Type: "HttpApi", Properties: { ApiId: { Ref: "HttpApi" }, Path: "/v1/matchmaking/tickets/current", Method: "GET" } },
         CancelTicket: { Type: "HttpApi", Properties: { ApiId: { Ref: "HttpApi" }, Path: "/v1/matchmaking/tickets/current", Method: "DELETE" } },
+        GetMatch: { Type: "HttpApi", Properties: { ApiId: { Ref: "HttpApi" }, Path: "/v1/matches/{matchId}", Method: "GET" } },
+        RegisterMatchSession: { Type: "HttpApi", Properties: { ApiId: { Ref: "HttpApi" }, Path: "/v1/matches/{matchId}/session", Method: "POST" } },
+        MatchJoined: { Type: "HttpApi", Properties: { ApiId: { Ref: "HttpApi" }, Path: "/v1/matches/{matchId}/joined", Method: "POST" } },
+        MatchStarted: { Type: "HttpApi", Properties: { ApiId: { Ref: "HttpApi" }, Path: "/v1/matches/{matchId}/started", Method: "POST" } },
+        MatchFinished: { Type: "HttpApi", Properties: { ApiId: { Ref: "HttpApi" }, Path: "/v1/matches/{matchId}/finished", Method: "POST" } },
+        MatchLeft: { Type: "HttpApi", Properties: { ApiId: { Ref: "HttpApi" }, Path: "/v1/matches/{matchId}/left", Method: "POST" } },
       },
     });
     expect(JSON.stringify(template.Resources.HttpApi)).not.toMatch(
@@ -99,6 +105,8 @@ describe("SAM authentication stack", () => {
       EOS_VERIFIER_MAX_OUTPUT_BYTES: { Ref: "VerifierMaxOutputBytes" },
       PLAYER_PROFILES_TABLE: { Ref: "PlayerProfiles" },
       MATCHMAKING_TICKETS_TABLE: { Ref: "MatchmakingTickets" },
+      MATCHES_TABLE: { Ref: "Matches" },
+      MATCHMAKING_QUEUE_URL: { Ref: "MatchmakingQueue" },
     });
     expect(parameters.VerifierTimeoutMs.Default).toBe(8000);
     expect(parameters.VerifierMaxOutputBytes.Default).toBe(65536);
@@ -128,6 +136,14 @@ describe("SAM authentication stack", () => {
       { AttributeName: "pk", KeyType: "HASH" },
       { AttributeName: "sk", KeyType: "RANGE" },
     ]);
+    expect(matches.GlobalSecondaryIndexes).toContainEqual({
+      IndexName: "DeadlineIndex",
+      KeySchema: [
+        { AttributeName: "deadlineKey", KeyType: "HASH" },
+        { AttributeName: "deadlineSortKey", KeyType: "RANGE" },
+      ],
+      Projection: { ProjectionType: "KEYS_ONLY" },
+    });
     for (const table of [profiles, tickets, matches]) {
       expect(table.BillingMode).toBe("PAY_PER_REQUEST");
       expect(table.TimeToLiveSpecification).toEqual({

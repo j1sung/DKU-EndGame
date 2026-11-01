@@ -143,4 +143,15 @@ describe("DynamoTicketStore", () => {
       .mockResolvedValueOnce({ Item: { ticketId: TICKET, playerId: PLAYER, status: "ASSIGNED", matchId: "match-1" } });
     expect(await makeStore(send).current(PLAYER)).toEqual({ ticketId: TICKET, status: "ASSIGNED", matchId: "match-1" });
   });
+
+  it("recovers an overdue match guard before allowing a new ticket", async () => {
+    const send = vi.fn().mockResolvedValueOnce({})
+      .mockResolvedValueOnce({ Item: { kind: "MATCH", matchId: "old-match", expiresAtMs: NOW - 1 } })
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({});
+    const recover = vi.fn().mockResolvedValue("EXPIRED");
+    const ticketStore = new DynamoTicketStore({ send } as unknown as DynamoDBDocumentClient, "profiles", "tickets", () => NOW, () => TICKET, recover);
+    expect((await ticketStore.create(INPUT)).status).toBe("WAITING");
+    expect(recover).toHaveBeenCalledWith("old-match");
+  });
 });

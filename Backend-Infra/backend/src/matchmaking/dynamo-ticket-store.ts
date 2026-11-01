@@ -23,6 +23,7 @@ export class DynamoTicketStore implements TicketStore {
     private readonly ticketTable: string,
     private readonly now: () => number = Date.now,
     private readonly newTicketId: (now: number) => string = makeTicketId,
+    private readonly recoverMatch?: (matchId: string) => Promise<unknown>,
   ) {}
 
   async create(input: TicketMutation): Promise<TicketView & { requestId: string }> {
@@ -61,7 +62,11 @@ export class DynamoTicketStore implements TicketStore {
   }
 
   async current(playerId: string): Promise<TicketView | null> {
-    const guard = await this.get(this.profileTable, this.guardKey(playerId));
+    let guard = await this.get(this.profileTable, this.guardKey(playerId));
+    if (guard?.kind === "MATCH" && guard.expiresAtMs <= this.now() && typeof guard.matchId === "string" && this.recoverMatch) {
+      await this.recoverMatch(guard.matchId);
+      guard = await this.get(this.profileTable, this.guardKey(playerId));
+    }
     if (!guard) return null;
     const ticket = await this.get(this.ticketTable, { ticketId: guard.ticketId });
     if (!ticket || ticket.playerId !== playerId) throw new TicketStoreError("TICKET_STORE_FAILURE");
@@ -139,6 +144,10 @@ export class DynamoTicketStore implements TicketStore {
     for (let attempt = 0; attempt < 2; attempt++) {
       const guard = await this.get(this.profileTable, this.guardKey(playerId));
       if (!guard) return;
+      if (guard.kind === "MATCH" && guard.expiresAtMs <= this.now() && typeof guard.matchId === "string" && this.recoverMatch) {
+        await this.recoverMatch(guard.matchId);
+        continue;
+      }
       if (guard.kind !== "WAITING" || guard.expiresAtMs > this.now()) throw new TicketStoreError("ALREADY_ACTIVE");
       const ticket = await this.get(this.ticketTable, { ticketId: guard.ticketId });
       if (!ticket || ticket.playerId !== playerId || ticket.status !== "WAITING") throw new TicketStoreError("TICKET_STORE_FAILURE");

@@ -9,6 +9,9 @@ import { loadRuntimeConfig } from "./config.js";
 import type { SafeLogger } from "./logging.js";
 import { DynamoProfileStore } from "./profile/dynamo-profile-store.js";
 import { DynamoTicketStore } from "./matchmaking/dynamo-ticket-store.js";
+import { DynamoMatchStore } from "./matchmaking/dynamo-match-store.js";
+import { SQSClient } from "@aws-sdk/client-sqs";
+import { SqsQueueHintPublisher } from "./matchmaking/queue-hint.js";
 
 const config = loadRuntimeConfig(process.env);
 const secretProvider = new SecretsManagerClientSecretProvider(
@@ -23,11 +26,13 @@ const verifier = new NativeTokenVerifier({
 });
 const documentClient = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 const profileStore = new DynamoProfileStore(documentClient, config.profileTableName);
-const ticketStore = new DynamoTicketStore(documentClient, config.profileTableName, config.ticketTableName);
+const matchStore = new DynamoMatchStore(documentClient, config.profileTableName, config.ticketTableName, config.matchTableName);
+const ticketStore = new DynamoTicketStore(documentClient, config.profileTableName, config.ticketTableName, Date.now, undefined, (matchId) => matchStore.expire(matchId));
+const queueHintPublisher = new SqsQueueHintPublisher(new SQSClient({}), config.matchmakingQueueUrl);
 const logger: SafeLogger = {
   write(event) {
     console.log(JSON.stringify(event));
   },
 };
 
-export const handler = createHandler({ verifier, secretProvider, logger, profileStore, ticketStore });
+export const handler = createHandler({ verifier, secretProvider, logger, profileStore, ticketStore, matchStore, queueHintPublisher });

@@ -16,6 +16,9 @@ import { errorResponse, jsonResponse } from "./http/responses.js";
 import type { AuthOutcome, SafeLogger } from "./logging.js";
 import { parseClientVersion, parseMode, parseTicketId, TicketContractError } from "./matchmaking/ticket-contract.js";
 import { TicketStoreError } from "./matchmaking/dynamo-ticket-store.js";
+import { MatchStoreError } from "./matchmaking/dynamo-match-store.js";
+import type { MatchStore } from "./matchmaking/match-store.js";
+import type { QueueHintPublisher } from "./matchmaking/queue-hint.js";
 import type { TicketStore } from "./matchmaking/ticket-store.js";
 import { ProfileStoreError } from "./profile/dynamo-profile-store.js";
 import { NicknameValidationError, normalizeNickname } from "./profile/nickname.js";
@@ -27,6 +30,8 @@ export interface HandlerDependencies {
   logger: SafeLogger;
   profileStore: ProfileStore;
   ticketStore: TicketStore;
+  matchStore: MatchStore;
+  queueHintPublisher: QueueHintPublisher;
 }
 
 class RequestError extends Error {
@@ -84,7 +89,24 @@ function mutationRequest(event: APIGatewayProxyEventV2, route: string): { idempo
   return { idempotencyKey, requestHash: createHash("sha256").update(`${route}\0${rawBody}`, "utf8").digest("hex"), body: body as Record<string, unknown> };
 }
 
+function matchIdFrom(event: APIGatewayProxyEventV2): string {
+  const value = event.pathParameters?.matchId;
+  if (typeof value !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)) throw new RequestError("INVALID_MATCH_ID");
+  return value.toLowerCase();
+}
+
+function hostAttemptFrom(body: Record<string, unknown>): number {
+  if (body.hostAttempt !== 1) throw new RequestError("INVALID_HOST_ATTEMPT");
+  return 1;
+}
+
 function profileError(error: unknown): { statusCode: number; code: string; message: string } {
+  if (error instanceof MatchStoreError) {
+    const statusCode = error.code === "MATCH_NOT_FOUND" ? 404
+      : error.code === "NOT_MATCH_MEMBER" || error.code === "NOT_MATCH_HOST" ? 403
+      : error.code === "MATCH_STORE_FAILURE" || error.code === "MATCH_GUARD_MISMATCH" ? 500 : 409;
+    return { statusCode, code: error.code, message: statusCode === 500 ? "Internal server error" : "Match request failed" };
+  }
   if (error instanceof TicketContractError) {
     return { statusCode: error.code === "CLIENT_VERSION_UNSUPPORTED" ? 426 : 400, code: error.code, message: "Invalid matchmaking request" };
   }
@@ -207,6 +229,12 @@ export function createHandler(
           const profile = await dependencies.profileStore.get(verified.playerId);
           if (!profile.nickname) throw new RequestError("NICKNAME_REQUIRED");
           const created = await dependencies.ticketStore.create({ playerId: verified.playerId, requestId, idempotencyKey: input.idempotencyKey, requestHash: input.requestHash });
+          try {
+            await dependencies.queueHintPublisher.publish();
+          } catch {
+            try { await dependencies.queueHintPublisher.publish(); }
+            catch { console.warn(JSON.stringify({ event: "matchmaking_hint_failed", requestId })); }
+          }
           statusCode = 201;
           response = jsonResponse(201, created);
         } else if (route === "GET /v1/matchmaking/tickets/current") {
@@ -217,6 +245,32 @@ export function createHandler(
           const ticketId = parseTicketId(input.body.ticketId);
           const cancelled = await dependencies.ticketStore.cancel({ playerId: verified.playerId, requestId, ticketId, idempotencyKey: input.idempotencyKey, requestHash: input.requestHash });
           response = jsonResponse(200, cancelled);
+        } else if (route === "GET /v1/matches/{matchId}") {
+          const matchId = matchIdFrom(event);
+          const match = await dependencies.matchStore.getForMember(matchId, verified.playerId);
+          response = jsonResponse(200, { ...match, requestId });
+        } else if (route.startsWith("POST /v1/matches/{matchId}/")) {
+          const matchId = matchIdFrom(event);
+          const input = mutationRequest(event, `${route}\0${matchId}`);
+          const hostAttempt = hostAttemptFrom(input.body);
+          const base = { matchId, playerId: verified.playerId, hostAttempt, idempotencyKey: input.idempotencyKey, requestHash: input.requestHash, requestId };
+          let result: Record<string, unknown>;
+          if (route === "POST /v1/matches/{matchId}/session") {
+            const sessionId = input.body.sessionId;
+            if (typeof sessionId !== "string" || sessionId.length < 1 || sessionId.length > 128 || /[\x00-\x1f\x7f]/.test(sessionId)) throw new RequestError("INVALID_SESSION_ID");
+            result = await dependencies.matchStore.registerSession({ ...base, sessionId });
+          } else if (route === "POST /v1/matches/{matchId}/joined") {
+            result = await dependencies.matchStore.join(base);
+          } else if (route === "POST /v1/matches/{matchId}/started") {
+            result = await dependencies.matchStore.start(base);
+          } else if (route === "POST /v1/matches/{matchId}/finished") {
+            result = await dependencies.matchStore.finish(base);
+          } else if (route === "POST /v1/matches/{matchId}/left") {
+            result = await dependencies.matchStore.leave(base);
+          } else {
+            throw new RequestError("INVALID_MATCH_ROUTE");
+          }
+          response = jsonResponse(200, { ...result, requestId: result.requestId ?? requestId });
         } else {
           statusCode = 404;
           response = errorResponse(404, "NOT_FOUND", "Not found", requestId);

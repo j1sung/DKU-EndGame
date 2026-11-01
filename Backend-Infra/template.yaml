@@ -117,11 +117,24 @@ Resources:
           AttributeType: S
         - AttributeName: sk
           AttributeType: S
+        - AttributeName: deadlineKey
+          AttributeType: S
+        - AttributeName: deadlineSortKey
+          AttributeType: S
       KeySchema:
         - AttributeName: pk
           KeyType: HASH
         - AttributeName: sk
           KeyType: RANGE
+      GlobalSecondaryIndexes:
+        - IndexName: DeadlineIndex
+          KeySchema:
+            - AttributeName: deadlineKey
+              KeyType: HASH
+            - AttributeName: deadlineSortKey
+              KeyType: RANGE
+          Projection:
+            ProjectionType: KEYS_ONLY
       TimeToLiveSpecification:
         AttributeName: expiresAtSeconds
         Enabled: true
@@ -130,6 +143,24 @@ Resources:
           Value: chickengame
         - Key: Environment
           Value: dev
+
+  MatchmakingDeadLetterQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: chickengame-dev-matchmaking-dlq
+      MessageRetentionPeriod: 1209600
+
+  MatchmakingQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: chickengame-dev-matchmaking
+      VisibilityTimeout: 180
+      RedrivePolicy:
+        deadLetterTargetArn:
+          Fn::GetAtt:
+            - MatchmakingDeadLetterQueue
+            - Arn
+        maxReceiveCount: 5
 
   AuthFunction:
     Type: AWS::Serverless::Function
@@ -164,6 +195,10 @@ Resources:
             Ref: PlayerProfiles
           MATCHMAKING_TICKETS_TABLE:
             Ref: MatchmakingTickets
+          MATCHES_TABLE:
+            Ref: Matches
+          MATCHMAKING_QUEUE_URL:
+            Ref: MatchmakingQueue
           EOS_VERIFIER_TIMEOUT_MS:
             Ref: VerifierTimeoutMs
           EOS_VERIFIER_MAX_OUTPUT_BYTES:
@@ -193,6 +228,23 @@ Resources:
               Resource:
                 Fn::GetAtt:
                   - MatchmakingTickets
+                  - Arn
+            - Effect: Allow
+              Action:
+                - dynamodb:GetItem
+                - dynamodb:PutItem
+                - dynamodb:UpdateItem
+                - dynamodb:Query
+              Resource:
+                - Fn::GetAtt:
+                    - Matches
+                    - Arn
+                - Fn::Sub: ${Matches.Arn}/index/DeadlineIndex
+            - Effect: Allow
+              Action: sqs:SendMessage
+              Resource:
+                Fn::GetAtt:
+                  - MatchmakingQueue
                   - Arn
       Events:
         Me:
@@ -230,6 +282,139 @@ Resources:
               Ref: HttpApi
             Path: /v1/matchmaking/tickets/current
             Method: DELETE
+        GetMatch:
+          Type: HttpApi
+          Properties:
+            ApiId:
+              Ref: HttpApi
+            Path: /v1/matches/{matchId}
+            Method: GET
+        RegisterMatchSession:
+          Type: HttpApi
+          Properties:
+            ApiId:
+              Ref: HttpApi
+            Path: /v1/matches/{matchId}/session
+            Method: POST
+        MatchJoined:
+          Type: HttpApi
+          Properties:
+            ApiId:
+              Ref: HttpApi
+            Path: /v1/matches/{matchId}/joined
+            Method: POST
+        MatchStarted:
+          Type: HttpApi
+          Properties:
+            ApiId:
+              Ref: HttpApi
+            Path: /v1/matches/{matchId}/started
+            Method: POST
+        MatchFinished:
+          Type: HttpApi
+          Properties:
+            ApiId:
+              Ref: HttpApi
+            Path: /v1/matches/{matchId}/finished
+            Method: POST
+        MatchLeft:
+          Type: HttpApi
+          Properties:
+            ApiId:
+              Ref: HttpApi
+            Path: /v1/matches/{matchId}/left
+            Method: POST
+
+  MatchmakingWorker:
+    Type: AWS::Serverless::Function
+    Metadata:
+      DockerContext: .
+      Dockerfile: backend/Dockerfile
+      DockerTag: nodejs24-worker-v1
+    Properties:
+      PackageType: Image
+      ImageConfig:
+        Command:
+          - dist/worker-handler.handler
+      Architectures:
+        - x86_64
+      FunctionName: chickengame-dev-matchmaking-worker
+      MemorySize: 512
+      Timeout: 120
+      Environment:
+        Variables:
+          PLAYER_PROFILES_TABLE:
+            Ref: PlayerProfiles
+          MATCHMAKING_TICKETS_TABLE:
+            Ref: MatchmakingTickets
+          MATCHES_TABLE:
+            Ref: Matches
+          MATCHMAKING_QUEUE_URL:
+            Ref: MatchmakingQueue
+      Policies:
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:GetItem
+                - dynamodb:UpdateItem
+                - dynamodb:DeleteItem
+              Resource:
+                Fn::GetAtt:
+                  - PlayerProfiles
+                  - Arn
+            - Effect: Allow
+              Action:
+                - dynamodb:GetItem
+                - dynamodb:UpdateItem
+                - dynamodb:Query
+              Resource:
+                - Fn::GetAtt:
+                    - MatchmakingTickets
+                    - Arn
+                - Fn::Sub: ${MatchmakingTickets.Arn}/index/QueueIndex
+            - Effect: Allow
+              Action:
+                - dynamodb:GetItem
+                - dynamodb:PutItem
+                - dynamodb:UpdateItem
+                - dynamodb:Query
+              Resource:
+                - Fn::GetAtt:
+                    - Matches
+                    - Arn
+                - Fn::Sub: ${Matches.Arn}/index/DeadlineIndex
+            - Effect: Allow
+              Action:
+                - sqs:ReceiveMessage
+                - sqs:DeleteMessage
+                - sqs:GetQueueAttributes
+                - sqs:SendMessage
+              Resource:
+                Fn::GetAtt:
+                  - MatchmakingQueue
+                  - Arn
+      Events:
+        QueueHints:
+          Type: SQS
+          Properties:
+            Queue:
+              Fn::GetAtt:
+                - MatchmakingQueue
+                - Arn
+            BatchSize: 1
+        RecoverySweep:
+          Type: Schedule
+          Properties:
+            Schedule: rate(1 minute)
+            Enabled: true
+
+  MatchmakingWorkerLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName:
+        Fn::Sub: /aws/lambda/${MatchmakingWorker}
+      RetentionInDays: 14
 
   AuthFunctionLogGroup:
     Type: AWS::Logs::LogGroup

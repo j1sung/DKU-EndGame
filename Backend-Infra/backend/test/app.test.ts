@@ -16,6 +16,7 @@ import type { SafeLogger } from "../src/logging.js";
 import type { ProfileStore } from "../src/profile/profile-store.js";
 import { ProfileStoreError } from "../src/profile/dynamo-profile-store.js";
 import type { TicketStore } from "../src/matchmaking/ticket-store.js";
+import type { MatchStore } from "../src/matchmaking/match-store.js";
 
 const PLAYER_ID = "0123456789abcdef0123456789abcdef";
 const OTHER_PLAYER_ID = "fedcba9876543210fedcba9876543210";
@@ -88,8 +89,17 @@ function makeDependencies() {
     current: vi.fn().mockResolvedValue(null),
     cancel: vi.fn().mockImplementation(async ({ requestId, ticketId }) => ({ ticketId, status: "CANCELLED", requestId })),
   };
+  const matchStore: MatchStore = {
+    getForMember: vi.fn().mockResolvedValue({ matchId: "019a3185-c000-7aba-8bab-abababababab", status: "FORMING" }),
+    registerSession: vi.fn().mockResolvedValue({ status: "SESSION_READY" }),
+    join: vi.fn().mockResolvedValue({ status: "SESSION_READY", joinedCount: 1 }),
+    start: vi.fn().mockResolvedValue({ status: "IN_GAME" }),
+    finish: vi.fn().mockResolvedValue({ status: "FINISHED" }),
+    leave: vi.fn().mockResolvedValue({ status: "FAILED" }),
+  };
+  const queueHintPublisher = { publish: vi.fn().mockResolvedValue(undefined) };
 
-  return { verifier, secretProvider, logger, profileStore, ticketStore };
+  return { verifier, secretProvider, logger, profileStore, ticketStore, matchStore, queueHintPublisher };
 }
 
 function nicknameEvent(body: unknown, headers: Record<string, string> = {}) {
@@ -124,6 +134,39 @@ function parseBody(result: APIGatewayProxyStructuredResultV2): unknown {
 }
 
 describe("createHandler", () => {
+  it("returns a match only for the verified member and accepts host session reporting", async () => {
+    const dependencies = makeDependencies();
+    const matchId = "019a3185-c000-7aba-8bab-abababababab";
+    const getEvent = makeEvent({ routeKey: "GET /v1/matches/{matchId}", rawPath: `/v1/matches/${matchId}`, pathParameters: { matchId } });
+    const getResult = await invoke(createHandler(dependencies), getEvent);
+    expect(getResult.statusCode).toBe(200);
+    expect(dependencies.matchStore.getForMember).toHaveBeenCalledWith(matchId, PLAYER_ID);
+    const postEvent = makeEvent({ routeKey: "POST /v1/matches/{matchId}/session", rawPath: `/v1/matches/${matchId}/session`, pathParameters: { matchId }, headers: { authorization: `Bearer ${makeToken()}`, "idempotency-key": "123e4567-e89b-42d3-a456-426614174000" }, body: JSON.stringify({ sessionId: "session-123", hostAttempt: 1 }) });
+    const postResult = await invoke(createHandler(dependencies), postEvent);
+    expect(postResult.statusCode).toBe(200);
+    expect(dependencies.matchStore.registerSession).toHaveBeenCalledWith(expect.objectContaining({ matchId, playerId: PLAYER_ID, sessionId: "session-123", hostAttempt: 1 }));
+  });
+
+  it("routes join, start, finish, and left reports to the match store", async () => {
+    const dependencies = makeDependencies();
+    const matchId = "019a3185-c000-7aba-8bab-abababababab";
+    const cases = [["joined", "join"], ["started", "start"], ["finished", "finish"], ["left", "leave"]] as const;
+    for (const [routeSuffix, method] of cases) {
+      const event = makeEvent({ routeKey: `POST /v1/matches/{matchId}/${routeSuffix}`, rawPath: `/v1/matches/${matchId}/${routeSuffix}`, pathParameters: { matchId }, headers: { authorization: `Bearer ${makeToken()}`, "idempotency-key": "123e4567-e89b-42d3-a456-426614174000" }, body: JSON.stringify({ hostAttempt: 1 }) });
+      expect((await invoke(createHandler(dependencies), event)).statusCode).toBe(200);
+      expect(dependencies.matchStore[method]).toHaveBeenCalledWith(expect.objectContaining({ matchId, playerId: PLAYER_ID, hostAttempt: 1 }));
+    }
+  });
+  it("binds a match mutation idempotency hash to the concrete match id", async () => {
+    const dependencies = makeDependencies();
+    const ids = ["019a3185-c000-7aba-8bab-abababababab", "019a3185-c000-7aba-8bab-abababababac"];
+    for (const matchId of ids) {
+      const event = makeEvent({ routeKey: "POST /v1/matches/{matchId}/joined", rawPath: `/v1/matches/${matchId}/joined`, pathParameters: { matchId }, headers: { authorization: `Bearer ${makeToken()}`, "idempotency-key": "123e4567-e89b-42d3-a456-426614174000" }, body: JSON.stringify({ hostAttempt: 1 }) });
+      expect((await invoke(createHandler(dependencies), event)).statusCode).toBe(200);
+    }
+    const calls = vi.mocked(dependencies.matchStore.join).mock.calls;
+    expect(calls[0]![0].requestHash).not.toBe(calls[1]![0].requestHash);
+  });
   it("requires a nickname and exact client version before creating a ticket", async () => {
     const dependencies = makeDependencies();
     const event = makeEvent({ routeKey: "POST /v1/matchmaking/tickets", rawPath: "/v1/matchmaking/tickets", headers: { authorization: `Bearer ${makeToken()}`, "idempotency-key": "123e4567-e89b-42d3-a456-426614174000", "x-client-version": "0.1.0" }, body: JSON.stringify({ mode: "standard" }) });
@@ -136,6 +179,7 @@ describe("createHandler", () => {
     expect(second.statusCode).toBe(201);
     expect(parseBody(second)).toMatchObject({ status: "WAITING", requestId: "api-request-id" });
     expect(dependencies.ticketStore.create).toHaveBeenCalledWith(expect.objectContaining({ playerId: PLAYER_ID, requestHash: expect.stringMatching(/^[a-f0-9]{64}$/) }));
+    expect(dependencies.queueHintPublisher.publish).toHaveBeenCalledTimes(1);
     const wrong = await invoke(createHandler(dependencies), { ...event, headers: { ...event.headers, "x-client-version": "0.2.0" } });
     expect(wrong.statusCode).toBe(426);
     expect(parseBody(wrong)).toMatchObject({ error: { code: "CLIENT_VERSION_UNSUPPORTED" } });
