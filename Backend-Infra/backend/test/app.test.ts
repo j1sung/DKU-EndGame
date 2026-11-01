@@ -15,6 +15,7 @@ import {
 import type { SafeLogger } from "../src/logging.js";
 import type { ProfileStore } from "../src/profile/profile-store.js";
 import { ProfileStoreError } from "../src/profile/dynamo-profile-store.js";
+import type { TicketStore } from "../src/matchmaking/ticket-store.js";
 
 const PLAYER_ID = "0123456789abcdef0123456789abcdef";
 const OTHER_PLAYER_ID = "fedcba9876543210fedcba9876543210";
@@ -82,8 +83,13 @@ function makeDependencies() {
       created: true,
     })),
   };
+  const ticketStore: TicketStore = {
+    create: vi.fn().mockImplementation(async ({ requestId }) => ({ ticketId: "019a3185-c000-7aba-8bab-abababababab", status: "WAITING", expiresAt: "2026-11-01T12:03:00.000Z", requestId })),
+    current: vi.fn().mockResolvedValue(null),
+    cancel: vi.fn().mockImplementation(async ({ requestId, ticketId }) => ({ ticketId, status: "CANCELLED", requestId })),
+  };
 
-  return { verifier, secretProvider, logger, profileStore };
+  return { verifier, secretProvider, logger, profileStore, ticketStore };
 }
 
 function nicknameEvent(body: unknown, headers: Record<string, string> = {}) {
@@ -118,6 +124,56 @@ function parseBody(result: APIGatewayProxyStructuredResultV2): unknown {
 }
 
 describe("createHandler", () => {
+  it("requires a nickname and exact client version before creating a ticket", async () => {
+    const dependencies = makeDependencies();
+    const event = makeEvent({ routeKey: "POST /v1/matchmaking/tickets", rawPath: "/v1/matchmaking/tickets", headers: { authorization: `Bearer ${makeToken()}`, "idempotency-key": "123e4567-e89b-42d3-a456-426614174000", "x-client-version": "0.1.0" }, body: JSON.stringify({ mode: "standard" }) });
+    const first = await invoke(createHandler(dependencies), event);
+    expect(first.statusCode).toBe(409);
+    expect(parseBody(first)).toMatchObject({ error: { code: "NICKNAME_REQUIRED" } });
+    expect(dependencies.ticketStore.create).not.toHaveBeenCalled();
+    vi.mocked(dependencies.profileStore.get).mockResolvedValue({ playerId: PLAYER_ID, nickname: "닭싸움왕" });
+    const second = await invoke(createHandler(dependencies), event);
+    expect(second.statusCode).toBe(201);
+    expect(parseBody(second)).toMatchObject({ status: "WAITING", requestId: "api-request-id" });
+    expect(dependencies.ticketStore.create).toHaveBeenCalledWith(expect.objectContaining({ playerId: PLAYER_ID, requestHash: expect.stringMatching(/^[a-f0-9]{64}$/) }));
+    const wrong = await invoke(createHandler(dependencies), { ...event, headers: { ...event.headers, "x-client-version": "0.2.0" } });
+    expect(wrong.statusCode).toBe(426);
+    expect(parseBody(wrong)).toMatchObject({ error: { code: "CLIENT_VERSION_UNSUPPORTED" } });
+  });
+
+  it("gets the caller's current ticket and cancels only a specified waiting ticket", async () => {
+    const dependencies = makeDependencies();
+    vi.mocked(dependencies.ticketStore.current).mockResolvedValue({ ticketId: "019a3185-c000-7aba-8bab-abababababab", status: "WAITING", expiresAt: "2026-11-01T12:03:00.000Z" });
+    const getResult = await invoke(createHandler(dependencies), makeEvent({ routeKey: "GET /v1/matchmaking/tickets/current", rawPath: "/v1/matchmaking/tickets/current" }));
+    expect(getResult.statusCode).toBe(200);
+    expect(parseBody(getResult)).toMatchObject({ status: "WAITING", requestId: "api-request-id" });
+    expect(dependencies.ticketStore.current).toHaveBeenCalledWith(PLAYER_ID);
+    const deleteResult = await invoke(createHandler(dependencies), makeEvent({ routeKey: "DELETE /v1/matchmaking/tickets/current", rawPath: "/v1/matchmaking/tickets/current", headers: { authorization: `Bearer ${makeToken()}`, "idempotency-key": "123e4567-e89b-42d3-a456-426614174000" }, body: JSON.stringify({ ticketId: "019a3185-c000-7aba-8bab-abababababab", playerId: OTHER_PLAYER_ID }) }));
+    expect(deleteResult.statusCode).toBe(200);
+    expect(parseBody(deleteResult)).toMatchObject({ status: "CANCELLED" });
+    expect(dependencies.ticketStore.cancel).toHaveBeenCalledWith(expect.objectContaining({ playerId: PLAYER_ID, ticketId: "019a3185-c000-7aba-8bab-abababababab" }));
+  });
+
+  it("rejects invalid ticket requests without calling the store", async () => {
+    const dependencies = makeDependencies();
+    vi.mocked(dependencies.profileStore.get).mockResolvedValue({ playerId: PLAYER_ID, nickname: "닭싸움왕" });
+    const create = makeEvent({ routeKey: "POST /v1/matchmaking/tickets", rawPath: "/v1/matchmaking/tickets", headers: { authorization: `Bearer ${makeToken()}`, "idempotency-key": "123e4567-e89b-42d3-a456-426614174000", "x-client-version": "0.1.0" }, body: JSON.stringify({ mode: "unknown" }) });
+    expect(parseBody(await invoke(createHandler(dependencies), create))).toMatchObject({ error: { code: "INVALID_MODE" } });
+    const cancel = makeEvent({ routeKey: "DELETE /v1/matchmaking/tickets/current", rawPath: "/v1/matchmaking/tickets/current", headers: { authorization: `Bearer ${makeToken()}`, "idempotency-key": "123e4567-e89b-42d3-a456-426614174000" }, body: JSON.stringify({ ticketId: "bad" }) });
+    expect(parseBody(await invoke(createHandler(dependencies), cancel))).toMatchObject({ error: { code: "INVALID_TICKET_ID" } });
+    const large = { ...create, body: JSON.stringify({ mode: "standard", padding: "x".repeat(5000) }) };
+    expect(parseBody(await invoke(createHandler(dependencies), large))).toMatchObject({ error: { code: "INVALID_BODY" } });
+    expect(dependencies.ticketStore.create).not.toHaveBeenCalled();
+    expect(dependencies.ticketStore.cancel).not.toHaveBeenCalled();
+  });
+
+  it("does not touch ticket storage when authentication fails", async () => {
+    const dependencies = makeDependencies();
+    const event = makeEvent({ routeKey: "GET /v1/matchmaking/tickets/current", rawPath: "/v1/matchmaking/tickets/current", headers: {} });
+    const result = await invoke(createHandler(dependencies), event);
+    expect(result.statusCode).toBe(401);
+    expect(dependencies.ticketStore.current).not.toHaveBeenCalled();
+  });
   it("returns the verified player identity and API Gateway request ID", async () => {
     const dependencies = makeDependencies();
     const handler = createHandler(dependencies);

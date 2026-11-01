@@ -63,6 +63,9 @@ describe("SAM authentication stack", () => {
             Method: "POST",
           },
         },
+        CreateTicket: { Type: "HttpApi", Properties: { ApiId: { Ref: "HttpApi" }, Path: "/v1/matchmaking/tickets", Method: "POST" } },
+        CurrentTicket: { Type: "HttpApi", Properties: { ApiId: { Ref: "HttpApi" }, Path: "/v1/matchmaking/tickets/current", Method: "GET" } },
+        CancelTicket: { Type: "HttpApi", Properties: { ApiId: { Ref: "HttpApi" }, Path: "/v1/matchmaking/tickets/current", Method: "DELETE" } },
       },
     });
     expect(JSON.stringify(template.Resources.HttpApi)).not.toMatch(
@@ -95,6 +98,7 @@ describe("SAM authentication stack", () => {
       EOS_VERIFIER_TIMEOUT_MS: { Ref: "VerifierTimeoutMs" },
       EOS_VERIFIER_MAX_OUTPUT_BYTES: { Ref: "VerifierMaxOutputBytes" },
       PLAYER_PROFILES_TABLE: { Ref: "PlayerProfiles" },
+      MATCHMAKING_TICKETS_TABLE: { Ref: "MatchmakingTickets" },
     });
     expect(parameters.VerifierTimeoutMs.Default).toBe(8000);
     expect(parameters.VerifierMaxOutputBytes.Default).toBe(65536);
@@ -144,8 +148,13 @@ describe("SAM authentication stack", () => {
     );
     expect(statements).toContainEqual({
       Effect: "Allow",
-      Action: ["dynamodb:GetItem", "dynamodb:UpdateItem", "dynamodb:PutItem"],
+      Action: ["dynamodb:GetItem", "dynamodb:UpdateItem", "dynamodb:PutItem", "dynamodb:DeleteItem"],
       Resource: { "Fn::GetAtt": ["PlayerProfiles", "Arn"] },
+    });
+    expect(statements).toContainEqual({
+      Effect: "Allow",
+      Action: ["dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:UpdateItem"],
+      Resource: { "Fn::GetAtt": ["MatchmakingTickets", "Arn"] },
     });
   });
 

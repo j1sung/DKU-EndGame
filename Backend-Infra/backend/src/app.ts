@@ -14,6 +14,9 @@ import {
 import { getRequestId } from "./http/request-context.js";
 import { errorResponse, jsonResponse } from "./http/responses.js";
 import type { AuthOutcome, SafeLogger } from "./logging.js";
+import { parseClientVersion, parseMode, parseTicketId, TicketContractError } from "./matchmaking/ticket-contract.js";
+import { TicketStoreError } from "./matchmaking/dynamo-ticket-store.js";
+import type { TicketStore } from "./matchmaking/ticket-store.js";
 import { ProfileStoreError } from "./profile/dynamo-profile-store.js";
 import { NicknameValidationError, normalizeNickname } from "./profile/nickname.js";
 import type { ProfileStore } from "./profile/profile-store.js";
@@ -23,6 +26,7 @@ export interface HandlerDependencies {
   secretProvider: ClientSecretProvider;
   logger: SafeLogger;
   profileStore: ProfileStore;
+  ticketStore: TicketStore;
 }
 
 class RequestError extends Error {
@@ -67,9 +71,29 @@ function nicknameRequest(event: APIGatewayProxyEventV2): {
   }
 }
 
+function mutationRequest(event: APIGatewayProxyEventV2, route: string): { idempotencyKey: string; requestHash: string; body: Record<string, unknown> } {
+  const idempotencyKey = header(event.headers, "idempotency-key");
+  if (!idempotencyKey || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(idempotencyKey)) {
+    throw new RequestError("INVALID_IDEMPOTENCY_KEY");
+  }
+  const rawBody = event.isBase64Encoded ? Buffer.from(event.body ?? "", "base64").toString("utf8") : event.body ?? "";
+  if (Buffer.byteLength(rawBody, "utf8") > 4096) throw new RequestError("INVALID_BODY");
+  let body: unknown;
+  try { body = JSON.parse(rawBody); } catch { throw new RequestError("INVALID_BODY"); }
+  if (!body || typeof body !== "object" || Array.isArray(body)) throw new RequestError("INVALID_BODY");
+  return { idempotencyKey, requestHash: createHash("sha256").update(`${route}\0${rawBody}`, "utf8").digest("hex"), body: body as Record<string, unknown> };
+}
+
 function profileError(error: unknown): { statusCode: number; code: string; message: string } {
+  if (error instanceof TicketContractError) {
+    return { statusCode: error.code === "CLIENT_VERSION_UNSUPPORTED" ? 426 : 400, code: error.code, message: "Invalid matchmaking request" };
+  }
+  if (error instanceof TicketStoreError) {
+    const statusCode = error.code === "TICKET_NOT_FOUND" ? 404 : error.code === "TICKET_STORE_FAILURE" ? 500 : 409;
+    return { statusCode, code: error.code, message: statusCode === 500 ? "Internal server error" : "Matchmaking conflict" };
+  }
   if (error instanceof RequestError) {
-    return { statusCode: 400, code: error.code, message: "Invalid request" };
+    return { statusCode: error.code === "NICKNAME_REQUIRED" ? 409 : 400, code: error.code, message: error.code === "NICKNAME_REQUIRED" ? "Nickname required" : "Invalid request" };
   }
   if (error instanceof NicknameValidationError) {
     return { statusCode: 400, code: error.code, message: error.message };
@@ -176,6 +200,23 @@ export function createHandler(
             nickname: registered.nickname,
             requestId: registered.requestId,
           });
+        } else if (route === "POST /v1/matchmaking/tickets") {
+          parseClientVersion(header(event.headers, "x-client-version"));
+          const input = mutationRequest(event, route);
+          parseMode(input.body.mode);
+          const profile = await dependencies.profileStore.get(verified.playerId);
+          if (!profile.nickname) throw new RequestError("NICKNAME_REQUIRED");
+          const created = await dependencies.ticketStore.create({ playerId: verified.playerId, requestId, idempotencyKey: input.idempotencyKey, requestHash: input.requestHash });
+          statusCode = 201;
+          response = jsonResponse(201, created);
+        } else if (route === "GET /v1/matchmaking/tickets/current") {
+          const current = await dependencies.ticketStore.current(verified.playerId);
+          response = jsonResponse(200, current ? { ...current, requestId } : { ticket: null, requestId });
+        } else if (route === "DELETE /v1/matchmaking/tickets/current") {
+          const input = mutationRequest(event, route);
+          const ticketId = parseTicketId(input.body.ticketId);
+          const cancelled = await dependencies.ticketStore.cancel({ playerId: verified.playerId, requestId, ticketId, idempotencyKey: input.idempotencyKey, requestHash: input.requestHash });
+          response = jsonResponse(200, cancelled);
         } else {
           statusCode = 404;
           response = errorResponse(404, "NOT_FOUND", "Not found", requestId);

@@ -8,6 +8,7 @@ import { SecretsManagerClientSecretProvider } from "./auth/secrets-manager-secre
 import { loadRuntimeConfig } from "./config.js";
 import type { SafeLogger } from "./logging.js";
 import { DynamoProfileStore } from "./profile/dynamo-profile-store.js";
+import { DynamoTicketStore } from "./matchmaking/dynamo-ticket-store.js";
 
 const config = loadRuntimeConfig(process.env);
 const secretProvider = new SecretsManagerClientSecretProvider(
@@ -20,14 +21,13 @@ const verifier = new NativeTokenVerifier({
   timeoutMs: config.verifierTimeoutMs,
   maxOutputBytes: config.verifierMaxOutputBytes,
 });
-const profileStore = new DynamoProfileStore(
-  DynamoDBDocumentClient.from(new DynamoDBClient({})),
-  config.profileTableName,
-);
+const documentClient = DynamoDBDocumentClient.from(new DynamoDBClient({}));
+const profileStore = new DynamoProfileStore(documentClient, config.profileTableName);
+const ticketStore = new DynamoTicketStore(documentClient, config.profileTableName, config.ticketTableName);
 const logger: SafeLogger = {
   write(event) {
     console.log(JSON.stringify(event));
   },
 };
 
-export const handler = createHandler({ verifier, secretProvider, logger, profileStore });
+export const handler = createHandler({ verifier, secretProvider, logger, profileStore, ticketStore });

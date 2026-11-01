@@ -196,7 +196,7 @@ aws secretsmanager delete-secret --secret-id $secretArn --recovery-window-in-day
 
 ## 9. 프로필·닉네임 확장 검증
 
-이번 확장은 `PlayerProfiles`, `MatchmakingTickets`, `Matches` 테이블을 정의한다. 현재 API가 사용하는 테이블은 `PlayerProfiles`뿐이다. `GET /v1/me`는 검증된 PUID로 프로필을 조회하고, `POST /v1/me/nickname`은 전역 고유 닉네임을 최초 등록한다. 쓰기 요청에는 UUID 형식의 `Idempotency-Key`가 필요하다.
+프로필 확장은 `PlayerProfiles`, `MatchmakingTickets`, `Matches` 테이블을 정의했다. 당시 배포된 API는 `PlayerProfiles`만 사용한다. `GET /v1/me`는 검증된 PUID로 프로필을 조회하고, `POST /v1/me/nickname`은 전역 고유 닉네임을 최초 등록한다. 쓰기 요청에는 UUID 형식의 `Idempotency-Key`가 필요하다.
 
 배포 전에 `Backend-Infra/backend`에서 `npm ci`, `npm test`, `npm run typecheck`, `npm run build`를 실행한다. 저장소 루트에서 `pwsh -NoProfile -File Backend-Infra/backend/test/container-smoke.ps1`로 이미지에 네이티브 검증기와 EOS 공유 라이브러리가 들어 있는지 확인한다. 이어 `Backend-Infra`에서 `sam validate --template-file template.yaml --lint --profile dku-dev --region ap-northeast-2`와 `sam build --template-file template.yaml --use-container`를 실행한다. 로컬 SDK는 Git 제외 경로 `Backend-Infra/vendor/eos-sdk/`에 준비해야 한다.
 
@@ -211,3 +211,9 @@ npm run smoke:profile -- --url $apiUrl --nickname 닭싸움왕 --expect-taken
 ```
 
 첫 실행은 프로필 조회, 닉네임 등록 `201`, 같은 멱등성 키로 재시도한 원 응답, 다시 조회한 영속 닉네임을 확인한다. 두 번째 실행은 다른 계정에서 `409 NICKNAME_TAKEN`을 확인한다. 실행마다 출력된 `requestId`를 사용해 `npm run logs:check -- --request-id <request-id> --function-name $functionName`으로 토큰·Secret 비노출을 확인한다. AWS 콘솔에서 프로필과 닉네임 점유 항목을 확인하되 실제 PUID와 닉네임은 공개 기록에 남기지 않는다. 무토큰 `GET /v1/me`가 `401 AUTH_MISSING`인지도 재확인한다.
+
+## 10. 매칭 티켓 API 개발 상태
+
+`POST /v1/matchmaking/tickets`, `GET/DELETE /v1/matchmaking/tickets/current`의 로컬 구현과 SAM 정의가 준비되었다. 티켓 수명은 3분이며 취소는 본인의 `WAITING` 티켓에만 적용된다. [Unreal 연동 계약](../docs/unreal-matchmaking-ticket-api.md)에 요청·응답과 UI 흐름을 기록했다.
+
+**이 변경이 포함된 SAM 템플릿을 현재 개발 스택에 단독 배포하지 않는다.** 아직 4인 배정 워커와 `ASSIGNED` 이후의 매치 종료·복구 경로가 없어 새 API를 실제 사용자에게 열면 대기나 활동 가드가 남을 수 있다. 배포 명령을 실행하기 전에 이 경로와 4계정 검증을 완료한다.

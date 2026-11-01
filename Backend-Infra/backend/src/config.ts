@@ -5,6 +5,7 @@ export interface RuntimeConfig {
   clientId: string;
   clientSecretArn: string;
   profileTableName: string;
+  ticketTableName: string;
   verifierPath: string;
   verifierTimeoutMs: number;
   verifierMaxOutputBytes: number;
@@ -54,6 +55,7 @@ export function loadRuntimeConfig(env: NodeJS.ProcessEnv): RuntimeConfig {
     clientId: required(env, "EOS_CLIENT_ID"),
     clientSecretArn: required(env, "EOS_CLIENT_SECRET_ARN"),
     profileTableName: required(env, "PLAYER_PROFILES_TABLE"),
+    ticketTableName: required(env, "MATCHMAKING_TICKETS_TABLE"),
     verifierPath:
       env.EOS_VERIFIER_PATH === undefined
         ? "/opt/bin/eos-token-verifier"

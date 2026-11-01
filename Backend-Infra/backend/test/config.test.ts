@@ -9,6 +9,7 @@ const REQUIRED_ENV = {
   EOS_CLIENT_ID: "client-id",
   EOS_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:ap-northeast-2:123456789012:secret:eos",
   PLAYER_PROFILES_TABLE: "chickengame-dev-player-profiles",
+  MATCHMAKING_TICKETS_TABLE: "chickengame-dev-matchmaking-tickets",
 };
 
 describe("loadRuntimeConfig", () => {
@@ -20,6 +21,7 @@ describe("loadRuntimeConfig", () => {
       clientId: "client-id",
       clientSecretArn: REQUIRED_ENV.EOS_CLIENT_SECRET_ARN,
       profileTableName: "chickengame-dev-player-profiles",
+      ticketTableName: "chickengame-dev-matchmaking-tickets",
       verifierPath: "/opt/bin/eos-token-verifier",
       verifierTimeoutMs: 8_000,
       verifierMaxOutputBytes: 65_536,

@@ -2,6 +2,8 @@
 
 상태: 기본 구조 승인 (2026-10-27). 3개 테이블과 첫 버전의 인증된 클라이언트 EOS 세션·참가 보고 방식을 채택한다. 프로필·닉네임 API와 테이블은 개발 스택에 배포해 두 계정으로 검증했다 (2026-11-01). 티켓·매치·워커는 아직 구현 전이다. 남은 게임 모드·버전·시간 정책과 EOS 연동 계약은 통합 담당이 결정해 문서화하고 게임 담당자에게 인계한다.
 
+다음 단계의 세부 초안: [매칭 티켓·4인 배정 설계](2026-11-01-matchmaking-tickets-worker-design.md).
+
 ## 1. 목적과 범위
 
 기존 `GET /v1/me`의 EOS Connect ID Token 검증 결과 PUID를 유일한 요청자 식별자로 사용한다. DynamoDB에 프로필과 전역 고유 닉네임을 저장하고, 한 명이 동시에 하나의 활성 매칭 흐름에만 참여하도록 한다. 4개 티켓의 선점과 매치 생성을 하나의 트랜잭션으로 처리하며, 취소·만료·실패 뒤에는 재매칭 가능 상태로 복구한다.
@@ -47,7 +49,7 @@
 
 기본키 `ticketId`(String), 정렬키 없음. 대기열용 sparse GSI `QueueIndex`: PK `queueKey`, SK `queueSortKey`; `queueKey = <mode>#<clientVersion>#<bucket>`, `queueSortKey = <13자리 0 패딩 createdAtMs>#<ticketId>`. `bucket = hash(ticketId) mod 16`으로 시작한다. 대기 티켓에만 두 속성을 기록하고, 대기열에서 나갈 때 제거한다. 같은 버전·모드의 16개 버킷을 병합해 오래된 순서로 후보를 고른다. 버킷 수는 부하 측정 후 조정한다.
 
-티켓 속성: `ticketId`, `playerId`, `status`, `mode`, `clientVersion`, `createdAtMs`, `expiresAtMs`, `assignedMatchId?`, `updatedAtMs`, `revision`, `expiresAtSeconds`(종료 후 보존용 TTL). 기본 대기 수명은 5분이다. `QueueIndex`는 eventual consistency이므로 후보의 원본 티켓을 일관 읽기로 다시 확인하고, 트랜잭션 조건식으로 상태·기한을 최종 검증한다.
+티켓 속성: `ticketId`, `playerId`, `status`, `mode`, `clientVersion`, `createdAtMs`, `expiresAtMs`, `assignedMatchId?`, `updatedAtMs`, `revision`, `expiresAtSeconds`(종료 후 보존용 TTL). 첫 버전의 대기 수명은 3분이다. `QueueIndex`는 eventual consistency이므로 후보의 원본 티켓을 일관 읽기로 다시 확인하고, 트랜잭션 조건식으로 상태·기한을 최종 검증한다.
 
 ### 4.3 Matches
 
@@ -59,7 +61,7 @@
 
 1. **닉네임 등록:** 프로필이 없거나 닉네임 미설정임을 확인한 뒤 프로필 생성/갱신과 닉네임 점유 `attribute_not_exists(pk)`를 한 트랜잭션에 묶는다. 점유 실패는 `409 NICKNAME_TAKEN`; 같은 사용자의 동일 요청 재시도는 멱등성 기록을 통해 원 응답을 준다.
 2. **티켓 생성:** 활동 가드가 없거나 이미 만료된 같은 요청의 복구가 끝난 상태에서만 `WAITING` 티켓과 `ACTIVITY(kind=WAITING,ticketId=...)`를 생성한다. 기존 활성 가드가 있으면 `409 ALREADY_ACTIVE`, 동일 키 재시도는 기존 결과다. 만료 가드가 있으면 먼저 연결된 티켓/매치를 조건부 정리하고 재시도한다.
-3. **티켓 취소:** 요청의 `ticketId`가 활동 가드와 원본 티켓의 ID에 일치하고 티켓이 `WAITING`일 때만 티켓을 `CANCELLED`로 바꾸고 가드를 삭제한다. 매치 배정과 경합하면 한 트랜잭션만 성공한다. 이미 `ASSIGNED`라면 `409 TICKET_ALREADY_ASSIGNED`; 새 티켓을 취소하지 않는다.
+3. **티켓 취소:** 4명이 모이기 전 대기 화면의 취소 버튼은 요청의 `ticketId`가 활동 가드와 원본 티켓의 ID에 일치하고 티켓이 `WAITING`일 때 요청자 자신의 티켓을 `CANCELLED`로 바꾸고 활동 가드를 삭제한다. 다른 플레이어의 항목은 변경하지 않는다. 성공하면 메인 화면으로 돌아간다. 매치 배정과 경합하면 한 트랜잭션만 성공한다. 이미 `ASSIGNED`라면 `409 TICKET_ALREADY_ASSIGNED`를 반환하고 매칭 취소 버튼으로 매치를 종료하지 않는다. 클라이언트는 현재 매치를 조회해 세션 준비 흐름으로 이동한다.
 4. **4인 선점:** 네 원본 티켓이 모두 `WAITING`, 같은 큐, 만료 전이며 네 활동 가드가 각각 해당 티켓을 가리키는지 조건부 확인한다. 한 `TransactWriteItems`에서 네 티켓을 `ASSIGNED`로 변경하고 큐 인덱스 속성을 제거하고, 네 가드를 `MATCH`로 바꾸고, 매치 메타 1개와 멤버 4개를 생성한다. 최다 13개 핵심 항목에 멱등성/작업 기록이 추가돼도 DynamoDB 트랜잭션 한도 안인지 구현 시 확인한다. 트랜잭션 충돌 시 동일 4인 조합을 무한 재시도하지 않고 최대 3회 지수 백오프 후 후보를 다시 조회한다.
 5. **상태 변경:** 세션 등록, 참가, 시작은 `matchId`, 현재 `status`, `revision`, 멤버·호스트 자격과 `hostAttempt`를 조건식으로 검사한다. 세션 등록과 시작처럼 기한을 바꾸는 전이는 매치 메타와 네 활동 가드의 `expiresAtMs`를 함께 갱신한다. 참가 보고는 해당 멤버 항목을 조건부 갱신한다. 이미 참가 처리된 멤버가 재시도해도 인원 수가 늘지 않으며, 네 멤버 항목이 모두 참가 상태일 때만 메타를 `READY_TO_START`로 전이한다. 동일 요청 재시도는 멱등성 키로 처리한다.
 6. **종료·복구:** 매치를 `FINISHED`/`FAILED`/`EXPIRED`로 변경하고 네 활동 가드를 해당 `matchId` 조건으로 삭제한다. 조건 충돌은 다른 복구자가 먼저 처리했는지 재조회한다. 네 가드와 매치 상태는 한 트랜잭션에서 갱신하며 실패하면 전체가 재시도 가능하게 남는다.
@@ -76,7 +78,7 @@ Match: FORMING -> SESSION_READY -> READY_TO_START -> IN_GAME -> FINISHED
 
 매치 생성 시 호스트는 정렬된 네 PUID 중 첫 번째로 정하는 결정적 초기 정책을 쓴다. `hostAttempt=1`이다. `FORMING`에서 60초 내 세션을 등록해야 하고, `SESSION_READY`에서 60초 내 네 명이 참가를 보고해야 한다. `READY_TO_START`에서 호스트가 시작을 보고한다. 인증된 호스트의 `sessionId` 등록과 인증된 멤버의 `joined` 보고를 첫 구현의 상태 근거로 사용한다. 서버가 EOS 세션 존재나 실제 네트워크 참가를 별도로 증명하지 않으므로 `READY_TO_START`는 **클라이언트 보고 기준**이다. 통합 담당이 이 신뢰 범위와 검증 한계를 명시해 게임 담당자에게 전달한다.
 
-호스트의 `finished` 보고는 `IN_GAME -> FINISHED`, 멤버 누구의 `left` 보고는 준비 또는 경기 중 `-> FAILED`로 전이한다. 두 전이 모두 네 활동 가드를 같은 트랜잭션에서 해제한다. 호스트 재선정은 첫 구현에서 하지 않고 준비 실패 시 매치를 종료·가드 해제해 다시 매칭한다. 보고 없이 클라이언트가 종료되면 복구 워커가 준비 제한시간 또는 경기 시작 후 30분 상한에 `EXPIRED`로 처리한다. 이 시간값은 시연 동선 확인 후 확정한다.
+호스트의 `finished` 보고는 `IN_GAME -> FINISHED`, 멤버 누구의 `left` 보고는 준비 또는 경기 중 `-> FAILED`로 전이한다. `left`는 연결 실패·게임 이탈을 처리하는 별도 경로이며 대기 화면의 **매칭 취소** 버튼과 연결하지 않는다. 두 종료 전이 모두 네 활동 가드를 같은 트랜잭션에서 해제한다. 호스트 재선정은 첫 구현에서 하지 않고 준비 실패 시 매치를 종료·가드 해제해 다시 매칭한다. 보고 없이 클라이언트가 종료되면 복구 워커가 준비 제한시간 또는 경기 시작 후 30분 상한에 `EXPIRED`로 처리한다. 이 시간값은 시연 동선 확인 후 확정한다.
 
 애플리케이션은 매 요청과 워커 실행에서 `expiresAtMs <= now`를 검사한다. DynamoDB TTL `expiresAtSeconds`는 완료/취소 항목의 지연 삭제에만 사용하며 기한 판정이나 가드 해제의 타이머가 아니다. 티켓과 매치 기록은 종료 후 7일 보관하는 초안이다.
 

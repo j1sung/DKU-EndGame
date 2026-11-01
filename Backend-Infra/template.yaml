@@ -162,6 +162,8 @@ Resources:
             Ref: EosClientSecret
           PLAYER_PROFILES_TABLE:
             Ref: PlayerProfiles
+          MATCHMAKING_TICKETS_TABLE:
+            Ref: MatchmakingTickets
           EOS_VERIFIER_TIMEOUT_MS:
             Ref: VerifierTimeoutMs
           EOS_VERIFIER_MAX_OUTPUT_BYTES:
@@ -178,9 +180,19 @@ Resources:
                 - dynamodb:GetItem
                 - dynamodb:UpdateItem
                 - dynamodb:PutItem
+                - dynamodb:DeleteItem
               Resource:
                 Fn::GetAtt:
                   - PlayerProfiles
+                  - Arn
+            - Effect: Allow
+              Action:
+                - dynamodb:GetItem
+                - dynamodb:PutItem
+                - dynamodb:UpdateItem
+              Resource:
+                Fn::GetAtt:
+                  - MatchmakingTickets
                   - Arn
       Events:
         Me:
@@ -197,6 +209,27 @@ Resources:
               Ref: HttpApi
             Path: /v1/me/nickname
             Method: POST
+        CreateTicket:
+          Type: HttpApi
+          Properties:
+            ApiId:
+              Ref: HttpApi
+            Path: /v1/matchmaking/tickets
+            Method: POST
+        CurrentTicket:
+          Type: HttpApi
+          Properties:
+            ApiId:
+              Ref: HttpApi
+            Path: /v1/matchmaking/tickets/current
+            Method: GET
+        CancelTicket:
+          Type: HttpApi
+          Properties:
+            ApiId:
+              Ref: HttpApi
+            Path: /v1/matchmaking/tickets/current
+            Method: DELETE
 
   AuthFunctionLogGroup:
     Type: AWS::Logs::LogGroup
