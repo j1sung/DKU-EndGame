@@ -1,8 +1,9 @@
 # 프로필·닉네임·4인 매칭 데이터 및 API 설계 초안
 
-상태: 기본 구조 승인 (2026-10-27). 3개 테이블과 첫 버전의 인증된 클라이언트 EOS 세션·참가 보고 방식을 채택한다. 프로필·닉네임 API와 테이블은 개발 스택에 배포해 두 계정으로 검증했다 (2026-11-01). 티켓·매치·워커는 아직 구현 전이다. 남은 게임 모드·버전·시간 정책과 EOS 연동 계약은 통합 담당이 결정해 문서화하고 게임 담당자에게 인계한다.
+상태: 기본 구조 승인 (2026-10-27). 3개 테이블과 첫 버전의 인증된 클라이언트 EOS 세션·참가 보고 방식을 채택한다. 프로필·닉네임 API와 테이블은 개발 스택에 배포해 두 계정으로 검증했다 (2026-11-01). 티켓 API는 로컬 EJ 브랜치에 구현했고 개발 스택에는 아직 배포하지 않았다. 매치·워커는 구현 전이다. 남은 시간·경기 정책과 EOS 연동 계약은 후속 설계에서 정리한다.
 
 다음 단계의 세부 초안: [매칭 티켓·4인 배정 설계](2026-11-01-matchmaking-tickets-worker-design.md).
+매치 기한 복구 방식: [Matches 기한 GSI 설계 초안](2026-11-01-match-deadline-recovery-design.md).
 
 ## 1. 목적과 범위
 
@@ -53,7 +54,7 @@
 
 ### 4.3 Matches
 
-기본키 `pk`(String), `sk`(String). `MATCH#<matchId>/META`에는 `status`, `mode`, `clientVersion`, `memberIds`(정렬된 PUID 4개), `hostPlayerId`, `hostAttempt`, `sessionId?`, `createdAtMs`, `readyDeadlineMs`, `updatedAtMs`, `revision`, `expiresAtSeconds`를 둔다. `MATCH#<matchId>/MEMBER#<PUID>`에는 `joinedAtMs?`, `joinStatus`를 둔다. 매치 ID로 `Query`해 메타와 구성원을 읽고, 구성원 확인은 해당 멤버 키의 `GetItem`으로 수행한다. 호스트 권한은 메타의 `hostPlayerId`와 `hostAttempt`를 조건식으로 검사한다. 별도 GSI는 초기 범위에 없다.
+기본키 `pk`(String), `sk`(String). `MATCH#<matchId>/META`에는 `status`, `mode`, `clientVersion`, `memberIds`(정렬된 PUID 4개), `hostPlayerId`, `hostAttempt`, `sessionId?`, `createdAtMs`, `readyDeadlineMs`, `updatedAtMs`, `revision`, `expiresAtSeconds`를 둔다. `MATCH#<matchId>/MEMBER#<PUID>`에는 `joinedAtMs?`, `joinStatus`를 둔다. 매치 ID로 `Query`해 메타와 구성원을 읽고, 구성원 확인은 해당 멤버 키의 `GetItem`으로 수행한다. 호스트 권한은 메타의 `hostPlayerId`와 `hostAttempt`를 조건식으로 검사한다. 초기 기본 구조에는 GSI가 없었으나, 후속 설계에서 활성 매치 기한 조회용 `DeadlineIndex`를 추가하기로 선택했다.
 
 예시 키: `PLAYER#puid/ACTIVITY`, `NICK#chicken/CLAIM`, 티켓 ID `018...`, `MATCH#018.../MEMBER#puid`. 실제 PUID와 토큰은 예시 문서에 넣지 않는다.
 
