@@ -61,6 +61,23 @@ JumpCharge 누름은 충전을 시작하고 해제는 누적 BodyTilt 방향으�
 충돌·기울기·이동을 LogChickenCollision, LogChickenTilt, LogChickenMovement로 분리했다. Actor·World·프레임·시간·네트워크 역할을 공통 출력한다. 사건 로그는 기본 활성화하고 매 이동 갱신·균형 계산·반복 접촉 로그는 기본 비활성화한다. cf.Debug.Events와 cf.Debug.Frames로 제어한다. 밀치기 요청값과 이후 관측 속도를 구분하며 기존 물리 계산과 게임플레이 상태 전환은 유지한다.
 - 설정·필드 해석·PIE 절차: [캐릭터 디버깅 로그](DebugLogging.md).
 
+<a id="ld-moving-obstacles"></a>
+## LD_Gym 이동 발판
+> 최근 기능 변경: 2026-11-01 · Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+
+`Content/LD_Gym/Levels/LevelPrototyping/Obstacles/`의 `BP_PhysicsObstacle_MovingPlatform`과 `BP_PhysicsObstacle_TurnTable`은 `BP_KinematicObstacle`을 부모로 사용한다. 새 부모는 Movable Root만 제공하며 Mover 플러그인에 의존하지 않는다. 기존 부모 `BP_PhysicsObstacle`의 저장되지 않은 편집은 보존했고, 그 부모의 Mover 오류 자체를 복구한 것은 아니다.
+
+- 상하 발판: `VerticalMovement` (`InterpToMovementComponent`)의 상대 Control Points `(0,0,0)` → `(0,0,300)`, Duration 3초, Behaviour Type `PingPong`. 기본 자세에서 300cm 위까지 편도 3초·왕복 6초로 반복한다. 이동 중 경로 충돌 Sweep은 끄고, 발판 메시의 충돌은 유지한다.
+- 회전 발판: `TurntableMovement` (`RotatingMovementComponent`)의 Rotation Rate `(Pitch=0, Yaw=45, Roll=0)`, 로컬 축 기준 초당 45도·한 바퀴 8초. 공전이 아니라 발판 중심의 자전이다.
+- 두 컴포넌트는 Auto Activate를 사용한다. 기존 메시·머티리얼·스케일·에셋 경로를 유지하며, 메시의 Simulate Physics는 꺼진 상태다. 이동 범위·시간·회전 속도는 각 Blueprint의 해당 컴포넌트에서 조절한다.
+- 확인 범위: 부모·자식 Blueprint 컴파일과 개별 저장, 설정 재조회, 메시 표시 및 배치된 상하 발판의 Root→Platform 연결 확인. PIE·캐릭터 탑승·멀티플레이 동기화는 미검증이며 서버 권한 기반 이동 복제는 추가하지 않았다.
+
+<a id="ld-window-glass"></a>
+## LD_Gym 유리창 에셋
+> 최근 기능 변경: 2026-11-01 · Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+
+`Content/LD_Gym/LDProps/StaticMeshes/SM_WindowGlass.uasset`은 프레임 없는 유리판 메시다. 엔진 Cube를 별도 에셋으로 복제하고 LOD Build Scale `(1.2, 0.04, 1.8)`을 적용했다. 렌더 정점 기준 가로 X 120cm·두께 Y 4cm·높이 Z 180cm이며, 단순 박스 충돌 1개를 추가했다. 같은 폴더의 `M_WindowGlass`는 Translucent·Two Sided·Surface 조명, 연한 청색 Base Color·Opacity 0.22·Roughness 0.1·Specular 0.5를 사용한다. 맵에 드래그해 배치하며, 크기는 액터 스케일로 조절할 수 있다. 머티리얼·메시 개별 저장과 에디터 미리보기의 배경 투과를 확인했으며 맵 배치·PIE는 수행하지 않았다.
+
 ## 후속 범위와 제약
 
 HP·피해량·인터넷 서비스 연결은 후속 범위다. 로컬 리슨 서버 검증을 외부 인터넷·패키징 검증으로 해석하지 않는다. 병합 시 dev의 `ABP_Chicken`·`Test_CF_Knockdown` 변경을 그대로 유지한다.

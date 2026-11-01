@@ -1,5 +1,20 @@
 # 변경 이력
 
+<a id="change-20261101-window-glass"></a>
+### 2026-11-01 · LD_Gym 반투명 유리창 메시 추가
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+- 변경: 지정한 LDProps/StaticMeshes 폴더에 SM_WindowGlass와 M_WindowGlass 추가. 120×4×180cm의 프레임 없는 유리판에 반투명 머티리얼과 단순 박스 충돌을 연결했다.
+- 확인: 에셋 저장·렌더 정점 크기·미리보기 배경 투과 확인. 맵 배치·PIE 미실행. [유리창 구성](Gameplay/Overview.md#ld-window-glass).
+
+<a id="change-20261101-ld-moving-obstacles"></a>
+### 2026-11-01 · LD_Gym 상하·회전 발판의 Mover 의존성 제거
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+- 배경: 이관된 부모 BP_PhysicsObstacle의 Mover·ChaosPathedMovementController 구성 누락으로 자식 발판의 정상 표시와 컴파일에 문제가 있었다.
+- 변경: 두 자식의 부모를 BP_KinematicObstacle로 변경하고 기본 InterpToMovement 왕복 이동(300cm·편도 3초)과 RotatingMovement 자전(45도/초)을 연결했다. 기존 부모와 맵의 저장되지 않은 편집은 저장하지 않았다.
+- 확인: Blueprint 컴파일·개별 저장·컴포넌트 설정 재조회·메시 표시 확인. PIE·탑승·네트워크 미검증. [이동 발판 구성](Gameplay/Overview.md#ld-moving-obstacles).
+
 <a id="change-20261030-collision-timing"></a>
 ### 2026-10-30 · 충돌 속도 판정 시점 보완
 
