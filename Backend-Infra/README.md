@@ -196,11 +196,11 @@ aws secretsmanager delete-secret --secret-id $secretArn --recovery-window-in-day
 
 ## 9. 프로필·닉네임 확장 검증
 
-프로필 확장은 `PlayerProfiles`, `MatchmakingTickets`, `Matches` 테이블을 정의했다. 당시 배포된 API는 `PlayerProfiles`만 사용한다. `GET /v1/me`는 검증된 PUID로 프로필을 조회하고, `POST /v1/me/nickname`은 전역 고유 닉네임을 최초 등록한다. 쓰기 요청에는 UUID 형식의 `Idempotency-Key`가 필요하다.
+개발 스택은 `PlayerProfiles`, `MatchmakingTickets`, `Matches` 테이블을 사용한다. `GET /v1/me`는 검증된 PUID로 프로필을 조회하고, `POST /v1/me/nickname`은 전역 고유 닉네임을 최초 등록한다. 쓰기 요청에는 UUID 형식의 `Idempotency-Key`가 필요하다.
 
 배포 전에 `Backend-Infra/backend`에서 `npm ci`, `npm test`, `npm run typecheck`, `npm run build`를 실행한다. 저장소 루트에서 `pwsh -NoProfile -File Backend-Infra/backend/test/container-smoke.ps1`로 이미지에 네이티브 검증기와 EOS 공유 라이브러리가 들어 있는지 확인한다. 이어 `Backend-Infra`에서 `sam validate --template-file template.yaml --lint --profile dku-dev --region ap-northeast-2`와 `sam build --template-file template.yaml --use-container`를 실행한다. 로컬 SDK는 Git 제외 경로 `Backend-Infra/vendor/eos-sdk/`에 준비해야 한다.
 
-개발 스택에 반영하기 전 CloudFormation 변경 세트를 확인한다. 예상 변경은 새 테이블 3개, 닉네임 경로, 프로필 테이블에 대한 Lambda 권한·환경 변수, Lambda 이미지다. 기존 EOS Secret이 교체되거나 다른 리소스가 삭제되는 변경 세트라면 배포를 멈추고 원인을 확인한다. 승인된 변경이면 기존 `dev` 설정으로 배포하고 `UPDATE_COMPLETE`를 확인한다.
+개발 스택에 반영하기 전 CloudFormation 변경 세트를 확인한다. 기존 EOS Secret이 교체되거나 다른 리소스가 삭제되는 변경 세트라면 배포를 멈추고 원인을 확인한다. 승인된 변경이면 기존 `dev` 설정으로 배포하고 `UPDATE_COMPLETE`를 확인한다.
 
 배포 후 **새 프로필을 가진 테스트 계정 A**와 아직 닉네임이 없는 다른 **계정 B**를 준비한다. 둘 다 같은 신규 닉네임으로 검사한다. Connect ID Token은 스크립트의 마스킹 입력에만 넣고, 파일·셸 변수·명령행 인수에 저장하지 않는다.
 
@@ -214,6 +214,6 @@ npm run smoke:profile -- --url $apiUrl --nickname 닭싸움왕 --expect-taken
 
 ## 10. 매칭 티켓 API 개발 상태
 
-`POST /v1/matchmaking/tickets`, `GET/DELETE /v1/matchmaking/tickets/current`, 매치 상태 보고 API, 4인 배정·기한 복구 워커의 로컬 구현과 SAM 정의가 준비되었다. 티켓 수명은 3분이며 취소는 본인의 `WAITING` 티켓에만 적용된다. 배정 뒤 준비·참가·시작 단계는 각각 최대 60초이고, 필요한 보고가 오면 즉시 다음 단계로 넘어간다. [Unreal 연동 계약](../docs/unreal-matchmaking-ticket-api.md)에 요청·응답과 UI 흐름을 기록했다.
+`POST /v1/matchmaking/tickets`, `GET/DELETE /v1/matchmaking/tickets/current`, 매치 상태 보고 API, 4인 배정·기한 복구 워커를 2026-11-02 개발 스택에 배포했다. 티켓 수명은 3분이며 취소는 본인의 `WAITING` 티켓에만 적용된다. 배정 뒤 준비·참가·시작 단계는 각각 최대 60초이고, 필요한 보고가 오면 즉시 다음 단계로 넘어간다. [Unreal 연동 계약](../docs/unreal-matchmaking-ticket-api.md)에 요청·응답과 UI 흐름을 기록했다.
 
-**이 변경이 포함된 SAM 템플릿을 현재 개발 스택에 배포하지 않았다.** Docker Linux 엔진이 없어 컨테이너 빌드를 완료하지 못했고, 현재 확보된 서로 다른 Epic 계정은 2개라 4인 실제 흐름을 검증할 수 없다. 엔진과 네 계정이 준비되면 `sam build --use-container`, 스택 변경 세트 검토, 4계정 배정·취소·만료·종료 스모크를 마친 뒤 배포한다.
+컨테이너 스모크, 이미지 내부 테스트 157개, SAM의 API·워커 이미지 빌드가 통과했다. 변경 세트는 추가 17개·수정 4개·삭제 0개였고, 기존 리소스 교체 없이 `UPDATE_COMPLETE`로 적용됐다. `Matches`의 `DeadlineIndex`는 `ACTIVE`, SQS 이벤트 연결과 1분 주기 복구 규칙은 활성 상태다. 무토큰 티켓 조회는 `401 AUTH_MISSING`, 배포된 워커의 빈 주기 호출은 `200`이며 Lambda 오류가 없었다. **서로 다른 Epic 계정 4개를 이용한 실제 배정·참가·시작·종료·복구 검증은 아직 남아 있다.** 현재 확보된 계정 2개로는 4인 흐름을 검증할 수 없다.
