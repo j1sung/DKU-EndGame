@@ -62,8 +62,8 @@ export class DynamoAssignmentWorker {
       items.push({ Update: {
         TableName: this.ticketTable, Key: { ticketId: ticket.ticketId },
         UpdateExpression: "SET #status = :assigned, matchId = :matchId, revision = :nextRevision, updatedAtMs = :now REMOVE queueKey, queueSortKey",
-        ConditionExpression: "#status = :waiting AND mode = :mode AND clientVersion = :version AND expiresAtMs > :now AND revision = :revision AND playerId = :playerId",
-        ExpressionAttributeNames: { "#status": "status" },
+        ConditionExpression: "#status = :waiting AND #mode = :mode AND clientVersion = :version AND expiresAtMs > :now AND revision = :revision AND playerId = :playerId",
+        ExpressionAttributeNames: { "#status": "status", "#mode": "mode" },
         ExpressionAttributeValues: { ":assigned": "ASSIGNED", ":waiting": "WAITING", ":matchId": matchId, ":nextRevision": ticket.revision + 1, ":now": now, ":revision": ticket.revision, ":mode": MATCHMAKING_MODE, ":version": MATCHMAKING_CLIENT_VERSION, ":playerId": ticket.playerId },
       } });
     }

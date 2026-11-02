@@ -29,6 +29,10 @@ it("atomically assigns the oldest four verified waiting tickets and creates one 
   expect(tx.input.TransactItems?.filter((x: any) => x.Update?.TableName === "tickets")).toHaveLength(4);
   expect(tx.input.TransactItems?.filter((x: any) => x.Update?.TableName === "profiles")).toHaveLength(4);
   expect(tx.input.TransactItems?.filter((x: any) => x.Put?.TableName === "matches")).toHaveLength(5);
+  for (const item of tx.input.TransactItems?.filter((x: any) => x.Update?.TableName === "tickets") ?? []) {
+    expect(item.Update?.ConditionExpression).toContain("#mode = :mode");
+    expect(item.Update?.ExpressionAttributeNames).toMatchObject({ "#mode": "mode" });
+  }
   expect(tx.input.TransactItems?.[8]?.Put?.Item).toMatchObject({ status: "FORMING", memberIds: ["p1", "p2", "p3", "p4"], hostPlayerId: "p1", deadlineAtMs: NOW + 60_000 });
 });
 

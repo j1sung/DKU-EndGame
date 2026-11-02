@@ -14,6 +14,7 @@
     "secret:set": "node scripts/set-client-secret.mjs",
     "smoke:auth": "node scripts/invoke-auth-smoke.mjs",
     "smoke:profile": "node scripts/invoke-profile-smoke.mjs",
+    "smoke:matchmaking": "node scripts/invoke-matchmaking-smoke.mjs",
     "logs:check": "node scripts/check-cloudwatch-redaction.mjs"
   },
   "dependencies": {

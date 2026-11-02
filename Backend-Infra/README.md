@@ -216,4 +216,23 @@ npm run smoke:profile -- --url $apiUrl --nickname 닭싸움왕 --expect-taken
 
 `POST /v1/matchmaking/tickets`, `GET/DELETE /v1/matchmaking/tickets/current`, 매치 상태 보고 API, 4인 배정·기한 복구 워커를 2026-11-02 개발 스택에 배포했다. 티켓 수명은 3분이며 취소는 본인의 `WAITING` 티켓에만 적용된다. 배정 뒤 준비·참가·시작 단계는 각각 최대 60초이고, 필요한 보고가 오면 즉시 다음 단계로 넘어간다. [Unreal 연동 계약](../docs/unreal-matchmaking-ticket-api.md)에 요청·응답과 UI 흐름을 기록했다.
 
-컨테이너 스모크, 이미지 내부 테스트 157개, SAM의 API·워커 이미지 빌드가 통과했다. 변경 세트는 추가 17개·수정 4개·삭제 0개였고, 기존 리소스 교체 없이 `UPDATE_COMPLETE`로 적용됐다. `Matches`의 `DeadlineIndex`는 `ACTIVE`, SQS 이벤트 연결과 1분 주기 복구 규칙은 활성 상태다. 무토큰 티켓 조회는 `401 AUTH_MISSING`, 배포된 워커의 빈 주기 호출은 `200`이며 Lambda 오류가 없었다. **서로 다른 Epic 계정 4개를 이용한 실제 배정·참가·시작·종료·복구 검증은 아직 남아 있다.** 현재 확보된 계정 2개로는 4인 흐름을 검증할 수 없다.
+초기 배포에서 컨테이너 스모크, 이미지 내부 테스트 157개, SAM의 API·워커 이미지 빌드가 통과했다. 변경 세트는 추가 17개·수정 4개·삭제 0개였고, 기존 리소스 교체 없이 `UPDATE_COMPLETE`로 적용됐다. `Matches`의 `DeadlineIndex`는 `ACTIVE`, SQS 이벤트 연결과 1분 주기 복구 규칙은 활성 상태다. 무토큰 티켓 조회는 `401 AUTH_MISSING`, 배포된 워커의 빈 주기 호출은 `200`이었다. 이후 4계정 실환경 검사에서 DynamoDB 조건식의 예약어 `mode` 때문에 배정 워커가 실패해 별칭 `#mode`로 수정했다. 수정 후 테스트 160개·타입 검사·SAM 컨테이너 빌드가 통과했고, 개발 스택은 `UPDATE_COMPLETE`로 갱신됐다.
+
+### 개발 스택 4계정 매칭 스모크
+
+서로 다른 Epic 계정 4개를 `chicken_game` 조직에 가입시키고 앱 접근을 허용한 다음, 각 계정의 닉네임을 먼저 등록한다. Dev Auth Tool의 자격 증명 이름은 계정마다 다르게 지정한다. 각 계정으로 EOS Connect 로그인하여 **Connect ID Token**을 새로 발급받는다. Dev Auth Tool에 표시되는 자격 증명 문자열은 이 토큰이 아니다. 토큰을 명령행 인수, 환경 변수, 파일, 채팅에 넣지 않는다.
+
+```powershell
+Set-Location Backend-Infra/backend
+$apiUrl = aws cloudformation describe-stacks --stack-name chickengame-backend-dev --profile dku-dev --region ap-northeast-2 --query "Stacks[0].Outputs[?OutputKey=='ApiUrl'].OutputValue | [0]" --output text
+npm run smoke:matchmaking -- --url $apiUrl --scenario full
+npm run smoke:matchmaking -- --url $apiUrl --scenario leave
+npm run smoke:matchmaking -- --url $apiUrl --scenario phase-expiry
+npm run smoke:matchmaking -- --url $apiUrl --scenario wait-expiry
+```
+
+각 실행은 토큰을 마스킹 입력으로 받는다. `full`, `leave`, `phase-expiry`는 A1~A4 순서로 4개, `wait-expiry`는 1개를 입력한다. 먼저 `GET /v1/me`로 서로 다른 PUID·등록된 닉네임을 확인하고 모든 계정에 활성 티켓이 없어야 시작한다. `full`은 A3 취소가 A1·A2를 유지하는지, 재신청 후 4명이 같은 매치에 배정되는지, 호스트 권한·세션 등록·4명 참가·시작·종료·가드 해제를 확인한다. `leave`는 멤버 이탈에 따른 전체 `FAILED`, `phase-expiry`는 `FORMING` 60초 기한과 `EXPIRED`, `wait-expiry`는 1인 대기 3분 만료를 확인한다. 실행 사이에는 이전 매치가 종료됐는지 확인한다.
+
+이 도구의 `/session`, `/joined`, `/left`, `/started`, `/finished`는 **모의 클라이언트 보고**다. 실제 EOS 세션 생성·참가와 Unreal UI는 검증하지 않는다. 실패 시 상태·오류 코드·`requestId`만 출력하며 토큰과 응답 본문은 출력하지 않는다. 실패한 실행에서 남은 활성 매치는 해당 단계의 기한이 지나 복구된 후 재실행한다.
+
+2026-11-02에 서로 다른 Epic 계정 4개로 `full`, `leave`, `phase-expiry`, `wait-expiry`를 개발 스택에서 실행해 모두 통과했다. 취소는 A3에만 적용됐고 A1·A2는 계속 대기했다. 네 계정은 같은 매치에 배정됐으며 호스트 외 시작 요청은 `403 NOT_MATCH_HOST`, 모의 세션·4명 참가·시작·종료 보고는 성공했다. 한 명 이탈 시 전체 `FAILED`, 세션 준비 60초 미보고 시 `EXPIRED`, 단독 대기 3분 후 활성 티켓 해제를 확인했다. 각 종료 뒤 네 계정의 활성 상태는 해제됐다. 수정 배포 후 워커의 CloudWatch `ERROR` 로그 건수는 0이었다. 실제 EOS 세션 생성·참가와 Unreal 화면 전환은 후속 연동 테스트로 남는다.
