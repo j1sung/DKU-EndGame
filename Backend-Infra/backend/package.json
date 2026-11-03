@@ -1,0 +1,36 @@
+{
+  "name": "@chickengame/backend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "build": "esbuild src/handler.ts src/worker-handler.ts --bundle --platform=node --target=node24 --format=esm --sourcemap --outdir=dist --external:@aws-sdk/*",
+    "secret:set": "node scripts/set-client-secret.mjs",
+    "smoke:auth": "node scripts/invoke-auth-smoke.mjs",
+    "smoke:profile": "node scripts/invoke-profile-smoke.mjs",
+    "smoke:matchmaking": "node scripts/invoke-matchmaking-smoke.mjs",
+    "logs:check": "node scripts/check-cloudwatch-redaction.mjs"
+  },
+  "dependencies": {
+    "@aws-sdk/client-cloudwatch-logs": "3.1149.0",
+    "@aws-sdk/client-dynamodb": "3.1149.0",
+    "@aws-sdk/client-secrets-manager": "3.1149.0",
+    "@aws-sdk/client-sqs": "3.1149.0",
+    "@aws-sdk/credential-providers": "3.1149.0",
+    "@aws-sdk/lib-dynamodb": "3.1149.0",
+    "yaml": "2.9.1"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "8.10.164",
+    "@types/node": "26.6.5",
+    "esbuild": "0.28.2",
+    "typescript": "7.0.2",
+    "vitest": "5.0.3"
+  }
+}
