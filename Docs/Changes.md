@@ -1,5 +1,12 @@
 # 변경 이력
 
+<a id="change-20261103-eos-integration"></a>
+### 2026-11-03 · EOS 자동 매칭 백엔드 통합과 목표 흐름 정리
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요
+- 변경: EJ의 `Backend-Infra/` 전체를 `dev`에 통합했다. 기존 LAN 방 생성·2명 이상 수동 시작은 게임플레이 테스트 구현으로 유지하고, 제품 목표를 EOS 자동 4인 매칭으로 명시했다. Unreal의 실제 EOS 세션·화면 연동은 아직 완료되지 않았다.
+- 문서: [EOS 클라이언트 인계](EOS/unreal-client-handoff.md), [API 계약](EOS/unreal-matchmaking-ticket-api.md), [UI 현황](UI/Overview.md), [Network 현황](Network/Overview.md).
+
 <a id="change-20261101-window-glass"></a>
 ### 2026-11-01 · LD_Gym 반투명 유리창 메시 추가
 
