@@ -19,6 +19,8 @@
 
 ## 최근 기록
 
+- [2026-11-04 · Figma 기반 타이틀·로그인·닉네임 UI](Changes.md#change-20261104-title-ui)
+
 - [2026-11-03 · EOS 자동 매칭 백엔드 통합과 목표 흐름 정리](Changes.md#change-20261103-eos-integration)
 
 - [2026-10-30 · 충돌 판정 시점 보완](Changes.md#change-20261030-collision-timing)

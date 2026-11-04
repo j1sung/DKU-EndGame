@@ -1,5 +1,13 @@
 # 변경 이력
 
+<a id="change-20261104-title-ui"></a>
+### 2026-11-04 · Figma 기반 타이틀·로그인·닉네임 UI
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+- 변경: `WBP_CF_TitleMenu`와 `BP_CF_TitleController`를 기본 메뉴 맵에 연결했다. 타이틀·로그인·최초 닉네임·접속 중 화면과 C++ 비동기 상태 인터페이스를 추가하고, 중복 요청·취소 후 늦은 응답·시간 초과를 처리한다. 기존 LAN 메뉴는 F9/`-CFLanMenu`로 유지한다.
+- 확인: C++ Editor 빌드·Blueprint 컴파일, PIE UI 상태 37개 검사, 큰 창/작은 창 렌더 및 종료 버튼 검증 통과. 실제 EOS 통합·패키징 테스트는 미실행.
+- 범위: 실제 EOS 인증·프로필 API·로비 이동 제공자는 미연결이다. UI 상태 검증의 모의 응답은 외부 테스트 도구에만 있다. [UI 현황](UI/Overview.md#menu), [화면·통합 계약](UI/MainMenu.md).
+
 <a id="change-20261103-eos-integration"></a>
 ### 2026-11-03 · EOS 자동 매칭 백엔드 통합과 목표 흐름 정리
 

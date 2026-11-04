@@ -8,7 +8,7 @@
 
 이 문서는 현재 LAN 기반 테스트 세션의 구현을 설명한다. 제품 목표인 EOS 자동 4인 배정·세션 연결은 [클라이언트 인계서](../EOS/unreal-client-handoff.md)와 [API 계약](../EOS/unreal-matchmaking-ticket-api.md)을 따른다. 실제 Unreal EOS 연동은 아직 검증되지 않았다.
 
-메인 메뉴 → 방 생성/참가 → 걷기 대기 → 경기·라운드 결과 → 최종 결과 → 같은 방 걷기 대기. 퇴장·연결 오류는 메뉴로 복귀한다.
+LAN 개발 메뉴 → 방 생성/참가 → 걷기 대기 → 경기·라운드 결과 → 최종 결과 → 같은 방 걷기 대기. 퇴장·연결 오류는 메뉴로 복귀한다. 2026-11-04부터 기본 진입은 새 타이틀이며, LAN 검증에는 F9 또는 `-CFLanMenu`를 사용한다. `CFFrontendSubsystem`은 별도 UI 상태 관리자이며 현재 LAN 세션을 EOS로 바꾸지 않는다. [진입 방법](../UI/MainMenu.md#기존-lan-개발-메뉴) 참고.
 `OnlineSubsystemNull`을 사용하는 호스트 포함 최대 4인, 최소 시작 인원 2명의 리슨 서버 구조. Steam/EOS·인터넷 검색·NAT·호스트 이전은 포함하지 않는다.
 
 <a id="sessions"></a>
