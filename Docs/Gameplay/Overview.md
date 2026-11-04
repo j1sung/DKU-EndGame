@@ -78,6 +78,21 @@ JumpCharge 누름은 충전을 시작하고 해제는 누적 BodyTilt 방향으�
 
 `Content/LD_Gym/LDProps/StaticMeshes/SM_WindowGlass.uasset`은 프레임 없는 유리판 메시다. 엔진 Cube를 별도 에셋으로 복제하고 LOD Build Scale `(1.2, 0.04, 1.8)`을 적용했다. 렌더 정점 기준 가로 X 120cm·두께 Y 4cm·높이 Z 180cm이며, 단순 박스 충돌 1개를 추가했다. 같은 폴더의 `M_WindowGlass`는 Translucent·Two Sided·Surface 조명, 연한 청색 Base Color·Opacity 0.22·Roughness 0.1·Specular 0.5를 사용한다. 맵에 드래그해 배치하며, 크기는 액터 스케일로 조절할 수 있다. 머티리얼·메시 개별 저장과 에디터 미리보기의 배경 투과를 확인했으며 맵 배치·PIE는 수행하지 않았다.
 
+<a id="playground-lobby"></a>
+## 놀이터 튜토리얼 로비
+> 최근 기능 변경: 2026-11-04 · Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+
+`Content/Map/L_LobbyJS_Playground.umap`은 `L_LobbyJS`의 별도 복제본이다. 원본 맵과 공유 Blueprint·메시를 수정하지 않고 기존 지형, 점프대, 상하 발판, 회전판, 오뚝이 타깃 2개를 유지했다. 새 맵에 민트 탄성포장 표현, 놀이대 난간, 회전판에 부착된 손잡이, 점프대 패딩, 5개 경사 구간으로 만든 지붕 없는 미끄럼틀, 벤치와 물리 블록 3개를 추가했다. 탄성포장은 시각 표현이며 실제 바닥 탄성 물리는 추가하지 않았다.
+
+- 머티리얼: `Content/Map/Playground/Materials/`의 `M_Playground_*` 8개. 절차적 Noise와 높은 Roughness로 입자감을 표현한다. 기존 지형의 높낮이는 보존한다.
+- 외벽은 원본 `L_LobbyJS`의 높은 구성을 유지하면서 놀이터 테마로 꾸몄다. 하단은 Mint, 상단은 Cream, 2층 창틀 3개는 Teal 머티리얼을 사용하며 원본 그리드 재질은 제거했다. 기존 유리창 3개의 배치·회전·메시·유리 재질을 유지하고 노란 창턱을 추가했다. 노란 상부 마감·청록색 모서리 기둥과 둥근 캡·코랄 띠·원형 벽 장식으로 놀이기구와 색상을 통일했다.
+- 높이·창문 복원은 `Tools/Editor/restore_playground_enclosure.py`, 테마 마감은 `Tools/Editor/theme_playground_enclosure.py`로 적용했다. 테마 스크립트는 장식 중복 생성을 차단한다. 저장 후 벽·창문 액터 15개의 스케일·표시·충돌, 벽·창틀 12개의 테마 재질과 장식 29개 및 에디터 외형을 확인했다. 벽의 기존 충돌은 유지하며 추가 마감·장식·창턱은 비충돌이다. 놀이대 난간·손잡이·미끄럼틀 가장자리는 장식용 비충돌, 미끄럼틀 바닥·벤치·신규 물리 블록은 충돌을 사용한다.
+- 생성 코드: `Tools/Editor/build_playground_lobby.py`. 원본을 연 Unreal Editor Python에서 실행하며 대상 맵이나 생성 머티리얼이 있으면 덮어쓰지 않는다. 현재 생성본에는 재실행하지 않는다.
+- 회전판 위 `BP_WobbleTarget2`의 Root를 Movable로 설정하고 회전판의 `Cylinder_0`에 월드 변환을 유지해 부착했다. 물리 제약은 타깃 내부 `BasePlate`–`Dummy` 연결을 사용한다. 회전판을 따라가는 받침대를 기준으로 몸체의 기존 물리 흔들림·각도 제한·복원 드라이브를 유지한다. 바닥의 다른 타깃은 변경하지 않았다.
+- 아치 옆 `SM_Dummy_Drum_01`·`SM_Dummy_Drum_2`는 별도 메시 `Content/Map/Playground/Meshes/SM_Playground_PushableDrum.uasset`을 사용한다. 원본 드럼 메시를 복제하고 26-DOP 볼록 충돌을 추가했다. 새 맵의 두 인스턴스만 Movable·PhysicsActor·Simulate Physics·중력·CCD, 질량 12kg, Linear Damping 0.4·Angular Damping 0.8로 설정했다. 기존 색상·배치를 유지한다.
+- 상호작용 적용 코드: `Tools/Editor/configure_playground_interactions.py`. 놀이터 맵만 대상으로 하며 공유 Blueprint·원본 메시·원본 맵은 저장하지 않는다. 저장 후 재조회로 타깃 부착·로컬 물리 제약·몸체 시뮬레이션, 전용 메시 볼록 충돌 1개, 항아리 2개의 질량·PhysicsActor·시뮬레이션을 확인했다. 실제 회전 추종·복원·캐릭터 밀침 강도는 PIE 미검증이다.
+- 확인: 맵 저장, 에디터 외형, 액터 188개, 점프대·상하 발판·회전판 각 1개, 오뚝이 2개, 미끄럼틀 바닥 5개를 조회했다. 오뚝이는 기존 연습 타깃이며 적 AI 구현을 의미하지 않는다. PIE·캐릭터 탑승·미끄럼틀 접속부 충돌·밀침·네트워크·패키징은 미검증이다. 기본 시작 맵과 매칭 흐름은 바꾸지 않았다.
+
 ## 후속 범위와 제약
 
 HP·피해량·인터넷 서비스 연결은 후속 범위다. 로컬 리슨 서버 검증을 외부 인터넷·패키징 검증으로 해석하지 않는다. 병합 시 dev의 `ABP_Chicken`·`Test_CF_Knockdown` 변경을 그대로 유지한다.
