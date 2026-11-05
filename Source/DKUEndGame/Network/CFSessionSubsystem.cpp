@@ -304,7 +304,8 @@ void UCFSessionSubsystem::OnNetworkFailure(UWorld* World,UNetDriver* Driver,ENet
 
 void UCFSessionSubsystem::OnTravelFailure(UWorld* World,ETravelFailure::Type Type,const FString& Detail)
 {
-    if (!OwnsFailure(World,nullptr) || State==ECFSessionState::Leaving || bDeinitializing) return;
+    // LAN 세션이 없는 타이틀/연습 로비 이동 오류는 해당 흐름의 담당자가 처리한다.
+    if (State==ECFSessionState::Idle || !OwnsFailure(World,nullptr) || State==ECFSessionState::Leaving || bDeinitializing) return;
     UE_LOG(LogTemp,Warning,TEXT("CF_SESSION travel failure %d: %s"),int32(Type),*Detail);
     BeginReturn(CFSession::Text(TEXT("경기장으로 이동하지 못했습니다. 다시 시도해 주세요.")));
 }

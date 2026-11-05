@@ -7,6 +7,38 @@
 - 변경: 기존 링·계단·캐릭터 배치를 유지하며 주변 건물 11동과 관중석 4곳에 전용 메시를 적용했다. 창호·한글 상가 간판·차양·옥상 설비, 포장석·가로등·펜스·휴지통, 바깥 배경 건물 18동을 추가했다. 신규 에셋은 메시 18개·머티리얼 25개·텍스처 6개이며 건물·광장 포장에 Nanite를 사용한다.
 - 확인: 에셋·맵 저장과 에디터 외형, 기존 액터 및 경기 영역 변환 보존과 재질 연결 조회. PIE·네트워크·패키징·실기기 성능은 미검증. [광장 구성·생성 도구](Gameplay/Overview.md#urban-sparring-plaza).
 
+<a id="change-20261105-eos-local-config"></a>
+### 2026-11-05 · EOS 로컬 설정 입력·검사·실행 도구
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+- 변경: `Tools/Network/Set-EOSLocal.ps1`로 기존 Peer2Peer Client의 Secret을 마스킹 입력하고 Git 제외 `Config/Custom/EOSLocal/DefaultEngine.ini`를 생성한다. dev ID 불일치·추적 파일을 거절하며 `Start-EOSLoginTest.ps1`은 `-CustomConfig=EOSLocal`로 실행한다. 설정 검사는 Unreal 설치 없이 가능하다.
+- 문서: [설정과 실계정 테스트](Network/LoginEntry.md#eos-로컬-설정-먼저-준비하기). Unreal 설치·실계정 인증·패키징 테스트는 미완료다.
+
+<a id="change-20261105-login-entry"></a>
+### 2026-11-05 · 로그인·프로필·연습 로비 진입 연결
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+- 변경: `CFEntrySubsystem`으로 EOS Account Portal·Connect 인증, 프로필 GET·닉네임 POST와 실제 로비 이동을 기존 타이틀에 연결했다. 등록 재시도·멱등성·401·지연/취소 응답을 처리하고 `BP_CF_TitleController.LobbyMap`을 지정했다. LAN Idle 상태가 별도 로비 이동 오류를 가로채지 않도록 보완했다.
+- 확인: UE 5.8.2 Editor 빌드, 프로필 응답 자동화 검사, PIE 20개 검사와 저장된 로비 참조 확인. 인증 성공 응답은 테스트 도구에서 주입했으며, 클라이언트 EOS 설정·권한과 실계정 검증·패키징은 남아 있다.
+- 상세: [로그인·로비 진입](Network/LoginEntry.md), [Network 개요](Network/Overview.md#login-entry), [메인 메뉴](UI/MainMenu.md).
+
+<a id="change-20261105-lobby-ui"></a>
+### 2026-11-05 · Figma 연습 로비 UI와 매칭 상태 인터페이스
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+- 변경: `L_Lobby_Playground`에 `BP_CF_LobbyGameMode`·`WBP_CF_Lobby`를 연결했다. 빠른 대전·매칭/취소/복구·설정 UI, BG/VFX 볼륨 저장과 분리 제어, 취소 확인 후 타이틀 복귀를 추가했다. 기존 메인 UI·연습 캐릭터 코드는 유지했다.
+- 확인: Editor C++·Blueprint 컴파일, 큰 창 30개·작은 창 28개 PIE 검사 통과. 실제 EOS·음원 청취·패키징은 미검증이며 API 제공자는 후속 연결이 필요하다.
+- 상세: [연습 로비 UI](UI/Lobby.md), [UI 개요](UI/Overview.md#practice-lobby).
+
+
+<a id="change-20261104-title-ui"></a>
+### 2026-11-04 · Figma 기반 타이틀·로그인·닉네임 UI
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+- 변경: `WBP_CF_TitleMenu`와 `BP_CF_TitleController`를 기본 메뉴 맵에 연결했다. 타이틀·로그인·최초 닉네임·접속 중 화면과 C++ 비동기 상태 인터페이스를 추가하고, 중복 요청·취소 후 늦은 응답·시간 초과를 처리한다. 기존 LAN 메뉴는 F9/`-CFLanMenu`로 유지한다.
+- 확인: C++ Editor 빌드·Blueprint 컴파일, PIE UI 상태 37개 검사, 큰 창/작은 창 렌더 및 종료 버튼 검증 통과. 실제 EOS 통합·패키징 테스트는 미실행.
+- 범위: 실제 EOS 인증·프로필 API·로비 이동 제공자는 미연결이다. UI 상태 검증의 모의 응답은 외부 테스트 도구에만 있다. [UI 현황](UI/Overview.md#menu), [화면·통합 계약](UI/MainMenu.md).
+
 <a id="change-20261104-playground-wall-theme"></a>
 ### 2026-11-04 · 높은 외벽과 2층 창문의 놀이터 테마 적용
 

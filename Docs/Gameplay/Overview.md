@@ -80,6 +80,9 @@ JumpCharge 누름은 충전을 시작하고 해제는 누적 BodyTilt 방향으�
 
 <a id="playground-lobby"></a>
 ## 놀이터 튜토리얼 로비
+
+2026-11-05 UI 연결 대상은 현재 플레이용 맵 `/Game/Map/L_Lobby_Playground`다. 이 맵의 GameMode Override에 `BP_CF_LobbyGameMode`를 지정하고, 기존 연습 캐릭터와 배치 오브젝트를 유지했다. 빠른 대전·설정·타이틀 복귀는 [연습 로비 UI](../UI/Lobby.md)를 참고한다. 아래 놀이터 제작 기록의 맵 이름과 구분한다.
+
 > 최근 기능 변경: 2026-11-04 · Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
 
 `Content/Map/L_LobbyJS_Playground.umap`은 `L_LobbyJS`의 별도 복제본이다. 원본 맵과 공유 Blueprint·메시를 수정하지 않고 기존 지형, 점프대, 상하 발판, 회전판, 오뚝이 타깃 2개를 유지했다. 새 맵에 민트 탄성포장 표현, 놀이대 난간, 회전판에 부착된 손잡이, 점프대 패딩, 5개 경사 구간으로 만든 지붕 없는 미끄럼틀, 벤치와 물리 블록 3개를 추가했다. 탄성포장은 시각 표현이며 실제 바닥 탄성 물리는 추가하지 않았다.
