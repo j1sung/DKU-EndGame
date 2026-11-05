@@ -1,6 +1,6 @@
 # 메인 메뉴
 
-> 최근 기능 변경: 2026-11-04 · Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+> 최근 기능 변경: 2026-11-05 · Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
 
 관련 개요: [UI 개요](Overview.md#menu)
 
@@ -13,10 +13,10 @@
 1. **게임 시작** → Epic 로그인 팝업. 여기의 시작은 인증·프로필 확인 진입이며 자동 매칭 요청이 아니다.
 2. **LOG IN NOW** → 통합 계층에 로그인 요청 → 로그인 중 표시. 로그인 성공 응답은 Epic 인증과 프로필 조회까지 끝났다는 의미다.
 3. 닉네임이 없는 계정은 **닉네임 설정**. 이미 등록된 계정은 건너뛴다.
-4. 등록된 닉네임이 있으면 **접속 중** → 통합 계층이 실제 연습 로비 이동을 처리한다. 로비에서 시작할 자동 매칭 UI는 후속 범위다.
+4. 등록된 닉네임이 있으면 **접속 중** → 통합 계층이 실제 연습 로비 이동을 처리한다. 로비 UI는 [연습 로비](Lobby.md)에 구현했다. `UCFEntrySubsystem`이 실제 맵 이동을 처리하고 로딩 완료 뒤 진입을 확정한다.
 5. **게임 종료**는 게임 종료 요청을 실행한다. 로그인·닉네임에서 **돌아가기/Esc**는 진행 중 요청을 취소하고 타이틀로 돌아온다.
 
-**현재 실제 EOS 로그인·프로필 API·로비 이동 제공자는 연결하지 않았다.** 제공자가 없는 버튼은 오류와 재시도 UI를 표시하며 성공을 가정하거나 기존 LAN 방을 자동 생성하지 않는다. 테스트에서 사용하는 가짜 응답은 외부 에디터 검증 스크립트에만 있으며 프로젝트 런타임에는 없다.
+**`UCFEntrySubsystem`을 인증·프로필·로비 이동 제공자로 연결했다. 클라이언트 EOS 설정·권한은 미구성이므로 실계정 로그인은 아직 검증하지 않았다.** 설정 누락·통신 실패는 오류와 재시도 UI를 표시한다. [구현·설정·검증 범위](../Network/LoginEntry.md)를 참고한다. 성공 응답을 가정하거나 LAN 방을 자동 생성하지 않는다.
 
 화면 기준은 1920×1080이며 ScaleBox로 비율을 유지한다. 다른 화면 비율의 여백도 해당 화면 배경색으로 채운다. Inter Regular/Bold 폰트는 FontFace에 내장하며 한글은 엔진 composite font의 대체 글꼴을 사용한다. 로딩 링은 Figma의 실제 PNG이며 접속 중에 회전한다. 폰트 라이선스는 `Content/UI/MainMenu/Fonts/Inter-LICENSE.txt`에 포함한다.
 
@@ -26,9 +26,9 @@
 
 `Title → Login → LoggingIn → Nickname → SavingNickname → Connecting`
 
-실패 시 해당 입력 화면 또는 타이틀로 돌아간다. 등록된 프로필은 같은 실행 중에 유지되므로 뒤로 갔다 다시 시작하면 이미 끝낸 단계를 건너뛴다. 로그아웃·인증 만료를 감지한 통합 계층은 `InvalidateProfile()`을 호출해야 한다.
+실패 시 해당 입력 화면 또는 타이틀로 돌아간다. 등록된 프로필은 같은 실행 중에 유지되므로 뒤로 갔다 다시 시작하면 이미 끝낸 단계를 건너뛴다. 프로필 초기화는 `InvalidateProfile()`, 오류와 함께 재로그인 화면으로 돌아가기는 `RequireLogin(Error)`를 사용한다. Entry는 인증 만료를 후자로 처리한다.
 
-통합 담당은 UI를 열기 전에 아래 이벤트에 한 번씩 바인딩한다. 작업 응답은 게임 스레드에서 같은 요청 ID로 완료 함수를 호출한다.
+`UCFEntrySubsystem`이 GameInstance 초기화 때 아래 이벤트를 한 번씩 바인딩한다. 통합 담당은 현재 제공자를 재사용하며 교체 시 중복 바인딩을 피한다. 작업 응답은 게임 스레드에서 같은 요청 ID로 완료 함수를 호출한다.
 
 | UI가 보내는 이벤트 | 통합 담당이 할 작업 | 완료 응답 |
 | --- | --- | --- |
@@ -54,7 +54,8 @@
 | `Source/DKUEndGame/UI/CFTitleMenuWidget.h/.cpp` | 버튼·키보드·입력 활성화·오류·로딩 링 표시 |
 | `Source/DKUEndGame/UI/CFFrontendSubsystem.h/.cpp` | 로컬 화면 상태·비동기 요청 ID·취소·시간 초과·통합 이벤트 |
 | `Source/DKUEndGame/UI/CFTitleMenuController.h/.cpp` | 로컬 위젯 생성·UI Only 입력·커서·개발용 LAN 진입 |
-| `Content/UI/MainMenu/BP_CF_TitleController` | TitleWidgetClass와 LanWidgetClass 지정 |
+| `Content/UI/MainMenu/BP_CF_TitleController` | 기존 위젯 지정과 `LobbyMap = L_Lobby_Playground` soft 참조 |
+| `Source/DKUEndGame/Network/CFEntrySubsystem.h/.cpp` | EOS 인증·프로필 HTTP·실제 로비 이동 제공자 |
 | `Content/UI/MainMenu/BP_CF_MenuGameMode` | 새 타이틀 컨트롤러 지정. 플레이어 캐릭터는 생성하지 않음 |
 | `Content/UI/MainMenu/Fonts/`, `Textures/` | Inter 폰트·OFL 라이선스·Figma 로딩 링 |
 
@@ -74,7 +75,7 @@
 
 세션 검증 이력은 [LAN 세션](../Network/ListenServerSessions.md), 대기 캐릭터는 [대기 UI](WaitingRoomUI.md), 제품 연동은 [EOS 인계서](../EOS/unreal-client-handoff.md)를 참고한다.
 
-## 이번 구현 검증 (2026-11-04)
+## 화면 제작 당시 검증 (2026-11-04)
 
 - UE 5.8.2 C++ Editor 빌드와 새 메뉴 Blueprint 컴파일·저장 확인.
 - 실제 PIE 위젯으로 37개 UI 상태 검사 통과: Enter/Esc/F9, 한글 문자 입력, 입력 검증·중복 요청 차단, 취소 후 늦은 응답 무시, 실패 후 재시도, 기존 닉네임 경로, 로딩 링, 로그인 120초·등록 30초·로비 60초 시간 초과 복구.

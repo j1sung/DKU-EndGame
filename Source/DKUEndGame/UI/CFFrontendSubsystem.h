@@ -43,6 +43,7 @@ public:
     UFUNCTION(BlueprintCallable, Category="CF|Frontend|Integration")
     void CompleteLobbyEntry(int32 RequestId, bool bSuccess, const FText& Error);
     UFUNCTION(BlueprintCallable, Category="CF|Frontend|Integration") void InvalidateProfile();
+    UFUNCTION(BlueprintCallable, Category="CF|Frontend|Integration") void RequireLogin(const FText& Error);
 
 private:
     bool bAuthenticated = false;

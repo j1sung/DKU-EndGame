@@ -142,6 +142,14 @@ void UCFFrontendSubsystem::InvalidateProfile()
     bAuthenticated = false; ProfileNickname.Reset(); ReturnToTitle();
 }
 
+void UCFFrontendSubsystem::RequireLogin(const FText& Error)
+{
+    const int32 CancelledId = ActiveRequestId;
+    ClearDeadline(); ActiveRequestId = 0; bAuthenticated = false; ProfileNickname.Reset();
+    SetScreen(ECFFrontendScreen::Login, Error);
+    if (CancelledId > 0) OnRequestCancelled.Broadcast(CancelledId);
+}
+
 void UCFFrontendSubsystem::ClearError()
 {
     if (!ErrorMessage.IsEmpty()) { ErrorMessage = FText::GetEmpty(); OnStateChanged.Broadcast(); }

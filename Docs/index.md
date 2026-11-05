@@ -6,8 +6,8 @@
 
 | 카테고리 | 대표 문서 | 상세 문서 |
 |---|---|---|
-| Network | [개요](Network/Overview.md) | [LAN 세션·연결 종료](Network/ListenServerSessions.md) |
-| UI | [개요](UI/Overview.md) | [메인 메뉴](UI/MainMenu.md), [대기 UI](UI/WaitingRoomUI.md) |
+| Network | [개요](Network/Overview.md) | [LAN 세션·연결 종료](Network/ListenServerSessions.md), [로그인·로비 진입](Network/LoginEntry.md) |
+| UI | [개요](UI/Overview.md) | [메인 메뉴](UI/MainMenu.md), [연습 로비](UI/Lobby.md), [대기 UI](UI/WaitingRoomUI.md) |
 | Gameplay | [개요](Gameplay/Overview.md) | [경기 시작](MatchStart.md), [탈락·관전](RoundEnd.md), [라운드 점수](RoundProgression.md), [최종 결과·복귀](FinalResults.md) |
 | Animation | [개요](Animation/Overview.md) | [기본 상태](Animation/BasicAnimations.md), [서기·걷기](Animation/StandWalkAnimations.md), [넘어짐](Animation/DirectionalKnockdown.md) |
 | EOS 자동 매칭 | [클라이언트 인계](EOS/unreal-client-handoff.md) | [API 계약](EOS/unreal-matchmaking-ticket-api.md), [백엔드 운영](../Backend-Infra/README.md) |
@@ -18,6 +18,10 @@
 - [전체 문서 갱신 요청문](../.agents/prompts/refresh-project-docs.md)
 
 ## 최근 기록
+
+- [2026-11-05 · 로그인·프로필·연습 로비 진입 연결](Changes.md#change-20261105-login-entry)
+
+- [2026-11-05 · Figma 연습 로비 UI와 매칭 상태 인터페이스](Changes.md#change-20261105-lobby-ui)
 
 - [2026-11-04 · Figma 기반 타이틀·로그인·닉네임 UI](Changes.md#change-20261104-title-ui)
 

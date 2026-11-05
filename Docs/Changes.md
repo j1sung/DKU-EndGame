@@ -1,5 +1,22 @@
 # 변경 이력
 
+<a id="change-20261105-login-entry"></a>
+### 2026-11-05 · 로그인·프로필·연습 로비 진입 연결
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+- 변경: `CFEntrySubsystem`으로 EOS Account Portal·Connect 인증, 프로필 GET·닉네임 POST와 실제 로비 이동을 기존 타이틀에 연결했다. 등록 재시도·멱등성·401·지연/취소 응답을 처리하고 `BP_CF_TitleController.LobbyMap`을 지정했다. LAN Idle 상태가 별도 로비 이동 오류를 가로채지 않도록 보완했다.
+- 확인: UE 5.8.2 Editor 빌드, 프로필 응답 자동화 검사, PIE 20개 검사와 저장된 로비 참조 확인. 인증 성공 응답은 테스트 도구에서 주입했으며, 클라이언트 EOS 설정·권한과 실계정 검증·패키징은 남아 있다.
+- 상세: [로그인·로비 진입](Network/LoginEntry.md), [Network 개요](Network/Overview.md#login-entry), [메인 메뉴](UI/MainMenu.md).
+
+<a id="change-20261105-lobby-ui"></a>
+### 2026-11-05 · Figma 연습 로비 UI와 매칭 상태 인터페이스
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+- 변경: `L_Lobby_Playground`에 `BP_CF_LobbyGameMode`·`WBP_CF_Lobby`를 연결했다. 빠른 대전·매칭/취소/복구·설정 UI, BG/VFX 볼륨 저장과 분리 제어, 취소 확인 후 타이틀 복귀를 추가했다. 기존 메인 UI·연습 캐릭터 코드는 유지했다.
+- 확인: Editor C++·Blueprint 컴파일, 큰 창 30개·작은 창 28개 PIE 검사 통과. 실제 EOS·음원 청취·패키징은 미검증이며 API 제공자는 후속 연결이 필요하다.
+- 상세: [연습 로비 UI](UI/Lobby.md), [UI 개요](UI/Overview.md#practice-lobby).
+
+
 <a id="change-20261104-title-ui"></a>
 ### 2026-11-04 · Figma 기반 타이틀·로그인·닉네임 UI
 
