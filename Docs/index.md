@@ -19,6 +19,8 @@
 
 ## 최근 기록
 
+- [2026-11-05 · L_TestJS 도심 야외 스파링 광장 디테일](Changes.md#change-20261105-urban-sparring-plaza)
+
 - [2026-11-04 · 높은 외벽과 2층 창문의 놀이터 테마 적용](Changes.md#change-20261104-playground-wall-theme)
 
 - [2026-11-04 · 놀이터 외벽 높이와 2층 창문 복원](Changes.md#change-20261104-playground-enclosure)
