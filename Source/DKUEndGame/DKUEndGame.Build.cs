@@ -24,7 +24,7 @@ public class DKUEndGame : ModuleRules
 			"OnlineSubsystemUtils"
 		});
 
-		PrivateDependencyModuleNames.AddRange(new string[] { });
+		PrivateDependencyModuleNames.AddRange(new string[] { "HTTP", "Json", "OnlineSubsystemEOS", "EOSShared", "EOSSDK" });
 
 		PublicIncludePaths.AddRange(new string[] {
 			"DKUEndGame",

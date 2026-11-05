@@ -6,15 +6,23 @@
 
 ## 범위와 흐름
 
-이 문서는 현재 LAN 기반 테스트 UI의 동작을 설명한다. 제품 목표인 EOS 자동 4인 매칭 화면의 변경 항목은 [클라이언트 인계서](../EOS/unreal-client-handoff.md)를 따른다.
-메인 메뉴는 로컬 위젯 입력을 세션 관리자에 전달하고, 아레나 대기 UI는 실제 참가자 정보를 표시한다. UI 요청 이벤트와 서버의 경기 시작 승인은 별개.
+현재 진입 화면은 Figma 기반 타이틀·로그인·닉네임·접속 중 UI다. 인증·프로필·로비 이동 제공자 코드는 [Entry](../Network/LoginEntry.md)에 연결했지만 클라이언트 EOS 설정·권한과 실계정 검증은 남아 있다. 제품 목표인 자동 4인 매칭은 [클라이언트 인계서](../EOS/unreal-client-handoff.md)를 따른다.
+기존 LAN 방 생성·검색·직접 접속 메뉴는 F9 또는 Development 실행 인자 `-CFLanMenu`로 이용한다. 아레나 대기 UI는 실제 참가자 정보를 표시한다. 로컬 UI 요청 이벤트와 서버의 경기 시작 승인은 별개다.
 
 <a id="menu"></a>
 ## 메인 메뉴
-> 최근 기능 변경: 2026-09-29 · 작성자 GitHub ID 확인 필요 (Git 작성자: 정규민, `d13290b`)
+> 최근 기능 변경: 2026-11-05 · Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
 
-닉네임·방 만들기·검색 목록·직접 IP 참가·검색 취소·진행 및 오류 표시를 담당한다. 처리 중 중복 입력과 모달 뒤쪽 입력을 제한한다. `CFMainMenuWidget`은 C++ 이벤트를 연결하고 `WBP_CF_MainMenu`는 화면 배치를 제공하는 구조.
+`WBP_CF_TitleMenu`의 타이틀 → Epic 로그인 → 최초 닉네임 등록 → 접속 중 화면을 `CFTitleMenuWidget`이 제어한다. `CFFrontendSubsystem`은 화면 상태와 통합 요청/응답·취소·기한을 관리한다. `CFEntrySubsystem`은 EOS 인증·프로필 API·실제 로비 이동을 담당하며, 클라이언트 EOS 설정 없이는 실패 안내를 표시한다. 인증·등록 성공 응답 없이 다음 단계로 넘기지 않으며 중복 요청과 취소 후 늦은 응답을 차단한다.
+`BP_CF_MenuGameMode`는 새 `BP_CF_TitleController`를 사용한다. 기존 `WBP_CF_MainMenu`/`CFMainMenuWidget`과 LAN 세션 기능은 개발용 진입 경로로 유지한다. 새 타이틀의 게임 시작은 인증 진입이고, 로비에서의 자동 매칭 UI는 별도 `WBP_CF_Lobby`에 구현되어 있고, 실제 EOS 제공자는 미연결이다.
 - 상세: [메인 메뉴](MainMenu.md).
+
+<a id="practice-lobby"></a>
+## 연습 로비
+> 최근 기능 변경: 2026-11-05 · Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+
+`L_Lobby_Playground`는 기존 연습 캐릭터·놀이기구를 유지하며 `BP_CF_LobbyGameMode`와 `WBP_CF_Lobby`를 사용한다. 오른쪽 위 빠른 대전/매칭 중 패널, Esc·톱니바퀴 설정, 배경음·효과음 볼륨 저장, 타이틀 복귀를 제공한다. `CFLobbySubsystem`의 비동기 요청/응답 인터페이스는 중복 시작·취소와 배정 경합·상태 불명·복귀 대기를 처리한다. 실제 EOS·티켓 제공자는 미연결이다.
+- 상세: [연습 로비 UI](Lobby.md).
 
 <a id="waiting"></a>
 ## 대기방
@@ -26,8 +34,8 @@
 - 상세: [대기 UI](WaitingRoomUI.md).
 
 ## 수정 위치와 연결
-- 코드: `Source/DKUEndGame/UI/CFMainMenuWidget.h/.cpp`, `CFWaitingRoomWidget.h/.cpp`.
-- 에셋: `/Game/UI/MainMenu/`, `/Game/UI/WaitingRoom/`. Designer·부모 클래스·맵 설정은 상세 문서의 기존 기록 참고.
+- 코드: `Source/DKUEndGame/UI/CFTitleMenuWidget.h/.cpp`, `CFTitleMenuController.h/.cpp`, `CFFrontendSubsystem.h/.cpp`. 기존 LAN·대기는 `CFMainMenuWidget.h/.cpp`, `CFWaitingRoomWidget.h/.cpp`.
+- 에셋: `/Game/UI/MainMenu/`, `/Game/UI/Lobby/`, `/Game/UI/WaitingRoom/`. Designer·부모 클래스·맵 설정은 상세 문서의 기존 기록 참고.
 - `BindWidget` 이름은 C++ 연결에 사용하므로 단순 디자인 수정에서 임의 변경 금지.
 - 연결 처리: [Network 개요](../Network/Overview.md).
 - 대기 Pawn: [Gameplay](../Gameplay/Overview.md#waiting), [대기 애니메이션](../Animation/StandWalkAnimations.md).
