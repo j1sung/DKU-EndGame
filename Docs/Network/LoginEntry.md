@@ -91,6 +91,20 @@ pwsh -NoProfile -File .\Tools\Network\Start-EOSLoginTest.ps1 -UnrealEditorPath '
 
 자동 매칭 API와 4인 EOS 세션 제공자는 아직 연결되지 않았다. 여기서 성공 판정은 실계정 인증·프로필·닉네임·연습 로비 진입까지다. 현재 PC에는 Unreal이 없어 이 절차는 아직 재실행하지 않았다. 설정 생성 도구의 검증과 게임 실행 결과를 구분해 기록한다.
 
+## 로그인 준비 실패 진단
+
+`현재 로그인 서비스를 사용할 수 없습니다`는 API 주소 또는 EOS 준비 검사 실패 시 표시된다. 설정 도구의 `READY`와 `-CustomConfig=EOSLocal` 인식만으로 런타임 EOS 준비 성공을 판단하지 않는다.
+
+진단 로그가 포함된 최신 코드를 **Editor 대상으로 다시 빌드**한 뒤 기존 실행 도구로 실행하고 LOG IN NOW를 누른다. `Saved/Logs/DKUEndGame.log`에서 `LogCFEntry`를 검색한다.
+
+- `ApiBaseValid=0`: 프로필 API 주소 형식 검사 실패.
+- `EOS settings`: EAS·EOS Connect·Named Platform 설정의 실제 활성화 여부. EAS와 EOS Connect는 모두 `1`이어야 한다.
+- `artifact selection failed`: Artifact 선택 실패. `EOS artifact presence`의 각 항목은 값의 존재 여부이며 `0`은 누락, `1`은 존재다. 존재 여부로 자격 증명의 유효성까지 판단하지 않는다.
+- `EOS preparation failed`: 필수 필드 누락, 서브시스템 또는 Identity 생성 실패를 구분한다. Named Platform 설정을 사용하는 경우 Artifact 검사를 생략한 사실도 기록한다.
+- `EOS preparation succeeded` → `Starting Account Portal login`: 준비 완료 후 실제 로그인 호출 단계 진입. 로그인 성공을 의미하지 않는다.
+
+로그에는 API 주소·식별자·Secret·토큰 원문을 출력하지 않고 검사 결과만 기록한다. 화면의 오류 문구와 로그인 조건은 유지한다. 진단 로그 추가 후 Unreal 빌드와 실제 계정 재실행은 Unreal이 설치된 PC에서 확인해야 한다.
+
 ## 구현 위치와 패키징
 
 | 위치 | 책임 |

@@ -18,6 +18,7 @@ LAN 개발 메뉴 → 방 생성/참가 → 걷기 대기 → 경기·라운드 
 `UCFEntrySubsystem`이 Epic Account Portal·EOS Connect 인증, Connect ID Token을 이용한 프로필 조회·최초 닉네임 등록, `L_Lobby_Playground` 이동을 기존 Frontend UI에 연결한다. HTTP 취소·지연 응답·계정 일치·등록 재시도와 401 재로그인을 처리한다. 기본 플랫폼 NULL과 LAN 세션 경로는 유지한다. 2026-11-05 통합 담당 PC의 로컬 EOS 설정 입력·정적 검사를 완료했으며, 실계정 Unreal 인증은 미검증이다.
 - 상세: [로그인과 연습 로비 진입](LoginEntry.md).
 - 개발 EOS 접속 정보는 [로컬 설정 입력 도구](LoginEntry.md#eos-로컬-설정-먼저-준비하기)로 별도 생성한다. Unreal 없이 설정을 준비할 수 있고 실행 시 `-CustomConfig=EOSLocal`로 읽는다. 설정 준비와 실계정 인증 성공은 별도로 검증한다.
+- 로그인 준비 실패는 `LogCFEntry`의 검사 결과로 구분한다. 자격 증명 원문은 기록하지 않는다. [진단 절차](LoginEntry.md#로그인-준비-실패-진단) 참고.
 
 <a id="sessions"></a>
 ## 세션 생성·검색·참가
