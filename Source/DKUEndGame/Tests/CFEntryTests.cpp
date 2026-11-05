@@ -1,5 +1,6 @@
 #if WITH_DEV_AUTOMATION_TESTS
 #include "Misc/AutomationTest.h"
+#include "Misc/ConfigCacheIni.h"
 #include "Network/CFEntrySubsystem.h"
 #include "UI/CFFrontendSubsystem.h"
 #include "Engine/GameInstance.h"
@@ -13,6 +14,14 @@ bool FCFEntryResponseTest::RunTest(const FString& Parameters)
     TStrongObjectPtr<UGameInstance> Instance(NewObject<UGameInstance>());
     auto* UI = NewObject<UCFFrontendSubsystem>(Instance.Get());
     auto* Entry = NewObject<UCFEntrySubsystem>(Instance.Get());
+    // 자동 로딩된 프로퍼티가 비어 있어도 초기화 시 최종 Game 설정을 다시 읽는다.
+    FString ConfiguredApiBase;
+    TestTrue(TEXT("Profile endpoint exists in effective Game config"),
+        GConfig->GetString(TEXT("/Script/DKUEndGame.CFEntrySubsystem"), TEXT("ProfileApiBaseUrl"), ConfiguredApiBase, GGameIni));
+    Entry->ProfileApiBaseUrl.Reset();
+    Entry->LoadProfileApiConfig();
+    TestEqual(TEXT("Profile endpoint restored from effective config"), Entry->ProfileApiBaseUrl, ConfiguredApiBase);
+    TestTrue(TEXT("Loaded profile endpoint is valid HTTPS"), Entry->ValidApiBase(Entry->ProfileApiBaseUrl));
     Entry->Frontend = UI;
     using EOp = UCFEntrySubsystem::EOperation;
     auto Prepare = [&](EOp Op, int32 Id = 10)

@@ -1,5 +1,13 @@
 # 변경 이력
 
+<a id="change-20261105-eos-login-config-fix"></a>
+### 2026-11-05 · EOS 요청 권한 제한과 API 주소 로딩 보완
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요
+- 변경: 상위 `AuthScopeFlags` 목록을 비우고 `BasicProfile`만 요청한다. `CFEntrySubsystem` 초기화 시 최종 `GGameIni` 캐시의 API 주소를 명시적으로 읽고 발견·유효 여부를 기록한다. 주소 고정값이나 인증 우회를 추가하지 않는다.
+- 근거: 팀원 로그에서 일반 실행의 API 주소 검사 실패와 명령행 주소 지정 후 EOS 준비 성공, Account Portal의 `friends_list` 권한 거절을 확인했다. 비어 있는 프로퍼티의 최종 설정 재로딩 회귀 검사를 추가했다. Unreal 빌드·회귀 검사 실행·수정 후 실제 로그인은 미확인이다.
+- 문서: [로그인 설정](Network/LoginEntry.md#통합-담당이-구성할-것), [진단 절차](Network/LoginEntry.md#로그인-준비-실패-진단), [Network 개요](Network/Overview.md#login-entry).
+
 <a id="change-20261105-eos-login-diagnostics"></a>
 ### 2026-11-05 · EOS 로그인 준비 진단 로그
 
