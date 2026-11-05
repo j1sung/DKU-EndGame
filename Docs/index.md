@@ -19,6 +19,8 @@
 
 ## 최근 기록
 
+- [2026-11-05 · L_TestJS 도심 야외 스파링 광장 디테일](Changes.md#change-20261105-urban-sparring-plaza)
+
 - [2026-11-05 · 로그인·프로필·연습 로비 진입 연결](Changes.md#change-20261105-login-entry)
 
 - [2026-11-05 · Figma 연습 로비 UI와 매칭 상태 인터페이스](Changes.md#change-20261105-lobby-ui)
