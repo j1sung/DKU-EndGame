@@ -18,6 +18,8 @@ class DKUENDGAME_API UCFLobbySubsystem : public UGameInstanceSubsystem
 public:
     virtual void Initialize(FSubsystemCollectionBase& Collection) override;
     virtual void Deinitialize() override;
+    // 로비 이탈/인증 소실 시 표시 상태만 해제. 서버 취소 완료를 의미하지 않는다.
+    void ResetForEntry();
     UPROPERTY(BlueprintReadOnly, Category="CF|Lobby") ECFQueueScreen Screen = ECFQueueScreen::Idle;
     UPROPERTY(BlueprintReadOnly, Category="CF|Lobby") FText ErrorMessage;
     UPROPERTY(BlueprintReadOnly, Category="CF|Lobby") FText ConnectionMessage;

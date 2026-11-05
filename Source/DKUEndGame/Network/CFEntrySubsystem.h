@@ -18,6 +18,10 @@ class DKUENDGAME_API UCFEntrySubsystem : public UGameInstanceSubsystem
 public:
     virtual void Initialize(FSubsystemCollectionBase& Collection) override;
     virtual void Deinitialize() override;
+    // 네이티브 통합 계층에서만 토큰을 사용한다. Blueprint/화면/로그에 노출하지 않는다.
+    bool HasBackendSession() const;
+    bool GetBackendAccess(FString& BaseUrl, FString& Token, FString& PlayerId);
+    void RequireBackendLogin();
 
 private:
     enum class EOperation : uint8 { None, Login, Nickname, Travel };
@@ -54,6 +58,7 @@ private:
     void OnEOSLogout(int32 LocalUserNum, bool bSuccess);
     void OnEOSStatus(int32 LocalUserNum, ELoginStatus::Type Previous, ELoginStatus::Type Current, const FUniqueNetId& UserId);
     bool CopyConnectToken(FString& Token);
+    bool CopyBackendToken(FString& Token, FString& PlayerId);
     void SendProfileRequest(bool bRegister);
     void ReceiveProfile(int32 Id, uint64 Serial, bool bRegister, bool bConnected, int32 Status, const FString& Body);
     void ResolveProfile(const FString& Nickname);

@@ -21,7 +21,7 @@
 ## 연습 로비
 > 최근 기능 변경: 2026-11-05 · Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
 
-`L_Lobby_Playground`는 기존 연습 캐릭터·놀이기구를 유지하며 `BP_CF_LobbyGameMode`와 `WBP_CF_Lobby`를 사용한다. 오른쪽 위 빠른 대전/매칭 중 패널, Esc·톱니바퀴 설정, 배경음·효과음 볼륨 저장, 타이틀 복귀를 제공한다. `CFLobbySubsystem`의 비동기 요청/응답 인터페이스는 중복 시작·취소와 배정 경합·상태 불명·복귀 대기를 처리한다. 실제 EOS·티켓 제공자는 미연결이다.
+`L_Lobby_Playground`는 기존 연습 캐릭터·놀이기구를 유지하며 `BP_CF_LobbyGameMode`와 `WBP_CF_Lobby`를 사용한다. 오른쪽 위 빠른 대전/매칭 중 패널, Esc·톱니바퀴 설정, 배경음·효과음 볼륨 저장, 타이틀 복귀를 제공한다. `CFLobbySubsystem`의 비동기 요청/응답 인터페이스는 중복 시작·취소와 배정 경합·상태 불명·복귀 대기를 처리한다. 티켓 요청·조회·취소와 배정 복구는 [매칭 제공자](../Network/Matchmaking.md)에 연결했다. 실제 EOS 세션 연결과 실계정 API 검증은 남아 있다.
 - 상세: [연습 로비 UI](Lobby.md).
 
 <a id="waiting"></a>

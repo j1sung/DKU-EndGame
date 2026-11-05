@@ -26,7 +26,7 @@
 | 캐릭터, 경기 규칙, 승패 판정, 게임 내 네트워크 동기화 | 통합 시 연결 지원 | 기존 LAN 구현을 EOS 매치 흐름에 맞게 조정하고 4인 플레이 검증 |
 | 패키징된 Windows 빌드의 4인 통합 검증 | 함께 수행 | 함께 수행 |
 
-게임 담당자는 API 요청 형식이나 EOS 인증을 화면 코드에 중복 구현하지 않는다. 통합 담당이 제공할 **클라이언트 상태·동작 인터페이스**를 UI와 게임 흐름에 연결한다. 타이틀 인증·프로필·로비 진입에는 `UCFFrontendSubsystem`을 연결점으로 사용하며, 자동 매칭 화면에는 `UCFLobbySubsystem`의 요청/응답 인터페이스를 추가했으며 [로비 연결 계약](../UI/Lobby.md#매칭-통합-연결)을 사용한다. 인증·프로필 HTTP 제공자는 Entry에 추가했고, 매칭 HTTP·실제 EOS 세션 동작은 후속 통합 범위다. `dev`에는 `CFMainMenuWidget`, `CFWaitingRoomWidget`, `CFMatchStatusWidget`과 LAN 세션 기반 게임 흐름이 있으므로 이를 재사용·수정할 지점을 함께 정한다. EOS 로그인 코드는 Editor 빌드·응답/화면/맵 이동 검사까지 확인했다. 실계정 로그인과 자동 매칭·실제 EOS 세션 연결의 완료를 의미하지 않는다.
+게임 담당자는 API 요청 형식이나 EOS 인증을 화면 코드에 중복 구현하지 않는다. 통합 담당이 제공할 **클라이언트 상태·동작 인터페이스**를 UI와 게임 흐름에 연결한다. 타이틀 인증·프로필·로비 진입에는 `UCFFrontendSubsystem`을 연결점으로 사용하며, 자동 매칭 화면에는 `UCFLobbySubsystem`의 요청/응답 인터페이스를 추가했으며 [로비 연결 계약](../UI/Lobby.md#매칭-통합-연결)을 사용한다. 인증·프로필 HTTP 제공자는 Entry에 추가했고, 매칭 HTTP 요청·대기·취소·배정 조회는 [CFMatchmakingSubsystem](../Network/Matchmaking.md)에 연결했다. 실계정 API 검증과 실제 EOS 세션 동작은 후속 통합 범위다. `dev`에는 `CFMainMenuWidget`, `CFWaitingRoomWidget`, `CFMatchStatusWidget`과 LAN 세션 기반 게임 흐름이 있으므로 이를 재사용·수정할 지점을 함께 정한다. EOS 로그인 코드는 Editor 빌드·응답/화면/맵 이동 검사까지 확인했다. 실계정 로그인과 자동 매칭·실제 EOS 세션 연결의 완료를 의미하지 않는다.
 
 ## 3. 화면별 구현 항목
 

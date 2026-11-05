@@ -20,7 +20,7 @@
 6. 서버가 확정한 닉네임으로 `CompleteNickname` 또는 `CompleteLogin`을 완료한다. Entry의 로비 핸들러가 `BP_CF_TitleController.LobbyMap`의 `/Game/Map/L_Lobby_Playground`를 연다.
 7. 같은 GameInstance의 해당 맵 로딩이 끝나면 `CompleteLobbyEntry`를 완료한다. 연습 로비의 기존 컨트롤러·캐릭터·UI를 사용한다.
 
-`UCFFrontendSubsystem`은 UI 상태·요청 ID만 관리하고 토큰을 받지 않는다. Entry는 GameInstance 수명이며 의존성을 초기화한 뒤 이벤트를 한 번씩 바인딩하고 종료 때 해제한다. 통합 담당은 기존 Entry를 확장·교체할 경우 동일 이벤트에 중복 제공자를 연결하지 않는다. 자동 매칭용 `UCFLobbySubsystem`에는 아직 실제 티켓·세션 제공자를 연결하지 않았다.
+`UCFFrontendSubsystem`은 UI 상태·요청 ID만 관리하고 토큰을 받지 않는다. Entry는 GameInstance 수명이며 의존성을 초기화한 뒤 이벤트를 한 번씩 바인딩하고 종료 때 해제한다. 통합 담당은 기존 Entry를 확장·교체할 경우 동일 이벤트에 중복 제공자를 연결하지 않는다. 자동 매칭용 `UCFLobbySubsystem`에는 [티켓 제공자](Matchmaking.md)를 연결했다. `GetBackendAccess`가 API 주소·현재 PUID·Connect 토큰을 native C++에서만 제공하며, `RequireBackendLogin`은 재인증을 요청한다. 실제 EOS 세션 제공자는 후속 작업이다.
 
 ## 실패·취소·재시도
 

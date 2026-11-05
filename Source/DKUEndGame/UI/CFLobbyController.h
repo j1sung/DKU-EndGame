@@ -29,4 +29,5 @@ private:
     bool bMixPushed = false;
     UFUNCTION() void ApplyAudio();
     UFUNCTION() void ReturnToTitle();
+    UFUNCTION() void OpenEntryScreen();
 };

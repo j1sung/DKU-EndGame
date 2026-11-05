@@ -79,7 +79,8 @@ void UCFLobbyWidget::Refresh()
     const bool bIdle = S == ECFQueueScreen::Idle;
     QuickMatchPanel->SetVisibility(bIdle ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
     SearchingPanel->SetVisibility(bIdle ? ESlateVisibility::Collapsed : ESlateVisibility::SelfHitTestInvisible);
-    const TCHAR* Heading = TEXT("매칭 중...");
+    MatchButton->SetIsEnabled(bIdle);
+    const TCHAR* Heading = TEXT("4인 매칭 중...");
     if (S == ECFQueueScreen::Starting) Heading = TEXT("매칭 요청 중...");
     else if (S == ECFQueueScreen::Cancelling) Heading = TEXT("취소 중...");
     else if (S == ECFQueueScreen::Connecting) Heading = TEXT("상대와 연결 중...");

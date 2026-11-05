@@ -1,5 +1,14 @@
 # 변경 이력
 
+<a id="change-20261105-matchmaking"></a>
+### 2026-11-05 · 로비 4인 매칭 대기·취소 API 연결
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+- 변경: `UCFMatchmakingSubsystem`으로 로비 시작·취소·복구와 티켓 API, 배정 후 매치 조회를 연결했다. 기존 Entry 인증을 재사용하고 중복 요청·멱등성 재시도·응답 유실·취소/배정 경합·기한·재인증을 처리한다. HOST/GUEST 배정 데이터를 후속 EOS 세션 계층에 제공한다.
+- 수동 검증 보완: 준비 명령의 30초 제한을 넘겨 로그인으로 이동하는 사례를 확인했다. 현재 Play에서 즉시 켜는 Editor 전용 `CF.Matchmaking.Mock`, 적용 완료/실패 로그와 화면 안내를 추가하고 40초 지연 후 활성화·기존 매칭 상태 보존을 검증했다.
+- 확인 범위: Editor 빌드·모의 HTTP 자동화·실제 로비 PIE 검증. 실계정 API, EOS 세션 생성/참가, 패키징은 후속 검증이며 성공 보고를 임의로 보내지 않는다.
+- 상세: [4인 매칭·취소](Network/Matchmaking.md), [Network 개요](Network/Overview.md#matchmaking), [로비 UI](UI/Lobby.md).
+
 <a id="change-20261105-login-entry"></a>
 ### 2026-11-05 · 로그인·프로필·연습 로비 진입 연결
 

@@ -196,9 +196,38 @@ void UCFEntrySubsystem::OnEOSStatus(int32 LocalUserNum, ELoginStatus::Type Previ
     RequireLogin();
 }
 
+bool UCFEntrySubsystem::HasBackendSession() const
+{
+    return !bNeedsReauthentication && Identity && Identity->GetLoginStatus(0) == ELoginStatus::LoggedIn && ValidApiBase(ProfileApiBaseUrl);
+}
+
+bool UCFEntrySubsystem::GetBackendAccess(FString& BaseUrl, FString& Token, FString& PlayerId)
+{
+    BaseUrl.Reset(); Token.Reset(); PlayerId.Reset();
+    if (!HasBackendSession() || !CopyBackendToken(Token, PlayerId)) return false;
+    BaseUrl = ProfileApiBaseUrl;
+    while (BaseUrl.EndsWith(TEXT("/"))) BaseUrl.LeftChopInline(1);
+    return true;
+}
+
+void UCFEntrySubsystem::RequireBackendLogin()
+{
+    bNeedsReauthentication = true;
+    ClearOperation();
+    if (Frontend) Frontend->RequireLogin(CFEntry::Text(TEXT("매칭을 계속하려면 다시 로그인해 주세요.")));
+}
+
 bool UCFEntrySubsystem::CopyConnectToken(FString& Token)
 {
-    Token.Reset();
+    FString PlayerId;
+    if (!CopyBackendToken(Token, PlayerId) || (!ExpectedPlayerId.IsEmpty() && ExpectedPlayerId != PlayerId)) { Token.Reset(); return false; }
+    ExpectedPlayerId = PlayerId;
+    return true;
+}
+
+bool UCFEntrySubsystem::CopyBackendToken(FString& Token, FString& PlayerId)
+{
+    Token.Reset(); PlayerId.Reset();
     if (!EOS || !Identity || Identity->GetLoginStatus(0) != ELoginStatus::LoggedIn) return false;
     const FUniqueNetIdPtr User = Identity->GetUniquePlayerId(0);
     const IEOSPlatformHandlePtr Platform = EOS->GetEOSPlatformHandle();
@@ -208,9 +237,7 @@ bool UCFEntrySubsystem::CopyConnectToken(FString& Token)
     char PlayerBuffer[EOS_PRODUCTUSERID_MAX_LENGTH + 1] = {};
     int32 BufferLength = UE_ARRAY_COUNT(PlayerBuffer);
     if (EOS_ProductUserId_ToString(Player, PlayerBuffer, &BufferLength) != EOS_EResult::EOS_Success) return false;
-    const FString PlayerId(UTF8_TO_TCHAR(PlayerBuffer));
-    if (!ExpectedPlayerId.IsEmpty() && ExpectedPlayerId != PlayerId) return false;
-    ExpectedPlayerId = PlayerId;
+    PlayerId = UTF8_TO_TCHAR(PlayerBuffer);
     EOS_Connect_CopyIdTokenOptions Options = {};
     Options.ApiVersion = EOS_CONNECT_COPYIDTOKEN_API_LATEST; Options.LocalUserId = Player;
     EOS_Connect_IdToken* IdToken = nullptr;

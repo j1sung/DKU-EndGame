@@ -2,6 +2,7 @@
 #include "UI/CFLobbyWidget.h"
 #include "UI/CFLobbySubsystem.h"
 #include "UI/CFFrontendSubsystem.h"
+#include "Network/CFMatchmakingSubsystem.h"
 #include "Components/InputComponent.h"
 #include "Engine/GameInstance.h"
 #include "Kismet/GameplayStatics.h"
@@ -29,7 +30,9 @@ void ACFLobbyController::BeginPlay()
         Mode.SetHideCursorDuringCapture(false);
         SetInputMode(Mode); bShowMouseCursor = true;
     }
-    Lobby->RestoreOnEntry();
+    auto* Matching = GetGameInstance()->GetSubsystem<UCFMatchmakingSubsystem>();
+    Matching->OnEntryRequired.AddDynamic(this, &ThisClass::OpenEntryScreen);
+    Matching->OnLobbyEntered();
 }
 
 void ACFLobbyController::SetupInputComponent()
@@ -58,8 +61,21 @@ void ACFLobbyController::ReturnToTitle()
     UGameplayStatics::OpenLevelBySoftObjectPtr(this, TitleMap);
 }
 
+void ACFLobbyController::OpenEntryScreen()
+{
+    if (!TitleMap.IsNull()) UGameplayStatics::OpenLevelBySoftObjectPtr(this, TitleMap);
+}
+
 void ACFLobbyController::EndPlay(const EEndPlayReason::Type Reason)
 {
+    if (IsLocalController() && GetGameInstance())
+    {
+        if (auto* Matching = GetGameInstance()->GetSubsystem<UCFMatchmakingSubsystem>())
+        {
+            Matching->OnEntryRequired.RemoveDynamic(this, &ThisClass::OpenEntryScreen);
+            Matching->OnLobbyExited();
+        }
+    }
     if (Lobby)
     {
         Lobby->OnAudioChanged.RemoveDynamic(this, &ThisClass::ApplyAudio);

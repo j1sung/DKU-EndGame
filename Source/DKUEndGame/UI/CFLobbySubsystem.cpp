@@ -24,6 +24,13 @@ void UCFLobbySubsystem::Deinitialize()
     ClearWatchdog(); SaveAudioSettings(); Super::Deinitialize();
 }
 
+void UCFLobbySubsystem::ResetForEntry()
+{
+    ClearWatchdog(); ActiveFlowId = 0; QueueDeadline = 0;
+    bAssigned = bCancelRequested = bCancelSent = bReturnRequested = false;
+    ConnectionMessage = FText::GetEmpty(); SetState(ECFQueueScreen::Idle);
+}
+
 void UCFLobbySubsystem::SetMusicVolume(float Value)
 {
     MusicVolume = Volume(Value); OnAudioChanged.Broadcast();
