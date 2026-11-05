@@ -1,5 +1,14 @@
 # 변경 이력
 
+<a id="change-20261105-profile-api-url-quoting"></a>
+### 2026-11-05 · 프로필 API URL 설정 문자열 잘림 수정
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요
+- 원인 확인: 팀원 `GetIni` 실행 로그에서 `ProfileApiBaseUrl = https:`를 확인했다. 이전 명시적 재로딩만으로 해결되지 않았으며 설정 문자열 자체가 잘렸다.
+- 변경: `Config/DefaultGame.ini`의 URL 전체를 큰따옴표로 감싼다. 인증 코드나 주소 검증 조건은 변경하지 않는다.
+- 확인 범위: 설정 및 문서 검토·공백 검사. 기존 최종 Game 설정의 유효 HTTPS 검사로 런타임 회귀를 확인할 수 있으나 Unreal 미설치로 직접 실행하지 않았다. 최신 코드 빌드가 된 PC는 설정 갱신 후 게임 재시작으로 재확인한다.
+- 문서: [로그인 설정](Network/LoginEntry.md#통합-담당이-구성할-것), [진단 절차](Network/LoginEntry.md#로그인-준비-실패-진단), [Network 개요](Network/Overview.md#login-entry).
+
 <a id="change-20261105-eos-login-config-fix"></a>
 ### 2026-11-05 · EOS 요청 권한 제한과 API 주소 로딩 보완
 
