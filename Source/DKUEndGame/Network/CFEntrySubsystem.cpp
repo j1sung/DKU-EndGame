@@ -10,6 +10,7 @@
 #include "Interfaces/IHttpResponse.h"
 #include "Kismet/GameplayStatics.h"
 #include "Misc/PackageName.h"
+#include "Misc/ConfigCacheIni.h"
 #include "OnlineSubsystemUtils.h"
 #include "Serialization/JsonReader.h"
 #include "Serialization/JsonSerializer.h"
@@ -40,6 +41,7 @@ FText ApiError(int32 Status, const FString& Code)
 void UCFEntrySubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
     Super::Initialize(Collection);
+    LoadProfileApiConfig();
     Collection.InitializeDependency<UCFFrontendSubsystem>();
     Frontend = GetGameInstance()->GetSubsystem<UCFFrontendSubsystem>();
     Frontend->OnLoginRequested.AddUniqueDynamic(this, &ThisClass::Login);
@@ -111,6 +113,16 @@ void UCFEntrySubsystem::Fail(const FText& Error)
     if (FailedOperation == EOperation::Login) Frontend->CompleteLogin(Id, false, FString(), Error);
     else if (FailedOperation == EOperation::Nickname) Frontend->CompleteNickname(Id, false, FString(), Error);
     else if (FailedOperation == EOperation::Travel) Frontend->CompleteLobbyEntry(Id, false, Error);
+}
+
+void UCFEntrySubsystem::LoadProfileApiConfig()
+{
+    // CDO의 자동 복사에만 의존하지 않고 명령행 덮어쓰기를 포함한 최종 시작 설정을 읽는다.
+    ProfileApiBaseUrl.Reset();
+    const bool bFound = GConfig && GConfig->GetString(TEXT("/Script/DKUEndGame.CFEntrySubsystem"),
+        TEXT("ProfileApiBaseUrl"), ProfileApiBaseUrl, GGameIni);
+    UE_LOG(LogCFEntry, Display, TEXT("Profile API configuration: Found=%d Valid=%d"),
+        bFound, ValidApiBase(ProfileApiBaseUrl));
 }
 
 bool UCFEntrySubsystem::ValidApiBase(const FString& Base)
