@@ -93,6 +93,9 @@ Backend-Infra/.sam-local/
 Backend-Infra/.env*
 Backend-Infra/backend/.env*
 
+# Machine-local EOS game-client credentials (selected with -CustomConfig=EOSLocal)
+/Config/Custom/EOSLocal/
+
 # =========================================================
 # Unreal generated files
 # =========================================================

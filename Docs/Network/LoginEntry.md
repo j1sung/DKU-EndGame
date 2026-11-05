@@ -6,7 +6,7 @@
 
 ## 현재 상태
 
-`UCFEntrySubsystem`이 기존 `UCFFrontendSubsystem`의 로그인·닉네임 등록·로비 요청을 처리한다. Epic Account Portal 로그인과 EOS Connect 인증, 프로필 HTTP 호출, 실제 맵 이동 코드를 연결했다. **클라이언트용 EOS 설정·권한은 아직 구성하지 않았으므로 실계정 로그인이 완료된 상태는 아니다.** 설정이 없으면 로그인 화면에서 오류와 재시도를 제공한다.
+`UCFEntrySubsystem`이 기존 `UCFFrontendSubsystem`의 로그인·닉네임 등록·로비 요청을 처리한다. Epic Account Portal 로그인과 EOS Connect 인증, 프로필 HTTP 호출, 실제 맵 이동 코드를 연결했다. **2026-11-05 통합 담당 PC의 로컬 EOS 설정 입력·정적 검사는 완료했다. 해당 PC에는 Unreal이 없어 실계정 로그인은 아직 검증하지 않았다.** 자격 증명 파일은 각 PC에서 별도 생성하며 다른 개발자의 체크아웃에 포함되지 않는다. 설정이 없으면 로그인 화면에서 오류와 재시도를 제공한다.
 
 사용자 확인: Dev Auth Tool과 별도 SDK 도구의 Connect 로그인·백엔드 인증은 검증했지만, Unreal 클라이언트 설정과 권한은 통합 작업에서 확인·구성한다. 해당 도구의 성공을 현재 Unreal 빌드의 실계정 검증으로 간주하지 않는다. Client Secret과 토큰은 공유·저장소 추가하지 않았다.
 
@@ -45,11 +45,51 @@ HTTP 요청별 기한은 12초다. 등록 전 조회와 POST를 합쳐 기존 �
 ## 통합 담당이 구성할 것
 
 - 설치된 UE 5.8.2의 `OnlineSubsystemEOS`·`EOSShared` 플러그인은 활성화했다. 새 SDK나 프레임워크를 설치하지 않았다.
-- 프로젝트/샌드박스/배포 ID, **게임 클라이언트용** Client ID·정책·Artifact 또는 Named Platform 설정을 개발 환경과 일치시킨다. 백엔드 검증용 Client Secret을 클라이언트에 복사하지 않는다.
+- 프로젝트/샌드박스/배포 ID와 Client ID·정책을 개발 환경과 일치시킨다. 2026-11-05 사용자가 기존 `xyza7891MHpvCZ6hgPhGFHQwn6KZNTp9` Client의 Peer2Peer 정책과 EAS Linked Clients 연결을 확인했다. 백엔드의 허용 Client ID도 동일하다. 아래 도구는 이 Client의 Portal 자격 증명을 사용하며 AWS Secrets Manager의 값을 가져오지 않는다. TrustedServer 정책의 자격 증명은 공개 게임 빌드에 넣지 않는다.
 - Epic Account Services 애플리케이션·계정 접근·Account Portal·Connect 권한을 확인한다. 현재 코드의 요청 범위는 `BasicProfile`이다.
 - 민감 설정은 팀의 비공개 로컬/빌드 설정 경로로 제공한다. 추적 중인 DefaultEngine.ini에 실제 Secret이나 토큰을 넣지 않는다. 저장소에는 `bUseEAS`·`bUseEOSConnect` 등 비밀이 아닌 기본 옵션만 있다.
 - `Config/DefaultGame.ini`의 `[/Script/DKUEndGame.CFEntrySubsystem] ProfileApiBaseUrl`은 기존 개발 API 주소다. 2026-11-05 무토큰 GET의 `401 AUTH_MISSING`까지 확인했다. 환경 변경 시 통합 담당이 주소를 바꾼다.
 - 준비 후 신규/기존 계정 각각으로 실제 Epic 로그인, GET, 최초 닉네임 POST, 중복 이름, 취소, 인증 만료 후 재로그인을 확인한다.
+
+## EOS 로컬 설정 먼저 준비하기
+
+이 단계에는 Unreal 설치가 필요 없다. 프로젝트 루트에서 PowerShell로 다음을 실행한다.
+
+```powershell
+pwsh -NoProfile -File .\Tools\Network\Set-EOSLocal.ps1
+```
+
+출력된 Client ID가 Portal의 기존 Client와 같은지 확인하고, 그 Client의 **Client Secret**을 마스킹 프롬프트에 붙여넣는다. Secret은 명령행·채팅·환경 변수로 전달하지 않는다. 이 값은 사용자 계정 비밀번호나 Connect ID Token이 아니다.
+
+도구는 `Backend-Infra/samconfig.toml`의 dev 식별자를 읽고 `Config/Custom/EOSLocal/DefaultEngine.ini`를 만든다. 이 경로는 `.gitignore`로 제외되며, 추적 중인 파일로 바뀌면 입력/검사를 거절한다. 저장한 파일은 해당 PC에서만 사용하고 동료에게 복사하거나 Git에 추가하지 않는다. 다른 PC에서도 도구를 실행해 로컬로 입력한다. 설정을 다시 실행하면 기존 로컬 자격 증명을 갱신한다.
+
+이 파일에는 `ChickenGameDev` Artifact와 현재 dev ID, 해당 Client Secret이 들어간다. `bUseNamedPlatformConfig=false`로 이 Artifact를 선택하고, 현재 사용하지 않는 Player/Title Data Storage의 EncryptionKey는 Epic 문서의 개발 예시값(64개의 `1`)을 쓴다. 파일 저장 기능을 도입할 때에는 이 키 정책을 다시 정한다. 기본 `NULL` LAN 설정과 인증 코드의 명시적 `EOS` 선택은 유지한다.
+
+입력 없이 저장 상태만 검사할 때:
+
+```powershell
+pwsh -NoProfile -File .\Tools\Network\Set-EOSLocal.ps1 -CheckOnly
+```
+
+`READY`는 파일 형식·dev ID 일치·Git 제외 확인이 끝났다는 뜻이다. 실제 Secret의 유효성, Epic 로그인, 인증된 프로필 호출 성공을 의미하지 않는다.
+
+## Unreal 설치 후 실계정 확인
+
+UE 5.8.2에서 프로젝트 Editor 빌드를 완료한 뒤 실행 파일 경로를 지정한다. 아래 경로는 예시이므로 실제 설치 경로로 바꾼다.
+
+```powershell
+pwsh -NoProfile -File .\Tools\Network\Start-EOSLoginTest.ps1 -UnrealEditorPath 'C:\Program Files\Epic Games\UE_5.8\Engine\Binaries\Win64\UnrealEditor.exe'
+```
+
+이 도구는 Secret을 인수로 넘기지 않고 `-game -CustomConfig=EOSLocal`로 실행한다. 일반 실행은 이 개발 설정을 읽지 않으므로 **이 실행 도구로 테스트한다**. UE는 [CustomConfig 방식](https://dev.epicgames.com/documentation/unreal-engine/using-lyra-with-epic-online-services-in-unreal-engine)과 [OSS EOS Artifact 설정](https://dev.epicgames.com/documentation/unreal-engine/online-subsystem-eos-plugin-in-unreal-engine)을 지원한다. 설치·Editor 빌드·실제 로그인 검증은 현재 설정 도구의 자동 검증 범위 밖이다.
+
+1. 게임 시작 → LOG IN NOW → 열린 Account Portal에서 테스트 계정으로 로그인한다. EAS 브랜드가 미검증이면 조직에 가입한 계정을 사용한다.
+2. 기존 닉네임 계정은 재등록 없이 연습 로비로 이동하는지 확인한다.
+3. 미등록 계정은 닉네임 입력 화면에서 한글 이름을 등록한 뒤 연습 로비로 이동하는지 확인한다. 최초 등록 후 이름 변경은 지원하지 않으므로 사용할 이름을 먼저 정한다.
+4. 다른 계정의 중복 이름을 입력하면 화면에 오류가 나오고 다른 이름으로 다시 입력할 수 있는지 확인한다.
+5. Account Portal 취소와 로그인 중 뒤로가기, 재시도, 인증 만료 후 재로그인을 확인한다. 연습 로비에서 인증이 끊겼을 때의 표시와 복구도 별도 확인한다.
+
+자동 매칭 API와 4인 EOS 세션 제공자는 아직 연결되지 않았다. 여기서 성공 판정은 실계정 인증·프로필·닉네임·연습 로비 진입까지다. 현재 PC에는 Unreal이 없어 이 절차는 아직 재실행하지 않았다. 설정 생성 도구의 검증과 게임 실행 결과를 구분해 기록한다.
 
 ## 구현 위치와 패키징
 
@@ -64,6 +104,8 @@ HTTP 요청별 기한은 12초다. 등록 전 조회와 POST를 합쳐 기존 �
 로비 참조는 Blueprint에 저장되어 에셋 레지스트리의 soft package dependency로 확인했다. 메인 맵 → 메뉴 GameMode → 컨트롤러 → 연습 로비의 에셋 참조를 사용하며 전체 MapsToCook 목록을 덮어쓰지 않았다. 실제 Windows 패키징·cook 및 EOS 런타임 배포 검증은 아직 하지 않았다.
 
 ## 확인한 범위
+
+- 2026-11-05 설정 도구: PowerShell 7에서 dev ID 일치, 잘못된 입력과 개행 거절, Secret 저장 시 출력 비노출, Git 제외·추적 파일 거절, Secret 없는 실행 인수 검사를 통과했다. 통합 담당이 마스킹 입력한 실제 로컬 설정의 `-CheckOnly` 결과는 `READY`다. 이는 실계정 인증 성공 기록이 아니다.
 
 - UE 5.8.2 Editor C++ 빌드 성공, 메인 컨트롤러 Blueprint 컴파일·저장과 로비 의존성 재조회.
 - `ChickenFight.Entry.ProfileResponses` 자동화 검사 통과: 신규/기존 프로필, PUID 불일치, 잘못된 응답, 중복 이름, 등록 응답 유실 복구, 401, 지연·취소 응답, 멱등성 키 보존 등.

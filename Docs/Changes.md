@@ -1,5 +1,12 @@
 # 변경 이력
 
+<a id="change-20261105-eos-local-config"></a>
+### 2026-11-05 · EOS 로컬 설정 입력·검사·실행 도구
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+- 변경: `Tools/Network/Set-EOSLocal.ps1`로 기존 Peer2Peer Client의 Secret을 마스킹 입력하고 Git 제외 `Config/Custom/EOSLocal/DefaultEngine.ini`를 생성한다. dev ID 불일치·추적 파일을 거절하며 `Start-EOSLoginTest.ps1`은 `-CustomConfig=EOSLocal`로 실행한다. 설정 검사는 Unreal 설치 없이 가능하다.
+- 문서: [설정과 실계정 테스트](Network/LoginEntry.md#eos-로컬-설정-먼저-준비하기). Unreal 설치·실계정 인증·패키징 테스트는 미완료다.
+
 <a id="change-20261105-login-entry"></a>
 ### 2026-11-05 · 로그인·프로필·연습 로비 진입 연결
 
