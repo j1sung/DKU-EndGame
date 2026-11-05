@@ -1,5 +1,13 @@
 # 변경 이력
 
+<a id="change-20261105-eos-login-diagnostics"></a>
+### 2026-11-05 · EOS 로그인 준비 진단 로그
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요
+- 변경: `CFEntrySubsystem`의 API 주소 검사, EOS 옵션, Artifact 선택·필수 필드 존재, 서브시스템·Identity 준비와 Account Portal 호출 진입을 `LogCFEntry`로 구분한다. 설정값·자격 증명 원문과 토큰은 출력하지 않는다. 로그인 조건과 UI 오류 문구는 유지한다.
+- 확인 범위: 소스·문서 검토. Unreal 빌드 및 실제 계정 재실행은 미확인이다.
+- 문서: [로그인 준비 실패 진단](Network/LoginEntry.md#로그인-준비-실패-진단), [Network 개요](Network/Overview.md#login-entry).
+
 <a id="change-20261105-urban-sparring-plaza"></a>
 ### 2026-11-05 · L_TestJS 도심 야외 스파링 광장 디테일
 
