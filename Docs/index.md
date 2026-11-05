@@ -21,6 +21,14 @@
 
 - [2026-11-04 · Figma 기반 타이틀·로그인·닉네임 UI](Changes.md#change-20261104-title-ui)
 
+- [2026-11-04 · 높은 외벽과 2층 창문의 놀이터 테마 적용](Changes.md#change-20261104-playground-wall-theme)
+
+- [2026-11-04 · 놀이터 외벽 높이와 2층 창문 복원](Changes.md#change-20261104-playground-enclosure)
+
+- [2026-11-04 · 놀이터 오뚝이 회전판 연결과 항아리 물리 설정](Changes.md#change-20261104-playground-interactions)
+
+- [2026-11-04 · 별도 놀이터 튜토리얼 로비 생성](Changes.md#change-20261104-playground-lobby)
+
 - [2026-11-03 · EOS 자동 매칭 백엔드 통합과 목표 흐름 정리](Changes.md#change-20261103-eos-integration)
 
 - [2026-10-30 · 충돌 판정 시점 보완](Changes.md#change-20261030-collision-timing)
