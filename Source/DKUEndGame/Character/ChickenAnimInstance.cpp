@@ -37,7 +37,8 @@ void UChickenAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
     KnockdownIndex = static_cast<int32>(Character->GetKnockdownDirection());
     Speed = Character->GetVelocity().Size2D();
     NormalizedCharge = FMath::Clamp(Character->GetNormalizedJumpCharge(), 0.f, 1.f);
-    JumpStartPlayRate = 0.3f / FMath::Max(0.01f, JumpStartDuration);
+    const float EffectiveJumpDuration = FMath::Max(0.01f, FMath::Max(JumpStartDuration, MinimumJumpStartDuration));
+    JumpStartPlayRate = 0.3f / EffectiveJumpDuration;
     LandPlayRate = 0.7f / FMath::Max(0.01f, Character->GetLandingRecoveryTime());
 
     const bool bNewTakeoff = Character->GetTakeoffSerial() != LastTakeoffSerial;
@@ -51,11 +52,15 @@ void UChickenAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
     {
         Next = ECFBasicAnimState::Land;
     }
+    else if (!bFallen && AnimationState == ECFBasicAnimState::JumpStart && StateElapsed < EffectiveJumpDuration)
+    {
+        // LaunchCharacter may not have switched movement mode yet on the takeoff frame.
+        Next = ECFBasicAnimState::JumpStart;
+    }
     else if (bInAir)
     {
         // Charging in mid-air changes gameplay charge, but keeps an airborne pose.
-        Next = AnimationState == ECFBasicAnimState::JumpStart && StateElapsed < JumpStartDuration
-            ? ECFBasicAnimState::JumpStart : ECFBasicAnimState::AirLoop;
+        Next = ECFBasicAnimState::AirLoop;
     }
     else if (bCharging && !bFallen)
     {

@@ -53,6 +53,10 @@ public:
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Chicken|Animation", meta=(ClampMin="0.01"))
     float JumpStartDuration = 0.15f;
 
+    // Minimum also smooths existing AnimBP overrides authored at 0.15 seconds.
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Chicken|Animation", meta=(ClampMin="0.01"))
+    float MinimumJumpStartDuration = 0.22f;
+
     UPROPERTY(BlueprintReadOnly, Category="Chicken|Animation")
     float JumpStartPlayRate = 2.f;
 
