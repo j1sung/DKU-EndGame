@@ -14,7 +14,7 @@
 
 현재 `dev`의 LAN 방 생성·검색, 2명 이상 수동 시작, 같은 방 대기 복귀는 게임플레이 테스트 구현이다. **제품 방향은 EOS 기반 자동 4인 매칭**이며, 기존 LAN 화면·세션 경로가 자동 매칭에 이미 연결됐다는 뜻은 아니다. 현재 코드와 에셋은 [UI 개요](../UI/Overview.md), [Network 개요](../Network/Overview.md), [경기 결과](../FinalResults.md)를 기준으로 확인한다.
 
-2026-11-05 CKM 작업에는 기존 Figma 진입 UI에 `UCFEntrySubsystem`을 연결했다. Epic Account Portal·Connect 인증, 프로필 조회·최초 닉네임 등록과 `L_Lobby_Playground` 이동 코드를 구현했다. **클라이언트 EOS 설정·권한은 미구성이며 실계정 인증·인증된 HTTP는 미검증이다.** 통합 담당은 [Entry 설정·확인 항목](../Network/LoginEntry.md)과 [메인 메뉴 이벤트 계약](../UI/MainMenu.md#상태와-통합-연결)을 기준으로 현재 제공자를 재사용한다. Figma의 타이틀 `게임 시작`은 인증 진입이며, 아래 메인/매칭 버튼은 별도 연습 로비 화면에서의 매칭 시작을 뜻한다.
+2026-11-05 CKM 작업에는 기존 Figma 진입 UI에 `UCFEntrySubsystem`을 연결했다. Epic Account Portal·Connect 인증, 프로필 조회·최초 닉네임 등록과 `L_Lobby_Playground` 이동 코드를 구현했다. 2026-11-06 사용자가 클라이언트 설정 후 실제 로그인→로비 입장 성공을 보고했다. 이어 별도 브랜치에 [티켓 API 제공자](../Network/MatchmakingTickets.md)를 구현했으며 해당 코드의 Unreal 빌드·실계정 매칭은 검증 전이다. 통합 담당은 [Entry 설정·확인 항목](../Network/LoginEntry.md)과 [메인 메뉴 이벤트 계약](../UI/MainMenu.md#상태와-통합-연결)을 기준으로 현재 제공자를 재사용한다. Figma의 타이틀 `게임 시작`은 인증 진입이며, 아래 메인/매칭 버튼은 별도 연습 로비 화면에서의 매칭 시작을 뜻한다.
 
 ## 2. 담당 범위
 

@@ -1,5 +1,13 @@
 # 변경 이력
 
+<a id="change-20261106-matchmaking-tickets"></a>
+### 2026-11-06 · 로비 자동 매칭 티켓 API 연결
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+- 변경: 새 `codex/unreal-matchmaking-api` 브랜치에서 로비 이벤트를 티켓 생성·조회·본인 취소에 연결했다. 네이티브 흐름이 미확정 쓰기의 동일 키·본문 재시도와 취소/배정 경합을 처리하고, HTTP 제공자가 FlowId·응답 순서·계정 전환을 검증한다. 인증 만료의 로그인 복귀와 서버 확인 전 재시작 차단, 배정 ID 인계 이벤트를 추가했다. EOS 세션 생성·참가는 범위 밖이다.
+- 확인 범위: 회귀 검사 `ChickenFight.Matchmaking.TicketFlow`·`ResponseGuards` 작성. Unreal 미설치로 Editor 빌드·검사 실행·실계정 매칭은 미확인이다. 사용자가 보고한 기존 로그인→로비 성공과 구분한다.
+- 문서: [Network 개요](Network/Overview.md#matchmaking-tickets), [티켓 제공자](Network/MatchmakingTickets.md), [로비 UI](UI/Lobby.md), [구현 계획](EOS/superpowers/plans/2026-11-06-unreal-matchmaking-api.md).
+
 <a id="change-20261105-profile-api-url-quoting"></a>
 ### 2026-11-05 · 프로필 API URL 설정 문자열 잘림 수정
 

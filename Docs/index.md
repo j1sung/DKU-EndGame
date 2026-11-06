@@ -6,7 +6,7 @@
 
 | 카테고리 | 대표 문서 | 상세 문서 |
 |---|---|---|
-| Network | [개요](Network/Overview.md) | [LAN 세션·연결 종료](Network/ListenServerSessions.md), [로그인·로비 진입](Network/LoginEntry.md) |
+| Network | [개요](Network/Overview.md) | [LAN 세션·연결 종료](Network/ListenServerSessions.md), [로그인·로비 진입](Network/LoginEntry.md), [자동 매칭 티켓](Network/MatchmakingTickets.md) |
 | UI | [개요](UI/Overview.md) | [메인 메뉴](UI/MainMenu.md), [연습 로비](UI/Lobby.md), [대기 UI](UI/WaitingRoomUI.md) |
 | Gameplay | [개요](Gameplay/Overview.md) | [경기 시작](MatchStart.md), [탈락·관전](RoundEnd.md), [라운드 점수](RoundProgression.md), [최종 결과·복귀](FinalResults.md) |
 | Animation | [개요](Animation/Overview.md) | [기본 상태](Animation/BasicAnimations.md), [서기·걷기](Animation/StandWalkAnimations.md), [넘어짐](Animation/DirectionalKnockdown.md) |
@@ -18,6 +18,8 @@
 - [전체 문서 갱신 요청문](../.agents/prompts/refresh-project-docs.md)
 
 ## 최근 기록
+
+- [2026-11-06 · 로비 자동 매칭 티켓 API 연결](Changes.md#change-20261106-matchmaking-tickets)
 
 - [2026-11-05 · L_TestJS 도심 야외 스파링 광장 디테일](Changes.md#change-20261105-urban-sparring-plaza)
 

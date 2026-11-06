@@ -4,6 +4,8 @@
 
 `Backend-Infra/`의 서버 코드와 2026-11-02 개발 AWS 스택에 배포된 매칭·매치 API 계약이다. 서로 다른 Epic 계정 4개로 인증·배정·취소·상태 보고·기한 복구를 검증했다. 세션·참가·시작·종료 보고는 테스트 도구의 모의 호출이며 실제 EOS 세션과 Unreal UI 연동은 후속 검증 대상이다. `dev`의 기존 LAN 방 생성·수동 시작은 테스트 구현이며 이 API와 아직 연결되지 않았다.
 
+2026-11-06 별도 브랜치에 [Unreal 로비 티켓 제공자](../Network/MatchmakingTickets.md)를 구현했다. 시작·current 조회·배정 전 취소의 코드 연결이며 Unreal 빌드·실계정 UI 실행은 미확인이다. 실제 EOS 세션 API·매치 상태 보고와 LAN 경로는 이번 범위에 포함하지 않았다.
+
 ## 공통 요청
 
 - 모든 요청: `Authorization: Bearer <EOS Connect ID Token>`. 토큰은 `EOS_Connect_CopyIdToken`으로 받고 만료 전에 갱신한다. PUID는 서버가 토큰에서 확인한다.

@@ -33,6 +33,7 @@ public:
     UFUNCTION(BlueprintCallable, Category="CF|Frontend") void RequestNickname(const FString& Nickname);
     UFUNCTION(BlueprintCallable, Category="CF|Frontend") void ReturnToTitle();
     UFUNCTION(BlueprintCallable, Category="CF|Frontend") void ClearError();
+    bool HasAuthenticatedProfile() const { return bAuthenticated && !ProfileNickname.IsEmpty(); }
     UFUNCTION(BlueprintPure, Category="CF|Frontend") static bool ValidateNickname(const FString& Input, FString& Normalized);
 
     // 통합 계층은 요청 ID를 보존하고, 실제 작업이 끝난 경우에만 응답한다. 토큰은 UI에 전달하지 않는다.

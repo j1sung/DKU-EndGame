@@ -100,7 +100,7 @@ void UCFLobbySubsystem::SendCancel()
 
 void UCFLobbySubsystem::RequestCancel()
 {
-    if (ActiveFlowId <= 0 || bAssigned || Screen == ECFQueueScreen::Cancelling) return;
+    if (ActiveFlowId <= 0 || bAssigned || Screen == ECFQueueScreen::Cancelling || Screen == ECFQueueScreen::AuthenticationRequired) return;
     bCancelRequested = true;
     if (Screen == ECFQueueScreen::Starting) { SetState(ECFQueueScreen::Cancelling); return; }
     if (Screen == ECFQueueScreen::Recovering) { RecoverStatus(); return; }
@@ -135,6 +135,24 @@ void UCFLobbySubsystem::ReportUncertain(int32 FlowId, const FText& Message)
     SetState(ECFQueueScreen::Recovering, Message.IsEmpty() ? LobbyText(TEXT("연결 상태를 확인하고 있습니다. 다시 확인해 주세요.")) : Message);
 }
 
+void UCFLobbySubsystem::ReportAuthenticationRequired(int32 FlowId)
+{
+    if (!Accept(FlowId)) return;
+    ClearWatchdog(); bReturnRequested = false;
+    SetState(ECFQueueScreen::AuthenticationRequired,
+        LobbyText(TEXT("로그인이 필요합니다. 로그인 화면으로 돌아가 주세요. 기존 매칭은 취소된 것으로 처리되지 않습니다.")));
+}
+
+int32 UCFLobbySubsystem::BeginAccountRecovery()
+{
+    // 계정 전환은 이전 계정의 서버 매칭을 취소하지 않는다. 표시 흐름만 새 계정으로 분리한다.
+    ClearWatchdog(); ActiveFlowId = ++FlowSerial; QueueDeadline = 0;
+    bAssigned = bCancelRequested = bCancelSent = bReturnRequested = false;
+    ConnectionMessage = FText::GetEmpty();
+    SetState(ECFQueueScreen::Recovering);
+    return ActiveFlowId;
+}
+
 void UCFLobbySubsystem::RecoverStatus()
 {
     if (ActiveFlowId <= 0 || Screen != ECFQueueScreen::Recovering) return;
@@ -150,6 +168,10 @@ void UCFLobbySubsystem::RecoverStatus()
 
 void UCFLobbySubsystem::RestoreOnEntry()
 {
+    if (Screen == ECFQueueScreen::AuthenticationRequired && ActiveFlowId > 0)
+    {
+        SetState(ECFQueueScreen::Recovering); RecoverStatus(); return;
+    }
     if (ActiveFlowId != 0 || !OnStatusRecoveryRequested.IsBound()) return;
     ActiveFlowId = ++FlowSerial;
     SetState(ECFQueueScreen::Recovering); RecoverStatus();
@@ -169,12 +191,14 @@ int32 UCFLobbySubsystem::GetRemainingSeconds() const
 
 bool UCFLobbySubsystem::CanReturnToTitle() const
 {
+    if (Screen == ECFQueueScreen::AuthenticationRequired) return true;
     return !bAssigned && !bReturnRequested;
 }
 
 void UCFLobbySubsystem::RequestReturnToTitle()
 {
     if (!CanReturnToTitle()) return;
+    if (Screen == ECFQueueScreen::AuthenticationRequired) { OnReturnToTitleAllowed.Broadcast(); return; }
     if (Screen == ECFQueueScreen::Idle && ActiveFlowId == 0) { OnReturnToTitleAllowed.Broadcast(); return; }
     bReturnRequested = true; RequestCancel(); OnStateChanged.Broadcast();
 }
