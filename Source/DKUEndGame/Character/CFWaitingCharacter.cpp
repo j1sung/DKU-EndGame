@@ -16,3 +16,4 @@ bool ACFWaitingCharacter::CanJumpInternal_Implementation() const
 {
     return false;
 }
+ 

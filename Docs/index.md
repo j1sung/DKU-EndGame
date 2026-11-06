@@ -16,6 +16,18 @@
 
 ## 최근 기록
 
+- [2026-11-06 · 일시적 불안정 상태와 상체 입력 보간](Changes.md#change-20261106-unstable-balance)
+
+- [2026-11-06 · 일반 이동 기울기 제한·자동 복귀](Changes.md#change-20261106-safe-input-tilt)
+
+- [2026-11-06 · 시점 기준 이동과 종료 크래시 진단](Changes.md#change-20261106-view-movement)
+
+- [2026-11-06 · 점프 조준과 기울기 분리](Changes.md#change-20261106-jump-aim)
+
+- [2026-11-06 · 효과음 컴파일 오류 수정](Changes.md#change-20261106-audio-compile)
+
+- [2026-11-05 · 닭싸움 모션 완화·효과음](Changes.md#change-20261105-combat-feedback)
+
 - [2026-10-30 · 충돌 판정 시점 보완](Changes.md#change-20261030-collision-timing)
 
 - [2026-10-30 · 역입력 균형 회복 개선](Changes.md#change-20261030-counter-tilt)
