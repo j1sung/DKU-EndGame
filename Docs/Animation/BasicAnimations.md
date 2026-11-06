@@ -11,7 +11,7 @@
 3. Play를 누르고 게임 화면을 클릭한다.
 4. 마우스 왼쪽 버튼을 누르고 있으면 충전, 놓으면 점프한다. WASD는 기존 이동·기울기 입력이다.
 5. 처음에는 Idle이다. 첫 점프 후에는 착지와 자동 홉이 반복된다. 충전 중에는 다음 자동 홉이 억제된다.
-6. WASD를 오래 유지하면 기존 균형 제한으로 움직임이 멈춘다. 다시 시험하려면 Stop → Play한다. 방향별 넘어짐은 추가 연결되어 있으며 [4방향 넘어짐](DirectionalKnockdown.md)을 참고한다.
+6. 평상시 WASD 유지로는 제한된 기울기에 안정되고 키를 놓으면 중심으로 복귀한다. 강한 방향 점프·충돌 후 2초간은 누적 기울기 상태이므로 균형 한계에서 넘어진다. 다시 시험하려면 Stop → Play한다. 방향별 넘어짐은 [4방향 넘어짐](DirectionalKnockdown.md)을 참고한다.
 
 ## 연결 구조
 
@@ -36,16 +36,22 @@
 
 ## C++ 변경과 조절값
 
+2026-11-06 상체 입력 완화: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋. 기존 AnimBP가 참조하는 `CurrentTilt` 이름을 유지하면서 로컬 표현값으로 변경했다. 실제 입력·점프 조준·균형 계산은 복제된 `RawTiltInput`을 사용한다. `CurrentTilt`는 `UpperBodyTiltResponse=6`의 지수 보간과 `MaxUpperBodyTiltSpeed=4` 입력 단위/초의 변화량 제한으로 따라가므로 좌우 반전 때 즉시 -1↔1로 바뀌지 않는다. 상체 보간은 게임플레이 입력을 지연시키지 않는다. 전체 메시의 `VisualBodyTilt` 보간은 별도로 유지한다. 탈락·라운드 잠금·넘어짐 대기에서는 표현 기울기를 0으로 정리한다.
+
+에셋의 직렬화된 `ChickenCharacter:CurrentTilt`, `AnimTilt`, `spine_01`, `pelvis` 참조는 확인했지만 에디터에서 AnimGraph 연결을 다시 열거나 재생하지 않았다. AnimBP 바이너리는 수정하지 않았다. 정식 빌드 후 좌우·앞뒤 급반전, 키 해제, 호스트·원격 캐릭터, 넘어짐 포즈를 확인해야 한다.
+
 `AChickenCharacter`가 이동, 충전력, 점프와 착지 후 재점프 시점을 결정한다. `UChickenAnimInstance`는 그 결과를 읽어 표현할 상태와 재생 속도만 계산한다. 애니메이션 Notify로 점프하거나 체력을 변경하지 않는다.
 
-- `LandingRecoveryTime`: 기본 **0.2초**. 이전의 즉시 재점프를 짧은 착지 회복 후 재점프로 변경했다. BP_ChickenCharacter의 Class Defaults → Movement → Hopping에서 조절할 수 있다.
+- `LandingRecoveryTime`: 기존 값 **0.2초**와 `MinimumLandingRecoveryTime` 기본 **0.3초** 중 큰 값을 실제 회복 시간으로 사용한다. 기존 BP의 0.2초 오버라이드에도 최소값이 적용되며 자동 홉 간격도 늘어난다. BP_ChickenCharacter의 Class Defaults → Movement → Hopping에서 조절할 수 있다.
 - `ChargeStartDuration`: 기본 **0.4초**. 현재 Charge_Start 클립 길이와 일치한다.
-- `JumpStartDuration`: 기본 **0.15초**. 0.3초짜리 Jump_Start를 기본 2배속으로 재생한다. 실제 발사 시점은 C++ 입력 처리 시점이다.
-- Land 재생 속도는 `0.7 / LandingRecoveryTime`으로 계산한다. 기본값은 3.5배속이다. 짧게 압축한 착지감은 추후 플레이 감각에 맞춰 조절할 수 있다.
+- `JumpStartDuration`: 기존 값 **0.15초**와 `MinimumJumpStartDuration` 기본 **0.22초** 중 큰 값을 사용한다. 0.3초짜리 Jump_Start는 기본 약 1.36배속이다. 실제 발사 시점은 C++ 입력 처리 시점이며, 이동 모드 변경 전 한 프레임 때문에 Idle로 끊기지 않도록 시작 상태를 유지한다.
+- Land 재생 속도는 `0.7 / GetLandingRecoveryTime()`으로 계산한다. 기본 실효 시간 0.3초에서 약 2.33배속이다. 실제 착지하면 JumpStart 유지보다 Land가 우선한다.
 - `TakeoffSerial`: 새 점프를 감지하는 로컬 카운터다. 네트워크 복제 이벤트가 아니다.
 - 기존 `LandMontage` 필드는 호환을 위해 남았지만 현재 재생하지 않는다. `AM_Land`를 추가로 재생하면 착지가 중복될 수 있으므로 기본 경로에서는 사용하지 않는다.
 
 ## 범위와 후속 작업
+
+2026-11-05 조정: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋. 전체 메시 기울기는 서버의 균형값을 별도 시각값으로 따라가며 응답률 6, 최대 변화량 100도/초를 사용한다. 자동 중심 복원과 균형 판정은 변경하지 않았다. 점프·충전·착지·충돌 소리는 [Gameplay 효과음](../Gameplay/Overview.md#combat-audio)을 참고한다. 이번 변경에서 AnimBP 바이너리와 전환 블렌드는 편집하지 않았고 플레이 검증은 별도다.
 
 원본 `Lvl_CF_Arena`, 친구의 `TestMap`, 기존 게임모드, 메인 메뉴는 바꾸지 않았다. 테스트 레벨은 경기장 복사본이며 ChickenCharacter를 사용한다.
 
