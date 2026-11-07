@@ -19,6 +19,10 @@
 
 ## 최근 기록
 
+- [2026-11-07 · Round3 장애물 전투 아레나 재구성](Changes.md#change-20261107-round3-arena)
+
+- [2026-11-07 · Round3 장애물 코스 초안](Changes.md#change-20261107-round3-draft)
+
 - [2026-11-07 · 개별 철망 패널의 옥상 공사용 리프트](Changes.md#change-20261107-round2-construction-lift)
 
 - [2026-11-07 · 옥상 플레이 구역 외곽 높은 펜스 추가](Changes.md#change-20261107-round2-rooftop-perimeter)
