@@ -19,6 +19,20 @@
 
 ## 최근 기록
 
+- [2026-11-07 · 개별 철망 패널의 옥상 공사용 리프트](Changes.md#change-20261107-round2-construction-lift)
+
+- [2026-11-07 · 옥상 플레이 구역 외곽 높은 펜스 추가](Changes.md#change-20261107-round2-rooftop-perimeter)
+
+- [2026-11-07 · Round2 Organic 도심 옥상 테마 적용](Changes.md#change-20261107-round2-rooftop)
+
+- [2026-11-06 · Round2 울타리를 개별 네모 패널로 분리](Changes.md#change-20261106-round2-fence-panels)
+
+- [2026-11-06 · Round2 연결 구조를 보존한 펜스와 이동 기믹 초안](Changes.md#change-20261106-round2-organic)
+
+- [2026-11-06 · 네 높이의 캐주얼 입체 아레나 생성](Changes.md#change-20261106-round2-skyplay)
+
+- [2026-11-06 · 놀이터 회전판 손잡이와 오뚝이 비율 복구](Changes.md#change-20261106-playground-roundabout-repair)
+
 - [2026-11-05 · L_TestJS 도심 야외 스파링 광장 디테일](Changes.md#change-20261105-urban-sparring-plaza)
 
 - [2026-11-05 · 로그인·프로필·연습 로비 진입 연결](Changes.md#change-20261105-login-entry)
