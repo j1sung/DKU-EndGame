@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "Character/CFKnockdownTypes.h"
+#include "Character/ChickenAudioComponent.h"
 #include "ChickenCharacter.generated.h"
 
 class UPrimitiveComponent;
@@ -36,7 +37,7 @@ public:
     bool IsFallen() const { return bIsFallen; }
     bool IsRecoveringFromLanding() const { return bInLandingRecovery; }
     int32 GetTakeoffSerial() const { return TakeoffSerial; }
-    float GetLandingRecoveryTime() const { return LandingRecoveryTime; }
+    float GetLandingRecoveryTime() const { return FMath::Max(0.01f, FMath::Max(LandingRecoveryTime, MinimumLandingRecoveryTime)); }
     float GetNormalizedJumpCharge() const { return MaxJumpPower > MinJumpPower ? FMath::Clamp((CurrentJumpPower - MinJumpPower) / (MaxJumpPower - MinJumpPower), 0.f, 1.f) : 0.f; }
 
 protected:
@@ -49,6 +50,25 @@ protected:
     virtual void OnMovementModeChanged(EMovementMode PrevMovementMode, uint8 PreviousCustomMode = 0) override;
 
 private:
+    UPROPERTY(VisibleAnywhere, Category="Chicken|Audio")
+    TObjectPtr<UChickenAudioComponent> ChickenAudio;
+
+    UFUNCTION(NetMulticast, Unreliable)
+    void MulticastPlaySound(EChickenSound Event, float Strength);
+
+    // Presentation follows authoritative balance without feeding back into failure checks.
+    UPROPERTY(EditAnywhere, Category="Chicken|Animation", meta=(ClampMin="0.1"))
+    float VisualTiltResponse = 6.f;
+
+    UPROPERTY(EditAnywhere, Category="Chicken|Animation", meta=(ClampMin="1", Units="deg/s"))
+    float MaxVisualTiltSpeed = 100.f;
+
+    FVector2D VisualBodyTilt = FVector2D::ZeroVector;
+
+    // Also applies to existing Blueprints that still override LandingRecoveryTime to 0.2.
+    UPROPERTY(EditAnywhere, Category="Movement|Hopping", meta=(ClampMin="0.01", Units="s"))
+    float MinimumLandingRecoveryTime = 0.3f;
+
     FString DebugContext() const;
     void DebugInput(bool bForward, float Value);
     void DebugState();
@@ -81,8 +101,18 @@ protected:
     void MoveForward(float Value);
     void MoveRight(float Value);
 
-    UPROPERTY(Replicated, BlueprintReadOnly, Category = "Movement")
-    FVector2D CurrentTilt;
+    // Existing AnimBP reads this property; smoothing must not delay gameplay input.
+    UPROPERTY(BlueprintReadOnly, Category = "Movement")
+    FVector2D CurrentTilt = FVector2D::ZeroVector;
+
+    UPROPERTY(Replicated)
+    FVector2D RawTiltInput = FVector2D::ZeroVector;
+
+    UPROPERTY(EditAnywhere, Category = "Chicken|Animation", meta=(ClampMin="0.1"))
+    float UpperBodyTiltResponse = 6.f;
+
+    UPROPERTY(EditAnywhere, Category = "Chicken|Animation", meta=(ClampMin="0.1"))
+    float MaxUpperBodyTiltSpeed = 4.f;
 
     // 균형.
 	void UpdateBodyTilt(float DeltaTime);
@@ -116,14 +146,32 @@ protected:
     void StartJumpCharge();
     void ExecuteJump();
 
+    void UpdateJumpAim();
+    void UpdateUpperBodyTilt(float DeltaTime);
+    void EnterUnstableBalance();
+
+    UPROPERTY(EditAnywhere, Category = "Balance", meta=(ClampMin="0.0", Units="s"))
+    float UnstableBalanceDuration = 2.f;
+
+    UPROPERTY(EditAnywhere, Category = "Balance", meta=(ClampMin="0.0", ClampMax="1.0"))
+    float StrongJumpChargeThreshold = 0.5f;
+
+    UPROPERTY(EditAnywhere, Category = "Balance", meta=(ClampMin="0.0"))
+    float StrongJumpTiltImpulse = 1.2f;
+
+    // Server-only timer; clients display replicated BodyTilt and raw input.
+    float UnstableBalanceRemaining = 0.f;
+    // Server-owned WASD aim for this charge; transformed by control yaw on release.
+    FVector2D JumpAim = FVector2D::ZeroVector;
+
     UPROPERTY(Replicated, BlueprintReadOnly, Category = "Jump")
     float CurrentJumpPower = 0.f;
 
     UPROPERTY(EditAnywhere, Category = "Jump")
-    float MinJumpPower = 200.0f;
+    float MinJumpPower = 100.0f;
 
     UPROPERTY(EditAnywhere, Category = "Jump")
-    float MaxJumpPower = 700.0f;
+    float MaxJumpPower = 400.0f;
 
     UPROPERTY(EditAnywhere, Category = "Jump")
     float ChargeRate = 700.0f;
@@ -210,6 +258,14 @@ protected :
     // 기울어지는 속도.
     // X: 전후, Y: 좌우. 기존 BodyTilt 좌표 규칙을 그대로 사용.
     FVector2D TiltVelocity = FVector2D::ZeroVector;
+
+    // Ordinary movement leans within a safe fraction of the knockdown limit.
+    UPROPERTY(EditAnywhere, Category = "Balance", meta = (ClampMin = "0.0", ClampMax = "0.5"))
+    float InputTiltLimitRatio = 0.35f;
+
+    // Spring response in 1/s; also returns the body to center when input is released.
+    UPROPERTY(EditAnywhere, Category = "Balance", meta = (ClampMin = "0.1", ClampMax = "10.0"))
+    float BalanceReturnSpeed = 2.f;
 
     // 입력으로 기울어지는 속도를 바꾸는 힘.
     UPROPERTY(EditAnywhere, Category = "Balance",
