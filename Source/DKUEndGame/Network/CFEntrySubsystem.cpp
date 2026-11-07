@@ -10,6 +10,7 @@
 #include "Interfaces/IHttpResponse.h"
 #include "Kismet/GameplayStatics.h"
 #include "Misc/PackageName.h"
+#include "Misc/ConfigCacheIni.h"
 #include "OnlineSubsystemUtils.h"
 #include "Serialization/JsonReader.h"
 #include "Serialization/JsonSerializer.h"
@@ -21,6 +22,8 @@
 #include "IEOSSDKManager.h"
 #include "eos_connect.h"
 #include "eos_sdk.h"
+
+DEFINE_LOG_CATEGORY_STATIC(LogCFEntry, Log, All);
 
 namespace CFEntry
 {
@@ -38,6 +41,7 @@ FText ApiError(int32 Status, const FString& Code)
 void UCFEntrySubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
     Super::Initialize(Collection);
+    LoadProfileApiConfig();
     Collection.InitializeDependency<UCFFrontendSubsystem>();
     Frontend = GetGameInstance()->GetSubsystem<UCFFrontendSubsystem>();
     Frontend->OnLoginRequested.AddUniqueDynamic(this, &ThisClass::Login);
@@ -111,6 +115,16 @@ void UCFEntrySubsystem::Fail(const FText& Error)
     else if (FailedOperation == EOperation::Travel) Frontend->CompleteLobbyEntry(Id, false, Error);
 }
 
+void UCFEntrySubsystem::LoadProfileApiConfig()
+{
+    // CDO의 자동 복사에만 의존하지 않고 명령행 덮어쓰기를 포함한 최종 시작 설정을 읽는다.
+    ProfileApiBaseUrl.Reset();
+    const bool bFound = GConfig && GConfig->GetString(TEXT("/Script/DKUEndGame.CFEntrySubsystem"),
+        TEXT("ProfileApiBaseUrl"), ProfileApiBaseUrl, GGameIni);
+    UE_LOG(LogCFEntry, Display, TEXT("Profile API configuration: Found=%d Valid=%d"),
+        bFound, ValidApiBase(ProfileApiBaseUrl));
+}
+
 bool UCFEntrySubsystem::ValidApiBase(const FString& Base)
 {
     if (!Base.StartsWith(TEXT("https://")) || Base.Len() <= 8) return false;
@@ -120,20 +134,60 @@ bool UCFEntrySubsystem::ValidApiBase(const FString& Base)
 
 bool UCFEntrySubsystem::PrepareEOS()
 {
-    if (Identity.IsValid()) return true;
+    if (Identity.IsValid())
+    {
+        UE_LOG(LogCFEntry, Display, TEXT("EOS preparation: reusing Identity interface."));
+        return true;
+    }
     const FEOSSettings Settings = UEOSSettings::GetSettings();
+    // 설정값 원문 대신 활성화/존재 여부만 기록한다. 자격 증명과 토큰은 출력하지 않는다.
+    UE_LOG(LogCFEntry, Display, TEXT("EOS settings: UseEAS=%d UseEOSConnect=%d UseNamedPlatformConfig=%d"),
+        static_cast<int32>(Settings.bUseEAS), static_cast<int32>(Settings.bUseEOSConnect),
+        static_cast<int32>(Settings.bUseNamedPlatformConfig));
+    if (!Settings.bUseEAS || !Settings.bUseEOSConnect)
+    {
+        UE_LOG(LogCFEntry, Warning, TEXT("EOS preparation failed: EAS or EOS Connect is disabled."));
+        return false;
+    }
     FEOSArtifactSettings Artifact;
-    if (!Settings.bUseEAS || !Settings.bUseEOSConnect ||
-        (!Settings.bUseNamedPlatformConfig && (!UEOSSettings::GetSelectedArtifactSettings(Artifact) ||
-         Artifact.ProductId.IsEmpty() || Artifact.SandboxId.IsEmpty() || Artifact.DeploymentId.IsEmpty() ||
-         Artifact.ClientId.IsEmpty() || Artifact.ClientSecret.IsEmpty()))) return false;
+    if (!Settings.bUseNamedPlatformConfig)
+    {
+        if (!UEOSSettings::GetSelectedArtifactSettings(Artifact))
+        {
+            UE_LOG(LogCFEntry, Warning, TEXT("EOS preparation failed: artifact selection failed."));
+            return false;
+        }
+        UE_LOG(LogCFEntry, Display, TEXT("EOS artifact presence: ProductId=%d SandboxId=%d DeploymentId=%d ClientId=%d ClientSecret=%d"),
+            !Artifact.ProductId.IsEmpty(), !Artifact.SandboxId.IsEmpty(), !Artifact.DeploymentId.IsEmpty(),
+            !Artifact.ClientId.IsEmpty(), !Artifact.ClientSecret.IsEmpty());
+        if (Artifact.ProductId.IsEmpty() || Artifact.SandboxId.IsEmpty() || Artifact.DeploymentId.IsEmpty() ||
+            Artifact.ClientId.IsEmpty() || Artifact.ClientSecret.IsEmpty())
+        {
+            UE_LOG(LogCFEntry, Warning, TEXT("EOS preparation failed: required artifact fields are missing."));
+            return false;
+        }
+    }
+    else
+    {
+        UE_LOG(LogCFEntry, Display, TEXT("EOS preparation: using named platform configuration; artifact check skipped."));
+    }
+    UE_LOG(LogCFEntry, Display, TEXT("EOS preparation: requesting EOS subsystem."));
     IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld(), FName(TEXT("EOS")));
-    if (!Subsystem || Subsystem->GetSubsystemName() != FName(TEXT("EOS"))) return false;
+    if (!Subsystem || Subsystem->GetSubsystemName() != FName(TEXT("EOS")))
+    {
+        UE_LOG(LogCFEntry, Warning, TEXT("EOS preparation failed: EOS subsystem is unavailable or has an unexpected type."));
+        return false;
+    }
     EOS = static_cast<IOnlineSubsystemEOS*>(Subsystem);
     Identity = EOS->GetIdentityInterface();
-    if (!Identity) return false;
+    if (!Identity)
+    {
+        UE_LOG(LogCFEntry, Warning, TEXT("EOS preparation failed: Identity interface is unavailable."));
+        return false;
+    }
     StatusHandle = Identity->AddOnLoginStatusChangedDelegate_Handle(0,
         FOnLoginStatusChangedDelegate::CreateUObject(this, &ThisClass::OnEOSStatus));
+    UE_LOG(LogCFEntry, Display, TEXT("EOS preparation succeeded."));
     return true;
 }
 
@@ -141,6 +195,7 @@ void UCFEntrySubsystem::Login(int32 Id)
 {
     ClearOperation(); RequestId = Id; Operation = EOperation::Login;
     if (!IsCurrent(Id)) { ClearOperation(); return; }
+    UE_LOG(LogCFEntry, Display, TEXT("Login requested: ApiBaseValid=%d"), ValidApiBase(ProfileApiBaseUrl));
     if (!ValidApiBase(ProfileApiBaseUrl) || !PrepareEOS())
     {
         Fail(CFEntry::Text(TEXT("현재 로그인 서비스를 사용할 수 없습니다. 잠시 후 다시 시도해 주세요."))); return;
@@ -164,6 +219,7 @@ void UCFEntrySubsystem::StartEOSLogin()
     LoginHandle = Identity->AddOnLoginCompleteDelegate_Handle(0, FOnLoginCompleteDelegate::CreateUObject(this, &ThisClass::OnEOSLogin));
     FOnlineAccountCredentials Credentials;
     Credentials.Type = TEXT("accountportal");
+    UE_LOG(LogCFEntry, Display, TEXT("Starting Account Portal login."));
     if (!Identity->Login(0, Credentials) && bLoginPending)
     {
         Identity->ClearOnLoginCompleteDelegate_Handle(0, LoginHandle); LoginHandle.Reset(); bLoginPending = false;

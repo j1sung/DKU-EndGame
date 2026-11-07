@@ -46,9 +46,9 @@ HTTP 요청별 기한은 12초다. 등록 전 조회와 POST를 합쳐 기존 �
 
 - 설치된 UE 5.8.2의 `OnlineSubsystemEOS`·`EOSShared` 플러그인은 활성화했다. 새 SDK나 프레임워크를 설치하지 않았다.
 - 프로젝트/샌드박스/배포 ID와 Client ID·정책을 개발 환경과 일치시킨다. 2026-11-05 사용자가 기존 `xyza7891MHpvCZ6hgPhGFHQwn6KZNTp9` Client의 Peer2Peer 정책과 EAS Linked Clients 연결을 확인했다. 백엔드의 허용 Client ID도 동일하다. 아래 도구는 이 Client의 Portal 자격 증명을 사용하며 AWS Secrets Manager의 값을 가져오지 않는다. TrustedServer 정책의 자격 증명은 공개 게임 빌드에 넣지 않는다.
-- Epic Account Services 애플리케이션·계정 접근·Account Portal·Connect 권한을 확인한다. 현재 코드의 요청 범위는 `BasicProfile`이다.
+- Epic Account Services 애플리케이션·계정 접근·Account Portal·Connect 권한을 확인한다. `Config/DefaultEngine.ini`에서 `!AuthScopeFlags=ClearArray` 뒤 `+AuthScopeFlags=BasicProfile`을 지정해 상위 친구 목록 등 요청 범위를 제거한다. 현재 로그인·닉네임 흐름에는 친구 권한이 필요하지 않다.
 - 민감 설정은 팀의 비공개 로컬/빌드 설정 경로로 제공한다. 추적 중인 DefaultEngine.ini에 실제 Secret이나 토큰을 넣지 않는다. 저장소에는 `bUseEAS`·`bUseEOSConnect` 등 비밀이 아닌 기본 옵션만 있다.
-- `Config/DefaultGame.ini`의 `[/Script/DKUEndGame.CFEntrySubsystem] ProfileApiBaseUrl`은 기존 개발 API 주소다. 2026-11-05 무토큰 GET의 `401 AUTH_MISSING`까지 확인했다. 환경 변경 시 통합 담당이 주소를 바꾼다.
+- `Config/DefaultGame.ini`의 `[/Script/DKUEndGame.CFEntrySubsystem] ProfileApiBaseUrl`은 기존 개발 API 주소다. **URL 전체를 큰따옴표로 감싼다** (`ProfileApiBaseUrl="https://..."`). 따옴표가 없는 기존 설정은 실제 로그에서 `https:`로 잘려 읽혔다. Subsystem 초기화 시 `GGameIni`의 최종 설정 캐시에서 명시적으로 읽고, 명령행 설정 덮어쓰기는 계속 존중한다. 누락·잘못된 주소는 대체 주소로 우회하지 않고 거절한다. 2026-11-05 무토큰 GET의 `401 AUTH_MISSING`까지 확인했다. 환경 변경 시 통합 담당이 주소를 바꾼다.
 - 준비 후 신규/기존 계정 각각으로 실제 Epic 로그인, GET, 최초 닉네임 POST, 중복 이름, 취소, 인증 만료 후 재로그인을 확인한다.
 
 ## EOS 로컬 설정 먼저 준비하기
@@ -90,6 +90,23 @@ pwsh -NoProfile -File .\Tools\Network\Start-EOSLoginTest.ps1 -UnrealEditorPath '
 5. Account Portal 취소와 로그인 중 뒤로가기, 재시도, 인증 만료 후 재로그인을 확인한다. 연습 로비에서 인증이 끊겼을 때의 표시와 복구도 별도 확인한다.
 
 자동 매칭 API와 4인 EOS 세션 제공자는 아직 연결되지 않았다. 여기서 성공 판정은 실계정 인증·프로필·닉네임·연습 로비 진입까지다. 현재 PC에는 Unreal이 없어 이 절차는 아직 재실행하지 않았다. 설정 생성 도구의 검증과 게임 실행 결과를 구분해 기록한다.
+
+## 로그인 준비 실패 진단
+
+`현재 로그인 서비스를 사용할 수 없습니다`는 API 주소 또는 EOS 준비 검사 실패 시 표시된다. 설정 도구의 `READY`와 `-CustomConfig=EOSLocal` 인식만으로 런타임 EOS 준비 성공을 판단하지 않는다.
+
+진단 로그가 포함된 최신 코드를 **Editor 대상으로 다시 빌드**한 뒤 기존 실행 도구로 실행하고 LOG IN NOW를 누른다. `Saved/Logs/DKUEndGame.log`에서 `LogCFEntry`를 검색한다.
+
+- `ApiBaseValid=0`: 프로필 API 주소 형식 검사 실패.
+- `Profile API configuration: Found=... Valid=...`: 초기화 시 최종 Game 설정 캐시에서 주소를 찾았는지와 형식 검사 결과. 둘 다 `1`이어야 한다. 값 원문은 기록하지 않는다.
+- `EOS settings`: EAS·EOS Connect·Named Platform 설정의 실제 활성화 여부. EAS와 EOS Connect는 모두 `1`이어야 한다.
+- `artifact selection failed`: Artifact 선택 실패. `EOS artifact presence`의 각 항목은 값의 존재 여부이며 `0`은 누락, `1`은 존재다. 존재 여부로 자격 증명의 유효성까지 판단하지 않는다.
+- `EOS preparation failed`: 필수 필드 누락, 서브시스템 또는 Identity 생성 실패를 구분한다. Named Platform 설정을 사용하는 경우 Artifact 검사를 생략한 사실도 기록한다.
+- `EOS preparation succeeded` → `Starting Account Portal login`: 준비 완료 후 실제 로그인 호출 단계 진입. 로그인 성공을 의미하지 않는다.
+
+로그에는 API 주소·식별자·Secret·토큰 원문을 출력하지 않고 검사 결과만 기록한다. 화면의 오류 문구와 로그인 조건은 유지한다. 진단 로그 추가 후 Unreal 빌드와 실제 계정 재실행은 Unreal이 설치된 PC에서 확인해야 한다.
+
+2026-11-05 팀원 제공 로그에서 일반 실행의 `ApiBaseValid=0`, 명령행 주소 지정 후 `ApiBaseValid=1`·EOS 준비 완료를 확인했다. 이어 Account Portal이 `friends_list` 요청을 거절했다. 명시적 주소 로딩과 요청 범위 초기화 이후에도 `Found=1 Valid=0`이었으며, `GetIni` 조회 로그에서 **`ProfileApiBaseUrl = https:`**를 확인했다. 주소 항목 누락이나 프로퍼티 복사 실패가 아닌 설정 문자열 잘림이 확인되어 URL을 큰따옴표로 감쌌다. 수정 후 실제 로그인 성공은 아직 확인하지 않았다. 최신 코드의 Editor 대상 빌드를 완료한 PC는 이 URL 따옴표 변경만 받는 경우 재빌드 없이 게임을 완전히 종료 후 기존 실행 도구로 다시 실행하고 **API 주소 덮어쓰기 없이** 재확인한다. 기존 EOS 로컬 설정과 Secret은 다시 입력할 필요가 없다.
 
 ## 구현 위치와 패키징
 

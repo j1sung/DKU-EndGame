@@ -1,5 +1,79 @@
 # 변경 이력
 
+<a id="change-20261107-round2-construction-lift"></a>
+### 2026-11-07 · 옥상 승강판을 개별 철망 패널의 공사용 리프트로 변경
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+- 변경: Organic 맵의 기존 승강판에 옥상 금속 테마의 개방형 프레임·가림판·고정 마스트·구동기용 메시 9종과 안전색 재질 1개를 추가했다. 가림판 14개는 독립 액터이며 북·동쪽 중앙은 문 없이 열어뒀으며, 후속 요청에 따라 열린 면 위의 긴 가로대도 제거했다. 사용자가 지운 기존 케이지를 복구하지 않고 현재 배치 777개에 37개를 더했다.
+- 확인: 저장·재로딩 후 패널 좌표·크기·충돌과 기존 배치 보존, 승강기 1600cm 이동 시 장식 추종·고정부 정지·복구를 검사했다. 재로딩 시 부착 좌표가 초기화되는 문제를 수정했다. 실제 플레이·네트워크는 미검증. [구성과 편집 위치](Gameplay/Overview.md#round2-organic).
+
+<a id="change-20261107-round2-rooftop-perimeter"></a>
+### 2026-11-07 · 옥상 플레이 구역 외곽 높은 펜스 추가
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+- 변경: 주변 배경 건물 사이의 외부 바닥으로 떨어지지 않도록 플레이 구역 외곽에 독립 철망 패널 481개를 추가했다. 윗선은 최고 플레이 옥상보다 4m 높은 Z=3150.5cm로 통일하고 기존 파라펫·설비·동선을 보존했다. 펜스 메시 1종과 최초 적용용 도구를 추가했다.
+- 확인: 저장·재로딩 후 기존 액터 400개 보존, 모든 패널의 Pawn·PhysicsBody 차단 및 Camera 무시, 패널별 세 높이 충돌면과 내부 진입부 7곳 통과 검사. 실제 플레이는 미검증. [편집 폴더·구성·제약](Gameplay/Overview.md#round2-organic).
+
+<a id="change-20261107-round2-rooftop"></a>
+### 2026-11-07 · Round2 Organic 도심 옥상 테마 적용
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+- 변경: 사용자 수정본의 기존 액터 326개 변환·동선을 보존하고 옥상 설비·외장·주변 도시용 메시 33개와 재질 12개를 생성했다. 외곽은 낮은 콘크리트 벽과 일부 철망, 허브·계단은 철제 난간으로 바꾸고 기존 개별 패널 편집과 열린 구간을 유지했다. 테마 액터 74개를 추가했다.
+- 확인: 저장·재로딩, 기존 변환·울타리 외 메시·기믹 설정 보존, 주요 진입부 7곳과 시작 위치 4곳의 캡슐 충돌 검사 및 고해상도 외형 캡처. 실제 플레이·네트워크·성능은 미검증. [현재 구성·편집 위치·제약](Gameplay/Overview.md#round2-organic).
+
+<a id="change-20261106-round2-fence-panels"></a>
+### 2026-11-06 · Round2 울타리를 개별 네모 패널로 분리
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+- 변경: `L_Round2_Organic`의 울타리를 가로 최대 240cm의 독립 패널 302개로 교체했다. 기둥·철망은 패널 안에 묶고 충돌도 각 패널에 포함했다. 이전 일체형 액터 4개·투명 벽 52개를 레벨에서 제거해 패널 삭제만으로 통로를 열 수 있다. 지형·기믹·원본 맵은 보존했다.
+- 확인: 저장·재로딩에서 패널별 변환·충돌과 울타리 외 액터 52개 보존, 대표 한 칸의 충돌 제거 시 개방 확인. PIE는 미실행. [편집 위치와 분리 도구](Gameplay/Overview.md#round2-organic).
+
+<a id="change-20261106-round2-organic"></a>
+### 2026-11-06 · Round2 연결 구조를 보존한 펜스와 이동 기믹 초안
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+- 변경: 현재 `L_Round2`의 땅·계단·엘리베이터·허브와 기존 액터 35개를 그대로 복제한 `L_Round2_Organic`을 생성했다. 시야가 열린 외곽·허브 펜스, 회전봉 2개·수평 왕복 블록 1개·범퍼 1개·물리 블록과 공 8개를 추가하고 원래 그레이박스 표면을 유지했다.
+- 확인: 저장 후 재로딩에서 원본 파일과 기존 액터 보존, 기믹 설정·물리 속성·펜스 충돌 52곳·캐릭터 크기의 출입구 7곳을 확인했다. 실제 움직임·밀침·4인 경기는 PIE 미검증이다. [구성·생성 도구·제약](Gameplay/Overview.md#round2-organic).
+
+<a id="change-20261106-round2-skyplay"></a>
+### 2026-11-06 · 네 높이의 캐주얼 입체 아레나 생성
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+- 변경: `L_Round2`를 보존하고 별도 `L_Round2_SkyPlay`에 1.8·4.8·7.8·10.8m의 네 구역, 외곽 순환 경사로·중앙 합류 허브·점프대 3개·상하 발판 2개·낙하 후 복귀 경로와 시작점 4개를 구성했다. 캐릭터 캡슐과 보행 경사 규격을 기준으로 폭·높이를 맞췄다.
+- 확인: 저장·재로딩, 경사로 충돌 27개 표본과 이동 장치·시작점 설정, 원본 파일 해시 보존. 실제 이동·점프·4인 경기는 PIE 미검증이다. [맵 구성과 제약](Gameplay/Overview.md#round2-skyplay).
+
+<a id="change-20261106-playground-roundabout-repair"></a>
+### 2026-11-06 · 놀이터 회전판 손잡이와 오뚝이 비율 복구
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+- 변경: `L_Lobby_Playground`의 회전판 장식 19개를 배치 형상이 포함된 전용 메시로 교체하고, 장식·오뚝이가 얇은 판의 비균일 스케일을 상속하지 않도록 수정했다. 기존 6방향 놀이터 디자인·부착·오뚝이 몸체 시뮬레이션과 다른 액터는 유지했다.
+- 확인: 저장 후 맵 재로딩, 전용 메시·부착·스케일·단순 충돌 없음과 액터 204개 보존 및 에디터 외형 확인. PIE는 미실행. [구성·복구 도구](Gameplay/Overview.md#playground-roundabout-repair).
+
+<a id="change-20261105-profile-api-url-quoting"></a>
+### 2026-11-05 · 프로필 API URL 설정 문자열 잘림 수정
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요
+- 원인 확인: 팀원 `GetIni` 실행 로그에서 `ProfileApiBaseUrl = https:`를 확인했다. 이전 명시적 재로딩만으로 해결되지 않았으며 설정 문자열 자체가 잘렸다.
+- 변경: `Config/DefaultGame.ini`의 URL 전체를 큰따옴표로 감싼다. 인증 코드나 주소 검증 조건은 변경하지 않는다.
+- 확인 범위: 설정 및 문서 검토·공백 검사. 기존 최종 Game 설정의 유효 HTTPS 검사로 런타임 회귀를 확인할 수 있으나 Unreal 미설치로 직접 실행하지 않았다. 최신 코드 빌드가 된 PC는 설정 갱신 후 게임 재시작으로 재확인한다.
+- 문서: [로그인 설정](Network/LoginEntry.md#통합-담당이-구성할-것), [진단 절차](Network/LoginEntry.md#로그인-준비-실패-진단), [Network 개요](Network/Overview.md#login-entry).
+
+<a id="change-20261105-eos-login-config-fix"></a>
+### 2026-11-05 · EOS 요청 권한 제한과 API 주소 로딩 보완
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요
+- 변경: 상위 `AuthScopeFlags` 목록을 비우고 `BasicProfile`만 요청한다. `CFEntrySubsystem` 초기화 시 최종 `GGameIni` 캐시의 API 주소를 명시적으로 읽고 발견·유효 여부를 기록한다. 주소 고정값이나 인증 우회를 추가하지 않는다.
+- 근거: 팀원 로그에서 일반 실행의 API 주소 검사 실패와 명령행 주소 지정 후 EOS 준비 성공, Account Portal의 `friends_list` 권한 거절을 확인했다. 비어 있는 프로퍼티의 최종 설정 재로딩 회귀 검사를 추가했다. Unreal 빌드·회귀 검사 실행·수정 후 실제 로그인은 미확인이다.
+- 문서: [로그인 설정](Network/LoginEntry.md#통합-담당이-구성할-것), [진단 절차](Network/LoginEntry.md#로그인-준비-실패-진단), [Network 개요](Network/Overview.md#login-entry).
+
+<a id="change-20261105-eos-login-diagnostics"></a>
+### 2026-11-05 · EOS 로그인 준비 진단 로그
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요
+- 변경: `CFEntrySubsystem`의 API 주소 검사, EOS 옵션, Artifact 선택·필수 필드 존재, 서브시스템·Identity 준비와 Account Portal 호출 진입을 `LogCFEntry`로 구분한다. 설정값·자격 증명 원문과 토큰은 출력하지 않는다. 로그인 조건과 UI 오류 문구는 유지한다.
+- 확인 범위: 소스·문서 검토. Unreal 빌드 및 실제 계정 재실행은 미확인이다.
+- 문서: [로그인 준비 실패 진단](Network/LoginEntry.md#로그인-준비-실패-진단), [Network 개요](Network/Overview.md#login-entry).
+
 <a id="change-20261105-urban-sparring-plaza"></a>
 ### 2026-11-05 · L_TestJS 도심 야외 스파링 광장 디테일
 
@@ -88,6 +162,53 @@
 - 배경: 이관된 부모 BP_PhysicsObstacle의 Mover·ChaosPathedMovementController 구성 누락으로 자식 발판의 정상 표시와 컴파일에 문제가 있었다.
 - 변경: 두 자식의 부모를 BP_KinematicObstacle로 변경하고 기본 InterpToMovement 왕복 이동(300cm·편도 3초)과 RotatingMovement 자전(45도/초)을 연결했다. 기존 부모와 맵의 저장되지 않은 편집은 저장하지 않았다.
 - 확인: Blueprint 컴파일·개별 저장·컴포넌트 설정 재조회·메시 표시 확인. PIE·탑승·네트워크 미검증. [이동 발판 구성](Gameplay/Overview.md#ld-moving-obstacles).
+
+<a id="change-20261106-unstable-balance"></a>
+### 2026-11-06 · 일시적 불안정 상태와 상체 입력 보간
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+- 변경: 평상시 안정 이동을 유지하고 50% 이상 방향 점프·충돌 후 2초간 기존 기울기 누적·중력·반대 입력 보정을 적용한다. 재발생하면 시간을 갱신하며 만료 후 현재 자세에서 안정 계산으로 복귀한다. 강한 방향 점프에는 충전량 비례 기울기 충격을 추가한다. 실제 입력을 RawTiltInput으로 분리하고 기존 AnimBP 참조 CurrentTilt는 보간된 상체 표현값으로 유지했다.
+- 검증: 30/60/120 FPS 수치 계산에서 평상시 유지, 강한 충격 한계 초과, 짧은 반대 입력으로 버티기, 약한 충격 후 복귀 및 상체 입력 변화량 제한을 확인했다. 정식 빌드·PIE·AnimGraph·멀티플레이 검증은 미수행이다.
+- 문서: [불안정 상태](Gameplay/Overview.md#unstable-balance), [상체 표현](Animation/BasicAnimations.md).
+
+<a id="change-20261106-safe-input-tilt"></a>
+### 2026-11-06 · 일반 이동 기울기 제한·자동 복귀
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+- 배경: WASD로 이동하려고 누르면 너무 쉽게 기울어 넘어지는 문제.
+- 변경: 입력 기울기 목표를 넘어짐 한계의 기본 35%로 제한하고 임계 감쇠 스프링으로 따라간다. 입력 해제 시 중심으로 자동 복귀한다. 충돌은 기존 기울기 속도에 반영하며 한계 초과 넘어짐 판정은 유지한다. 기존 누적 기울기·반대 입력 보정 수치는 현재 계산에서 사용하지 않는다.
+- 검증: 30/60/120 FPS 수치 시뮬레이션으로 장시간 입력·해제 복귀와 한계 근처 충격 판정을 확인했다. 사용자 요청에 따라 빌드는 실행하지 않았으며 실제 PIE·멀티플레이·충돌 강도 검증은 남아 있다.
+- 문서: [이동과 균형](Gameplay/Overview.md#balance).
+
+<a id="change-20261106-view-movement"></a>
+### 2026-11-06 · 시점 기준 이동과 종료 크래시 진단
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+- 변경: WASD 이동과 차징 점프 방향을 시점의 수평 회전 기준으로 통일하여 캐릭터 회전 보간에 따른 방향 지연을 제거했다. 균형·충돌 규칙은 유지한다.
+- 진단: Live Coding 후 종료 시 캐릭터 맵 소멸 경로의 접근 위반을 확인했다. 클래스 메모리 배치 불일치가 유력하며 정식 빌드·재실행으로 확인해야 한다.
+- 문서: [이동](Gameplay/Overview.md#balance), [크래시 복구와 플레이 검증](Gameplay/DebugLogging.md). 변경 후 빌드·PIE 검증은 아직 미실행.
+
+<a id="change-20261106-jump-aim"></a>
+### 2026-11-06 · 점프 조준과 기울기 분리
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+- 변경: 충전 중 WASD로 점프 방향을 정하고 입력 해제 후 마지막 방향을 유지한다. 새 충전에서 방향을 지정하지 않으면 제자리 점프한다. 기울기 대신 충전량으로 발사 세기를 결정하며 수평 계수 0.95·수직 계수 1을 사용한다. 기존 균형·넘어짐은 유지하고 SpaceBar 충전을 추가했다(LeftMouseButton 유지).
+- 문서: [차징 점프](Gameplay/Overview.md#jump). 빌드·PIE·멀티플레이 검증 미실행.
+
+<a id="change-20261106-audio-compile"></a>
+### 2026-11-06 · 효과음 컴파일 오류 수정
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+- 변경: `ChickenAudioComponent::Update`의 두 `Voices.FindRef()` 결과를 `auto*` 대신 `UAudioComponent*`로 받아 `TObjectPtr` 타입 추론 오류(C3535/C2440)를 수정했다. 기존 재생·정지 동작은 유지한다.
+- 문서: [효과음](Gameplay/Overview.md#combat-audio). 소스 정적 검토만 수행했으며 빌드·PIE는 미실행.
+
+<a id="change-20261105-combat-feedback"></a>
+### 2026-11-05 · 닭싸움 기울기·모션 속도와 효과음
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+- 배경: WASD 기울기가 급하게 변하는 느낌을 완화하고 점프·차징·충돌 소리를 추가해 달라는 요청.
+- 변경: 로컬 시각 기울기에 지수 보간·100도/초 제한을 적용했다. 점프 시작 최소 0.22초, 착지 회복 최소 0.3초로 모션을 완화하며 자동 홉 간격도 늘어난다. ChickenAudioComponent에 교체 가능한 기본 합성 효과음 5종, 공간 감쇠, 서버 사건 전달, 충돌 중복 억제를 연결했다. 기존 작업 중이던 점프 파워 100~400과 이동 모드 디버그 수정은 보존했다.
+- 문서: [이동·균형](Gameplay/Overview.md#balance), [효과음](Gameplay/Overview.md#combat-audio), [기본 모션](Animation/BasicAnimations.md). AnimBP 에셋 편집·청음·멀티플레이 검증은 미수행.
 
 <a id="change-20261030-collision-timing"></a>
 ### 2026-10-30 · 충돌 속도 판정 시점 보완

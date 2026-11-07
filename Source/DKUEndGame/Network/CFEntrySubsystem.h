@@ -47,6 +47,7 @@ private:
     UFUNCTION() void Cancel(int32 Id);
     bool IsCurrent(int32 Id) const;
     void ClearOperation();
+    void LoadProfileApiConfig();
     void Fail(const FText& Error);
     bool PrepareEOS();
     void StartEOSLogin();
