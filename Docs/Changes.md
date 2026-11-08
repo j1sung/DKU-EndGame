@@ -1,5 +1,13 @@
 # 변경 이력
 
+<a id="change-20261108-round-gameplay-apply"></a>
+### 2026-11-08 · 라운드 경기 설정 적용과 로컬 다인 생성 검증
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+- 변경: `CFRoundGameMode`의 기존 Actor 멤버와 겹친 지역 변수명을 수정해 Editor 정식 빌드를 완료했다. 네 맵을 백업한 뒤 경기 GameMode와 미리보기 태그·클라이언트 로드 제외 설정을 적용하고 원본 배치·스폰 보존과 저장·재로딩을 확인했다.
+- 확인: Python 19개와 C++ 스폰 예약 검사 통과. 네 맵의 같은 프로세스 Listen Server/PIE 클라이언트에서 3인 시작 거절·4인 대기/전투 Pawn 생성·소유·미리보기 제외·카운트다운 복제 통과. 추가 검사에서 서버 시작 XY·시점 Yaw를 확인했다. 입력·렌더링·전체 경기·다른 PC·EOS·맵 전환은 미검증이다.
+- 문서: [적용 결과·제한](Gameplay/RoundGameplaySetup.md#이-pc에서-확인한-결과), [경기 상태](Gameplay/Overview.md#match).
+
 <a id="change-20261108-round-gameplay-setup"></a>
 ### 2026-11-08 · 네 라운드 경기 GameMode 준비 코드
 

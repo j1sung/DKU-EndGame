@@ -6,9 +6,11 @@
 
 ## 받은 작업과 현재 상태
 
-다른 PC의 원격 커밋 `8c50f59`를 fast-forward로 받았다. 그 기록에서 Unreal 5.8.4의 네 맵 ArenaSpawn 4개 적용·저장·재로딩과 재조회가 확인된다. 이 PC에서 그 검사를 재실행하지는 않았다. 해당 시점 Round1·2의 GameMode Override는 없고 Round3·4는 테스트용 GameMode다.
+선행 커밋 `8c50f59`에서 Unreal 5.8.4의 네 맵 ArenaSpawn 4개 적용·저장·재로딩과 재조회를 완료했다. 해당 시점 Round1·2의 GameMode Override는 없었고 Round3·4는 테스트용 GameMode였다.
 
-이번 코드는 `ACFRoundGameMode`와 설정 도구다. **현재 PC에는 Unreal이 없어 C++ 빌드·에셋 적용·실제 4인 스폰은 미실행**이며, 받은 네 `.umap`도 이 작업에서 수정하지 않았다.
+원격 커밋 `59c9f30`의 `ACFRoundGameMode`와 설정 도구를 받은 뒤, 2026-11-08 이 PC의 Unreal 5.8.4에서 정식 Editor 빌드와 네 맵 적용·저장·재로딩을 완료했다. 빌드에서 발견한 지역 변수 `Children`과 `AActor::Children`의 이름 충돌은 `AttachedActors`로 수정했다. **각 맵의 로컬 4인 생성과 첫 카운트다운까지 검증했으며, 전체 경기·맵 전환·EOS 연결 완료는 아니다.**
+
+적용 전 네 맵과 상태 JSON은 `Saved/RoundGameplaySetup/20261108_212804_165375/`에 백업했다. 네 맵의 GameMode Override는 `/Script/DKUEndGame.CFRoundGameMode`이며, 각 맵의 편집용 닭 캐릭터 4개에 `CFRoundSpawnPreview`와 `net_load_on_client=false`를 적용했다. 저장·재로딩 검사에서 모든 액터의 위치·회전·크기, 스폰 및 기존 캐릭터 태그 보존을 확인했다.
 
 ## 책임과 범위
 
@@ -60,4 +62,12 @@ round_setup["run"](apply=True)
 - 첫 카운트다운까지만 확인한 뒤 종료한다. 현재 코드를 맵별 전체 경기 완료로 판정하지 않는다.
 - `ChickenFight.RoundSetup.SpawnReservations` 검사도 실행한다. 이 PC에서는 작성만 했다.
 
-일반 Python의 경기 설정 보호 8개와 기존 스폰 보호 11개, 총 19개를 통과했다. Unreal API 호출·UHT/C++ 빌드·서버 초기화·원격/늦은 입장자의 실제 미리보기 제외·4인 스폰 예약은 Unreal PC에서 확인해야 한다.
+## 이 PC에서 확인한 결과
+
+- Unreal 5.8.4 Editor 정식 빌드 성공, Python 보호 검사 19개 및 C++ `ChickenFight.RoundSetup.SpawnReservations` 통과.
+- 일반 Editor를 `-nullrhi -unattended`로 실행해 네 맵 적용·저장·재로딩 완료. 이후 다인 검사는 실제 PIE 월드와 네트워크를 사용했다.
+- 같은 프로세스의 Listen Server와 PIE 클라이언트로 맵마다 3인/4인, 총 8개 시나리오 통과. 서버 로그에서 `ArenaSpawns=4 PreviewsRemoved=4`를 확인했고, 서버와 모든 클라이언트 월드에서 미리보기 0개와 참가 인원만큼의 대기 Pawn을 확인했다. 3인은 호스트 시작 요청 후 Waiting 유지, 4인은 전투 Pawn 4개로 전환되고 전 월드가 Countdown으로 복제됐다. Playing 진입 전 종료했다.
+- 추가 4인 검사에서 모든 월드의 로컬 Controller가 Pawn 하나씩 소유하고 서버의 참가자별 Pawn이 각각 다른 스폰에 배정됨을 확인했다. 대기/전투 Pawn의 XY 오차 1cm 미만, 서버 ControlRotation의 Yaw 오차 1도 미만을 검사했다. 바닥 정착으로 Z는 달라지며, Round2 한 지점은 대기 약 -14.5cm·전투 약 -16.5cm였다. 수평 이탈은 없고 각 캐릭터의 MaxStepHeight 이내였다. 클라이언트 화면의 카메라 방향을 시각 확인한 것은 아니다.
+- 검사 자료: `Saved/RoundGameplaySetup/pie_3_and_4_results.json`, `pie_results.json`, `pie.log`, `pie_poses.log`, `automation.log`. Python/EditorScriptingUtilities 플러그인은 해당 검사 실행에서만 활성화했으며 프로젝트 플러그인 설정은 변경하지 않았다.
+
+실제 렌더링·입력 조작감·경기 끝까지의 진행·퇴장/재입장에 따른 예약 반환·별도 프로세스/다른 PC·EOS·패키징은 미검증이다. 기존 공통 시작 거절 안내에는 여전히 “2명 이상”이라는 문구가 있어, 라운드 GameMode의 실제 최소 4인 조건과 문구를 맞추는 보완이 남아 있다.

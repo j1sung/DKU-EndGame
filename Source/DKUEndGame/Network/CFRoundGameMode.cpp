@@ -52,9 +52,9 @@ void ACFRoundGameMode::InitGame(const FString& MapName, const FString& Options, 
         {
             ErrorMessage = TEXT("ROUND_SETUP_UNEXPECTED_CHARACTER"); return;
         }
-        TArray<AActor*> Children;
-        Actor->GetAttachedActors(Children);
-        if (!Children.IsEmpty()) { ErrorMessage = TEXT("ROUND_SETUP_ATTACHED_PREVIEW"); return; }
+        TArray<AActor*> AttachedActors;
+        Actor->GetAttachedActors(AttachedActors);
+        if (!AttachedActors.IsEmpty()) { ErrorMessage = TEXT("ROUND_SETUP_ATTACHED_PREVIEW"); return; }
         // 초기 삭제의 전파에만 의존하지 않는다. 저장된 표식은 원격 클라이언트가 맵에서 로드하지 않는다.
         if (Actor->bNetLoadOnClient) { ErrorMessage = TEXT("ROUND_SETUP_PREVIEW_CLIENT_LOAD_ENABLED"); return; }
         Previews.Add(Chicken);

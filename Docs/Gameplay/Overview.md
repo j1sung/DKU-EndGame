@@ -82,7 +82,7 @@ BP 캐릭터의 `ChickenAudio` 컴포넌트에서 `SoundOverrides`에 이벤트�
 - 상태 소유자: `ACFWaitingGameMode`, 복제: `ACFWaitingGameState`, 소유 플레이어 입력·관전: `ACFWaitingPlayerController`.
 - 상세: [경기 시작](../MatchStart.md), [탈락·관전](../RoundEnd.md), [점수·라운드](../RoundProgression.md), [최종 결과·복귀](../FinalResults.md).
 - 2026-11-08: 최신 dev의 네 라운드 배치를 작업 브랜치에 반영하고 [배치 캐릭터 기반 스폰 연결 도구](RoundSpawns.md)를 Unreal 5.8.4 Editor에서 적용했다. 네 맵의 `ArenaSpawn` 4개씩 저장·재로딩과 원본 캐릭터/GameMode 보존을 확인했다. 경기 GameMode 연결·배치 테스트 캐릭터 처리·실제 4인 스폰·라운드별 맵 전환은 후속 작업이다.
-- 후속으로 [경기 준비 GameMode와 적용 도구](RoundGameplaySetup.md)를 구현했다. 최소 4인, 태그로 지정한 미리보기의 서버 정리·클라이언트 로드 제외, 스폰 예약을 제공한다. 새 코드의 Unreal 빌드·에셋 적용·실제 4인 생성은 미확인이다. EOS 입장과 라운드별 맵 전환을 완료한 것은 아니다.
+- 후속 [경기 준비 GameMode와 적용 도구](RoundGameplaySetup.md)는 Unreal 5.8.4에서 정식 빌드하고 네 맵에 적용했다. 최소 4인, 미리보기의 서버 정리·클라이언트 로드 제외, 스폰 예약을 제공한다. 같은 프로세스의 Listen Server/PIE 클라이언트로 네 맵 모두 3인 시작 거절과 4인 생성·소유·전투 Pawn 교체·첫 카운트다운 복제를 확인했다. 서버의 시작 XY·시점 Yaw도 확인했다. 전체 경기·입력/렌더링·EOS 입장·라운드별 맵 전환은 별도다.
 
 <a id="debug-logging"></a>
 ## 디버깅 로그

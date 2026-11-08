@@ -19,6 +19,8 @@
 
 ## 최근 기록
 
+- [2026-11-08 · 라운드 경기 설정 적용과 로컬 다인 생성 검증](Changes.md#change-20261108-round-gameplay-apply)
+
 - [2026-11-08 · 네 라운드 맵에 스폰 위치 적용](Changes.md#change-20261108-round-spawn-link-apply)
 
 - [2026-11-08 · Round1 스파링장을 16m로 확대](Changes.md#change-20261108-round1-ring-expand)
