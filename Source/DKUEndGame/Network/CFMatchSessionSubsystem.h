@@ -6,7 +6,7 @@
 #include "Engine/EngineBaseTypes.h"
 #include "Interfaces/OnlineSessionInterface.h"
 #include "OnlineSessionSettings.h"
-#include "OnlineReplStructs.h"
+#include "GameFramework/OnlineReplStructs.h"
 #include "Network/CFMatchSessionContract.h"
 #include "CFMatchSessionSubsystem.generated.h"
 

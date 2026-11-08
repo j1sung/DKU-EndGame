@@ -19,6 +19,8 @@
 
 ## 최근 기록
 
+- [2026-11-08 · EOS 세션 코드의 Editor 빌드 오류 수정](Changes.md#change-20261108-eos-session-build-fix)
+
 - [2026-11-08 · EOS Round1 4인 접속과 자동 시작 연결 코드](Changes.md#change-20261108-eos-round1-session)
 
 - [2026-11-08 · 라운드 경기 설정 적용과 로컬 다인 생성 검증](Changes.md#change-20261108-round-gameplay-apply)

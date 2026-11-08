@@ -1,5 +1,12 @@
 # 변경 이력
 
+<a id="change-20261108-eos-session-build-fix"></a>
+### 2026-11-08 · EOS 세션 코드의 Editor 빌드 오류 수정
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+- 변경: UE 5.8.4의 실제 OnlineReplStructs 헤더 경로를 사용하고 계약 검사 두 곳의 FString 치환 인수 타입을 수정했다.
+- 확인: Editor 정식 빌드와 EOS 계약·응답 보호 검사 2개 통과. 실제 EOS 4PC 접속은 미검증이다. [검증 기록](Network/EOSRound1Session.md#검증-기록).
+
 <a id="change-20261108-eos-round1-session"></a>
 ### 2026-11-08 · EOS Round1 4인 접속과 자동 시작 연결 코드
 

@@ -6,7 +6,7 @@
 
 ## 현재 범위
 
-최신 원격 `codex/eos-session-integration`의 `8578b23`에서 시작했다. 기존 네 맵의 스폰·GameMode 에셋은 그대로 사용한다. 이번 코드는 배정 → EOS 호스트 생성 → Round1 리슨 서버 → 세 명 참가 → 실제 4인 준비 확인 → 3초 카운트다운 → Playing 및 `/started` 보고를 연결한다. **이 PC에는 Unreal이 없어 새 C++의 Editor 빌드·실제 EOS 4인 접속은 아직 검증하지 않았다.** 선행 커밋의 같은 프로세스 PIE 검증과 구분한다.
+최신 원격 `codex/eos-session-integration`의 `8578b23`에서 시작했다. 기존 네 맵의 스폰·GameMode 에셋은 그대로 사용한다. 이번 코드는 배정 → EOS 호스트 생성 → Round1 리슨 서버 → 세 명 참가 → 실제 4인 준비 확인 → 3초 카운트다운 → Playing 및 `/started` 보고를 연결한다. **2026-11-08 UE 5.8.4 Editor 정식 빌드와 EOS 자동 검사 2개는 통과했으며, 실제 EOS 4인 접속은 아직 검증하지 않았다.** 선행 커밋의 같은 프로세스 PIE 검증과 구분한다.
 
 다음 맵 이동, 월드 간 점수 보존, 최종 `/finished`, 호스트 이전·재접속은 이번 완료 범위가 아니다. 기존 같은 월드 4라운드 로직은 남아 있으므로 이 테스트는 첫 Playing까지 확인하고 종료한다.
 
@@ -75,5 +75,6 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\Tools\Network\Start-EO
 ## 검증 기록
 
 - 로컬 PowerShell 가짜 자격 증명 테스트: 기존 로그인 전용 설정 거절, Secret 보존 무출력 업그레이드, 반복 실행, 잘못된 dev ID 거절, Git 제외/추적 방지 및 기존 검사 통과.
-- native `ChickenFight.EOS.MatchSessionContract`와 `MatchSessionResponseGuards` 추가: 정상 명단, 다른 계정/매치, 중복 명단, 세션 누락/길이/제어 문자, 알 수 없는 상태, 잘못된 시도와 준비 인원 거절, 지연/중복/종료 콜백 거절, 멱등 키 보존, 쓰기 응답 후 GET 확인을 검사한다. **실행 전**.
-- 새 C++ Editor 빌드, EOS 세션 광고/참가, 다른 PC 4인 접속·자동 시작, 인증 만료·연결 실패 실환경 검증은 **실행 전**. 패키징의 Round1 cook 포함과 EOS 재배포 설정도 별도 확인이 필요하다.
+- native `ChickenFight.EOS.MatchSessionContract`와 `MatchSessionResponseGuards` 추가: 정상 명단, 다른 계정/매치, 중복 명단, 세션 누락/길이/제어 문자, 알 수 없는 상태, 잘못된 시도와 준비 인원 거절, 지연/중복/종료 콜백 거절, 멱등 키 보존, 쓰기 응답 후 GET 확인을 검사한다. 2026-11-08 UE 5.8.4 Editor에서 두 검사 모두 통과했다.
+- 빌드 실패 원인인 `OnlineReplStructs.h` include를 실제 경로 `GameFramework/OnlineReplStructs.h`로 수정하고, 계약 검사 두 곳의 `FString::Replace` 치환 인수를 `const TCHAR*`로 전달하도록 수정했다. Editor 정식 빌드 성공 후 `Saved/Logs/EOSBuildFixTests.log`에서 EOS 검사 두 개의 Success를 확인했다.
+- EOS 세션 광고/참가, 다른 PC 4인 접속·자동 시작, 인증 만료·연결 실패 실환경 검증은 **실행 전**. 패키징의 Round1 cook 포함과 EOS 재배포 설정도 별도 확인이 필요하다.

@@ -19,13 +19,13 @@ bool FCFMatchSessionContractTest::RunTest(const FString& Parameters)
     TestFalse(TEXT("Foreign admission"), Match.Contains(TEXT("00000000000000000000000000000005")));
     TestFalse(TEXT("Foreign account snapshot"), FCFSessionMatch::Parse(Body, Id, TEXT("other"), Match));
     TestFalse(TEXT("Wrong match"), FCFSessionMatch::Parse(Body, TEXT("other"), Local, Match));
-    TestFalse(TEXT("Duplicate roster"), FCFSessionMatch::Parse(Body.Replace(TEXT("00000000000000000000000000000004"), Local), Id, Local, Match));
+    TestFalse(TEXT("Duplicate roster"), FCFSessionMatch::Parse(Body.Replace(TEXT("00000000000000000000000000000004"), *Local), Id, Local, Match));
     TestFalse(TEXT("Missing session in ready"), FCFSessionMatch::Parse(Body.Replace(TEXT(",\"sessionId\":\"session-1\""), TEXT("")), Id, Local, Match));
     TestFalse(TEXT("Unknown phase"), FCFSessionMatch::Parse(Body.Replace(TEXT("SESSION_READY"), TEXT("OTHER")), Id, Local, Match));
     TestFalse(TEXT("Fractional attempt"), FCFSessionMatch::Parse(Body.Replace(TEXT("\"hostAttempt\":1"), TEXT("\"hostAttempt\":1.5")), Id, Local, Match));
     TestFalse(TEXT("Impossible ready count"), FCFSessionMatch::Parse(Body.Replace(TEXT("SESSION_READY"), TEXT("READY_TO_START")), Id, Local, Match));
     TestFalse(TEXT("Control characters in session"), FCFSessionMatch::Parse(Body.Replace(TEXT("session-1"), TEXT("session\\n1")), Id, Local, Match));
-    TestFalse(TEXT("Session exceeds backend limit"), FCFSessionMatch::Parse(Body.Replace(TEXT("session-1"), FString::ChrN(129, 's')), Id, Local, Match));
+    TestFalse(TEXT("Session exceeds backend limit"), FCFSessionMatch::Parse(Body.Replace(TEXT("session-1"), *FString::ChrN(129, 's')), Id, Local, Match));
     const FString Ready = Body.Replace(TEXT("SESSION_READY"), TEXT("READY_TO_START")).Replace(TEXT("\"joinedCount\":2"), TEXT("\"joinedCount\":4"));
     TestTrue(TEXT("Four joined ready"), FCFSessionMatch::Parse(Ready, Id, Local, Match));
     TestTrue(TEXT("In game snapshot"), FCFSessionMatch::Parse(Ready.Replace(TEXT("READY_TO_START"), TEXT("IN_GAME")), Id, Local, Match));
