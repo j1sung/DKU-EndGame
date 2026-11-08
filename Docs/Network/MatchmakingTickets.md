@@ -8,7 +8,7 @@
 
 로그인과 닉네임 확인 후 연습 로비의 빠른 대전 버튼으로 실제 개발 API에 티켓을 생성·조회·취소한다. `standard` 4인 단일 모드, `X-Client-Version: 0.1.0`, 대기 최대 180초다. 대기 인원 수는 API에 없으므로 표시하지 않는다.
 
-`ASSIGNED`이면 취소와 일반 타이틀 복귀를 막고 `matchId`를 보관한다. `UCFMatchmakingSubsystem::OnMatchAssigned`와 `GetAssignedMatchId()`를 후속 EOS 세션 제공자의 연결점으로 제공한다. 이벤트는 한 흐름에서 한 번만 발생하므로 늦게 연결한 소비자는 getter로도 확인한다. **EOS 세션 생성·참가와 게임 맵 이동은 아직 구현하지 않았다.** 현재 티켓을 계속 조회해 서버가 준비 기한 만료 등을 처리하고 `ticket:null`을 반환하면 로비의 빠른 대전을 다시 허용한다. 배정 실패를 이유로 `/left`를 호출하거나 가짜 참가·시작 보고를 보내지 않는다.
+`ASSIGNED`이면 취소와 일반 타이틀 복귀를 막고 `matchId`를 보관한다. `UCFMatchmakingSubsystem::OnMatchAssigned`를 GameInstance 초기화에서 바인딩한 `UCFMatchSessionSubsystem`이 `ClaimAssignment`로 소유권을 넘겨받는다. 인수 후 티켓 폴링·티켓 복구 요청은 중단하며 매치 API·실제 EOS 연결은 세션 계층만 담당한다. 서버 종료와 로컬 세션 정리를 확인하면 `CompleteAssignment`로 로비의 빠른 대전을 다시 허용한다. 가짜 참가·시작 보고를 보내지 않는다. [Round1 연결 코드·테스트 절차](EOSRound1Session.md). 새 EOS 경로의 실계정 검증은 아직 수행하지 않았다.
 
 ## 소유권과 코드
 
@@ -52,6 +52,6 @@ Unreal 설치 PC에서 이 브랜치의 Editor 대상을 재빌드하고 기존 
 - 일시 통신 끊김/응답 유실 시 새 매칭 차단과 `다시 확인` 복구.
 - 인증 만료 → 로그인 화면 복귀 → 같은 계정 복구, 다른 계정으로 전환 시 과거 DELETE 미전송.
 
-Unreal Editor의 Automation 창에서 `ChickenFight.Matchmaking` 검사를 실행한다. 테스트는 모의 응답을 네이티브 흐름에 전달하며 실계정 HTTP를 실행하지 않는다. 이후 4계정으로 배정·취소 경합·취소 차단을 확인할 수 있지만 실제 세션 참가/게임 시작은 다음 단계다. 테스트를 위해 새 프로필 닉네임을 임의 등록하거나 AWS 인프라를 변경하지 않는다.
+Unreal Editor의 Automation 창에서 `ChickenFight.Matchmaking` 검사를 실행한다. 테스트는 모의 응답을 네이티브 흐름에 전달하며 실계정 HTTP를 실행하지 않는다. 이후 4계정으로 배정·취소 경합·취소 차단을 확인한다. 실제 EOS 세션·자동 시작 검사는 [별도 절차](EOSRound1Session.md)를 따른다. 테스트를 위해 새 프로필 닉네임을 임의 등록하거나 AWS 인프라를 변경하지 않는다.
 
 현재 PC에는 Unreal과 C++ 빌드 도구가 없어 Editor 빌드·위 자동화 검사·실계정 매칭 UI 실행은 미확인이다. 기존 백엔드 4계정 성공 기록과 이번 Unreal 클라이언트 검증을 구분한다. 사용자는 2026-11-06 실제 로그인부터 연습 로비 진입 성공을 보고했으며 이 성공 범위에는 이번 매칭 연결이 포함되지 않는다.

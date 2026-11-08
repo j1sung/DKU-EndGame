@@ -3,7 +3,13 @@
 #include "Character/CFWaitingCharacter.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
+#include "Engine/GameInstance.h"
+#include "Engine/LocalPlayer.h"
+#include "GameFramework/GameSession.h"
 #include "GameFramework/PlayerStart.h"
+#include "GameFramework/PlayerState.h"
+#include "Kismet/GameplayStatics.h"
+#include "Network/CFMatchSessionSubsystem.h"
 #include "UObject/ConstructorHelpers.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogCFRoundSetup, Log, All);
@@ -28,6 +34,15 @@ void ACFRoundGameMode::InitGame(const FString& MapName, const FString& Options, 
     Super::InitGame(MapName, Options, ErrorMessage);
     bRoundSetupReady = false;
     if (!ErrorMessage.IsEmpty()) return;
+    bAssignedMatch = !UGameplayStatics::ParseOption(Options, TEXT("CFMatch")).IsEmpty();
+    if (bAssignedMatch)
+    {
+        const auto* Bridge = GetGameInstance()->GetSubsystem<UCFMatchSessionSubsystem>();
+        const auto* Local = GetGameInstance()->GetFirstGamePlayer();
+        if (!Bridge || !Local || !Bridge->CanAdmit(Local->GetPreferredUniqueNetId(), Options) ||
+            UWorld::RemovePIEPrefix(GetWorld()->GetOutermost()->GetName()) != TEXT("/Game/Map/L_Round1"))
+        { ErrorMessage = TEXT("EOS_MATCH_CONTEXT_REQUIRED"); return; }
+    }
     const FString Package = UWorld::RemovePIEPrefix(GetWorld()->GetOutermost()->GetName());
     bool bRoundMap = false;
     for (int32 Index = 1; Index <= 4; ++Index)
@@ -118,6 +133,64 @@ AActor* ACFRoundGameMode::ChoosePlayerStart_Implementation(AController* Player)
 
 void ACFRoundGameMode::Logout(AController* Exiting)
 {
+    const bool bMemberLeft = AdmittedPlayers.Remove(TWeakObjectPtr<AController>(Exiting)) > 0;
     AssignedStarts.Remove(TWeakObjectPtr<AController>(Exiting));
     Super::Logout(Exiting);
+    if (bAssignedMatch && bMemberLeft)
+        if (auto* Bridge = GetGameInstance()->GetSubsystem<UCFMatchSessionSubsystem>()) Bridge->NotifyPlayerLeft();
+}
+
+void ACFRoundGameMode::PreLogin(const FString& Options, const FString& Address, const FUniqueNetIdRepl& UniqueId, FString& ErrorMessage)
+{
+    Super::PreLogin(Options, Address, UniqueId, ErrorMessage);
+    if (!ErrorMessage.IsEmpty() || !bAssignedMatch) return;
+    const auto* Bridge = GetGameInstance()->GetSubsystem<UCFMatchSessionSubsystem>();
+    if (!Bridge || !Bridge->CanAdmit(UniqueId, Options)) { ErrorMessage = TEXT("NOT_ASSIGNED_MEMBER"); return; }
+    for (const auto& Existing : AdmittedPlayers)
+        if (Existing.IsValid() && Existing->PlayerState && Existing->PlayerState->GetUniqueId() == UniqueId)
+        { ErrorMessage = TEXT("DUPLICATE_MEMBER"); return; }
+}
+
+void ACFRoundGameMode::PostLogin(APlayerController* NewPlayer)
+{
+    if (bAssignedMatch)
+    {
+        const auto* Bridge = GetGameInstance()->GetSubsystem<UCFMatchSessionSubsystem>();
+        bool bValidMember = Bridge && NewPlayer && NewPlayer->PlayerState &&
+            Bridge->CanAdmit(NewPlayer->PlayerState->GetUniqueId(), OptionsString);
+        for (const auto& Existing : AdmittedPlayers)
+            if (Existing.IsValid() && Existing->PlayerState && NewPlayer && NewPlayer->PlayerState &&
+                Existing->PlayerState->GetUniqueId() == NewPlayer->PlayerState->GetUniqueId()) bValidMember = false;
+        if (!bValidMember)
+        {
+            if (GameSession && NewPlayer) GameSession->KickPlayer(NewPlayer, FText::FromString(TEXT("NOT_ASSIGNED_MEMBER")));
+            return;
+        }
+        AdmittedPlayers.Add(TWeakObjectPtr<AController>(NewPlayer));
+    }
+    Super::PostLogin(NewPlayer);
+}
+
+bool ACFRoundGameMode::TryStartRound(ACFWaitingPlayerController* Requester)
+{
+    // 기존 Designer 시작 버튼/RPC가 백엔드 준비 승인을 우회하지 못하게 한다.
+    if (bAssignedMatch && !bStartingAssignedRound) return false;
+    return Super::TryStartRound(Requester);
+}
+
+bool ACFRoundGameMode::StartAssignedRound(ACFWaitingPlayerController* Requester)
+{
+    const auto* Bridge = GetGameInstance()->GetSubsystem<UCFMatchSessionSubsystem>();
+    if (!bAssignedMatch || !bRoundSetupReady || !Bridge || !Bridge->CanAutoStart()) return false;
+    TGuardValue<bool> Starting(bStartingAssignedRound, true);
+    UE_LOG(LogCFRoundSetup, Display, TEXT("EOS four-player readiness accepted; starting Round1 countdown."));
+    return TryStartRound(Requester);
+}
+
+void ACFRoundGameMode::OnRoundPlaying()
+{
+    Super::OnRoundPlaying();
+    const auto* GS = GetGameState<ACFWaitingGameState>();
+    if (bAssignedMatch && GS && GS->CurrentRound == 1)
+        if (auto* Bridge = GetGameInstance()->GetSubsystem<UCFMatchSessionSubsystem>()) Bridge->NotifyPlaying();
 }

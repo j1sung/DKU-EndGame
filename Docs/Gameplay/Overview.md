@@ -84,6 +84,8 @@ BP 캐릭터의 `ChickenAudio` 컴포넌트에서 `SoundOverrides`에 이벤트�
 - 2026-11-08: 최신 dev의 네 라운드 배치를 작업 브랜치에 반영하고 [배치 캐릭터 기반 스폰 연결 도구](RoundSpawns.md)를 Unreal 5.8.4 Editor에서 적용했다. 네 맵의 `ArenaSpawn` 4개씩 저장·재로딩과 원본 캐릭터/GameMode 보존을 확인했다. 경기 GameMode 연결·배치 테스트 캐릭터 처리·실제 4인 스폰·라운드별 맵 전환은 후속 작업이다.
 - 후속 [경기 준비 GameMode와 적용 도구](RoundGameplaySetup.md)는 Unreal 5.8.4에서 정식 빌드하고 네 맵에 적용했다. 최소 4인, 미리보기의 서버 정리·클라이언트 로드 제외, 스폰 예약을 제공한다. 같은 프로세스의 Listen Server/PIE 클라이언트로 네 맵 모두 3인 시작 거절과 4인 생성·소유·전투 Pawn 교체·첫 카운트다운 복제를 확인했다. 서버의 시작 XY·시점 Yaw도 확인했다. 전체 경기·입력/렌더링·EOS 입장·라운드별 맵 전환은 별도다.
 
+2026-11-08 후속 코드: 배정된 EOS Round1에서는 명단 검사와 서버의 실제 4인 준비 확인 후 자동 카운트다운하도록 연결했다. 일반 LAN/맵 직접 실행은 기존 수동 시작을 유지한다. 새 Editor 빌드·실계정 4PC 검증은 아직 수행하지 않았으며 다음 맵 이동은 포함하지 않는다. [EOS Round1 연결](../Network/EOSRound1Session.md).
+
 <a id="debug-logging"></a>
 ## 디버깅 로그
 > 최근 기능 변경: 2026-10-23 · Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
