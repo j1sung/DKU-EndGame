@@ -84,13 +84,14 @@ void UCFLobbyWidget::Refresh()
     else if (S == ECFQueueScreen::Cancelling) Heading = TEXT("취소 중...");
     else if (S == ECFQueueScreen::Connecting) Heading = TEXT("상대와 연결 중...");
     else if (S == ECFQueueScreen::Recovering) Heading = TEXT("연결 확인 중...");
+    else if (S == ECFQueueScreen::AuthenticationRequired) Heading = TEXT("로그인이 필요합니다");
     StatusHeading->SetText(Text(Heading));
     CancelLabel->SetText(Text(S == ECFQueueScreen::Recovering ? TEXT("다시 확인") : TEXT("매칭 취소")));
-    CancelButton->SetVisibility(S == ECFQueueScreen::Connecting ? ESlateVisibility::Collapsed : ESlateVisibility::Visible);
+    CancelButton->SetVisibility(S == ECFQueueScreen::Connecting || S == ECFQueueScreen::AuthenticationRequired ? ESlateVisibility::Collapsed : ESlateVisibility::Visible);
     CancelButton->SetIsEnabled(S == ECFQueueScreen::Starting || S == ECFQueueScreen::Waiting || S == ECFQueueScreen::Recovering);
     ReturnButton->SetIsEnabled(Lobby->CanReturnToTitle());
-    ReturnLabel->SetText(Text(Lobby->bReturnRequested ? TEXT("취소 후 돌아가기...") : TEXT("타이틀로 돌아가기")));
-    ReturnButton->SetToolTipText(Text(S == ECFQueueScreen::Connecting ? TEXT("연결 중에는 돌아갈 수 없습니다.") : TEXT("매칭 중이면 취소 확인 후 타이틀로 돌아갑니다.")));
+    ReturnLabel->SetText(Text(S == ECFQueueScreen::AuthenticationRequired ? TEXT("로그인 화면으로") : Lobby->bReturnRequested ? TEXT("취소 후 돌아가기...") : TEXT("타이틀로 돌아가기")));
+    ReturnButton->SetToolTipText(Text(S == ECFQueueScreen::AuthenticationRequired ? TEXT("기존 매칭의 취소를 확정하지 않고 다시 로그인합니다.") : S == ECFQueueScreen::Connecting ? TEXT("연결 중에는 돌아갈 수 없습니다.") : TEXT("매칭 중이면 취소 확인 후 타이틀로 돌아갑니다.")));
     ErrorLabel->SetText(Lobby->ErrorMessage);
     ErrorLabel->SetVisibility(Lobby->ErrorMessage.IsEmpty() ? ESlateVisibility::Collapsed : ESlateVisibility::HitTestInvisible);
     LastRemainingSeconds = -2; RefreshTime();

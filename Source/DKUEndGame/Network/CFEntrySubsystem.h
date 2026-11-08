@@ -18,6 +18,10 @@ class DKUENDGAME_API UCFEntrySubsystem : public UGameInstanceSubsystem
 public:
     virtual void Initialize(FSubsystemCollectionBase& Collection) override;
     virtual void Deinitialize() override;
+    // 네이티브 API 제공자만 사용한다. 토큰을 Blueprint·화면·로그에 노출하지 않는다.
+    bool GetMatchmakingContext(FString& BaseUrl, FString& Token, FString& PlayerId);
+    void InvalidateAuthentication();
+    FSimpleMulticastDelegate OnAuthenticationRequired;
 
 private:
     enum class EOperation : uint8 { None, Login, Nickname, Travel };

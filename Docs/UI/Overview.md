@@ -6,7 +6,7 @@
 
 ## 범위와 흐름
 
-현재 진입 화면은 Figma 기반 타이틀·로그인·닉네임·접속 중 UI다. 인증·프로필·로비 이동 제공자 코드는 [Entry](../Network/LoginEntry.md)에 연결했지만 클라이언트 EOS 설정·권한과 실계정 검증은 남아 있다. 제품 목표인 자동 4인 매칭은 [클라이언트 인계서](../EOS/unreal-client-handoff.md)를 따른다.
+현재 진입 화면은 Figma 기반 타이틀·로그인·닉네임·접속 중 UI다. 인증·프로필·로비 이동 제공자는 [Entry](../Network/LoginEntry.md)에 연결했으며 2026-11-06 사용자가 실계정 로그인부터 로비 입장 성공을 보고했다. 로비의 [자동 매칭 티켓 제공자](../Network/MatchmakingTickets.md)는 코드 연결 후 빌드·실행 검증 전이다. 제품 목표인 자동 4인 매칭은 [클라이언트 인계서](../EOS/unreal-client-handoff.md)를 따른다.
 기존 LAN 방 생성·검색·직접 접속 메뉴는 F9 또는 Development 실행 인자 `-CFLanMenu`로 이용한다. 아레나 대기 UI는 실제 참가자 정보를 표시한다. 로컬 UI 요청 이벤트와 서버의 경기 시작 승인은 별개다.
 
 <a id="menu"></a>
@@ -21,7 +21,7 @@
 ## 연습 로비
 > 최근 기능 변경: 2026-11-05 · Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
 
-`L_Lobby_Playground`는 기존 연습 캐릭터·놀이기구를 유지하며 `BP_CF_LobbyGameMode`와 `WBP_CF_Lobby`를 사용한다. 오른쪽 위 빠른 대전/매칭 중 패널, Esc·톱니바퀴 설정, 배경음·효과음 볼륨 저장, 타이틀 복귀를 제공한다. `CFLobbySubsystem`의 비동기 요청/응답 인터페이스는 중복 시작·취소와 배정 경합·상태 불명·복귀 대기를 처리한다. 실제 EOS·티켓 제공자는 미연결이다.
+`L_Lobby_Playground`는 기존 연습 캐릭터·놀이기구를 유지하며 `BP_CF_LobbyGameMode`와 `WBP_CF_Lobby`를 사용한다. 오른쪽 위 빠른 대전/매칭 중 패널, Esc·톱니바퀴 설정, 배경음·효과음 볼륨 저장, 타이틀 복귀를 제공한다. `CFLobbySubsystem`의 비동기 요청/응답 인터페이스는 중복 시작·취소와 배정 경합·상태 불명·복귀 대기를 처리한다. `UCFMatchmakingSubsystem`이 티켓 제공자를 연결하고 인증 만료 시 로그인 복귀를 안내한다. 실제 EOS 세션 제공자는 후속 작업이다.
 - 상세: [연습 로비 UI](Lobby.md).
 
 <a id="waiting"></a>
