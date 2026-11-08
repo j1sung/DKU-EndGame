@@ -1,5 +1,13 @@
 # 변경 이력
 
+<a id="change-20261108-round-spawn-link-apply"></a>
+### 2026-11-08 · 네 라운드 맵에 스폰 위치 적용
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+- 변경: 기존 연결 도구를 Unreal 5.8.4 Editor에서 조회 후 적용했다. Round1~3에 PlayerStart 4개씩 생성하고 Round4의 기존 4개를 재사용해 `ArenaSpawn`·`CFLinkedRoundSpawn` 태그와 배치 캐릭터의 위치·회전을 연결했다. 적용 전 네 맵을 `Saved/RoundSpawnLink/20261108_210436_365321/`에 백업했다.
+- 확인: 대상 선정·보호 검사 11개 통과, 네 맵 저장·재로딩 후 스폰 4개와 원본 캐릭터/GameMode 보존 검사 통과. 시각 확인·실제 충돌·4인 경기·맵 전환은 미검증이다.
+- 문서: [적용 결과와 다음 작업](Gameplay/RoundSpawns.md), [경기 상태](Gameplay/Overview.md#match).
+
 <a id="change-20261108-round-spawn-link-tool"></a>
 ### 2026-11-08 · 배치 캐릭터 기반 라운드 스폰 연결 도구
 

@@ -8,7 +8,9 @@
 
 작업 브랜치 `codex/eos-session-integration`에 최신 원격 dev `e5401e9`의 `L_Round1`~`L_Round4` 배치 변경을 fast-forward 반영했다. 기존 `ACFWaitingGameMode`는 `ArenaSpawn` 액터 태그가 붙은 `PlayerStart`를 찾아 라운드 캐릭터를 생성하고, 최종 결과 후 대기 복귀 위치로도 사용한다.
 
-`Tools/Editor/link_round_spawns.py`는 **각 맵에 배치된 닭 캐릭터 4개의 위치·회전**을 그대로 스폰 기준으로 연결하는 에디터 도구다. 현재 PC에는 Unreal이 없어 **도구를 실제 맵에 적용하지 않았고, `.umap` 변경도 없다.** 코드 준비와 에셋 적용 완료를 구분한다.
+`Tools/Editor/link_round_spawns.py`는 **각 맵에 배치된 닭 캐릭터 4개의 위치·회전**을 그대로 스폰 기준으로 연결하는 에디터 도구다. 2026-11-08 이 PC의 Unreal 5.8.4 Editor에서 조회 후 실제 적용했다. `L_Round1`~`L_Round4` 각각 `ArenaSpawn`·`CFLinkedRoundSpawn` 액터 태그가 붙은 PlayerStart 4개를 저장하고 재로딩 검증했다. Round1~3은 새로 생성했고 Round4는 기존 4개를 재사용했다. **스폰 에셋 적용 완료와 실제 경기 연결 완료를 구분한다.**
+
+적용 전 백업은 `Saved/RoundSpawnLink/20261108_210436_365321/`의 네 `.umap` 및 `before.json`이다. 원본 캐릭터의 위치·회전·크기와 GameMode 설정은 보존했다. 조회 당시 Round1·2의 GameMode Override는 없었고, Round3·4는 `/Game/Testing/Knockdown/BP_CF_KnockdownTestGameMode`였다. Python 플러그인은 실행 인자의 `-EnablePlugins=PythonScriptPlugin`으로 해당 실행에만 활성화했으며 프로젝트 플러그인 설정은 수정하지 않았다.
 
 ## 변경 범위와 보호
 
@@ -44,9 +46,16 @@ spawn_tool["run"](apply=True)
 
 캡슐 간 겹침 검사는 네 시작 위치끼리의 거리 검사다. 바닥·벽·기믹과의 실제 충돌, 초기 방향, PlayerStart의 BADsize 표시와 실제 4인 생성은 에디터/플레이로 별도 확인한다. 배치된 테스트 캐릭터는 그대로 남아 있으므로 아직 최종 경기용 맵 설정 완료를 의미하지 않는다. 이후 경기 GameMode 연결과 함께 미리 배치된 캐릭터의 중복 생성·자동 소유 문제를 확인해 처리한다. 라운드별 맵 전환·점수 유지·EOS 입장도 이번 도구의 범위가 아니다.
 
+다음 순서로 진행한다.
+
+1. 일반 에디터에서 네 맵의 `RoundSpawns` 폴더와 태그 지점 4개, 높이·방향·주변 충돌을 확인한다. 새로 만든 Round1~3 지점은 이 폴더에 있고, 재사용한 Round4 지점은 기존 이름·폴더를 유지한다.
+2. 경기용 GameMode와 테스트 캐릭터 처리 방식을 연결한다. 현재 `PrepareRound()`는 참가자가 소유한 Pawn과 `RoundPawns`만 충돌을 끈 뒤 새 캐릭터를 생성한다. 소유되지 않은 배치 캐릭터는 정리 대상에 포함되지 않아 스폰 위치 보정 또는 생성 실패가 생길 수 있다. 배치 캐릭터를 남긴 상태의 BADsize만으로 지형 충돌이라고 단정하지 않는다.
+3. 실제 4인 생성·카운트다운·소유·시작 방향을 호스트와 원격 클라이언트에서 확인한다. 테스트 GameMode에서 캐릭터가 움직이는 것만으로 경기 검증을 대신하지 않는다.
+4. 별도 구현으로 라운드별 맵 전환과 점수·참가자 상태 유지를 연결한다. 현재 `ACFWaitingGameMode::AdvanceRound()`는 같은 월드에서 `PrepareRound(CurrentRound+1)`만 호출하며 `L_Round1`~`L_Round4`를 전환하지 않는다. EOS 입장 연결도 별도 범위다.
+
 ## 확인한 범위
 
-일반 Python으로 11개 검사를 통과했다. 위치·회전/입력 보존, 기존 지점 재사용, 다른 PlayerStart 보존, 재실행, 태그 대소문자, 모호한 태그 구성, 캐릭터 수·캡슐 겹침·수직 분리, 잘못된 좌표/클래스, 부착 액터 이동 위험과 미저장 작업 거절을 검사했다. Unreal Python API 호출·맵 저장·재로딩·실제 4인 스폰은 미실행이다.
+2026-11-08 엔진에 포함된 Python으로 11개 검사를 다시 실행해 통과했다. 위치·회전/입력 보존, 기존 지점 재사용, 다른 PlayerStart 보존, 재실행, 태그 대소문자, 모호한 태그 구성, 캐릭터 수·캡슐 겹침·수직 분리, 잘못된 좌표/클래스, 부착 액터 이동 위험과 미저장 작업 거절을 검사했다. Unreal Editor를 `-nullrhi -unattended`로 실행해 네 맵 조회·적용·저장·재로딩과 캐릭터/GameMode 보존 검사를 통과했고, 네 번의 `CF_ROUND_SPAWN_SAVED` 및 최종 완료를 확인했다. 일반 에디터의 시각 확인·실제 충돌·4인 스폰은 미실행이다.
 
 ```powershell
 python -B -m unittest discover -s Tools/Editor/tests -p test_round_spawns.py -v

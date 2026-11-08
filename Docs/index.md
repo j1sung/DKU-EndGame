@@ -19,6 +19,8 @@
 
 ## 최근 기록
 
+- [2026-11-08 · 네 라운드 맵에 스폰 위치 적용](Changes.md#change-20261108-round-spawn-link-apply)
+
 - [2026-11-08 · Round1 스파링장을 16m로 확대](Changes.md#change-20261108-round1-ring-expand)
 
 - [2026-11-08 · Round4 복합 순환 전투 맵 초안](Changes.md#change-20261108-round4-finale)

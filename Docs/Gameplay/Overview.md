@@ -81,7 +81,7 @@ BP 캐릭터의 `ChickenAudio` 컴포넌트에서 `SoundOverrides`에 이벤트�
 정원 4명·최소 2명, 호스트 시작 → 3초 카운트다운 → 경기 → 결과 6초를 4R까지 진행한다. 서버가 참가자·생존자·탈락 순서·5/3/1/0점·누적 점수를 관리한다. 최후 1인 승리, 동시 마지막 탈락은 무승부·공동 순위다. 최종 누적 순위·MVP를 표시한 뒤 호스트가 같은 연결을 유지하며 전원을 걷기 대기로 돌려보낼 수 있다. 새 경기는 1R·0점으로 초기화한다.
 - 상태 소유자: `ACFWaitingGameMode`, 복제: `ACFWaitingGameState`, 소유 플레이어 입력·관전: `ACFWaitingPlayerController`.
 - 상세: [경기 시작](../MatchStart.md), [탈락·관전](../RoundEnd.md), [점수·라운드](../RoundProgression.md), [최종 결과·복귀](../FinalResults.md).
-- 2026-11-08: 최신 dev의 네 라운드 배치를 작업 브랜치에 반영하고 [배치 캐릭터 기반 스폰 연결 도구](RoundSpawns.md)를 준비했다. 실제 에디터 적용·GameMode 전환·4인 스폰은 아직 미확인이다.
+- 2026-11-08: 최신 dev의 네 라운드 배치를 작업 브랜치에 반영하고 [배치 캐릭터 기반 스폰 연결 도구](RoundSpawns.md)를 Unreal 5.8.4 Editor에서 적용했다. 네 맵의 `ArenaSpawn` 4개씩 저장·재로딩과 원본 캐릭터/GameMode 보존을 확인했다. 경기 GameMode 연결·배치 테스트 캐릭터 처리·실제 4인 스폰·라운드별 맵 전환은 후속 작업이다.
 
 <a id="debug-logging"></a>
 ## 디버깅 로그
