@@ -19,6 +19,12 @@
 
 ## 최근 기록
 
+- [2026-11-08 · Round4 복합 순환 전투 맵 초안](Changes.md#change-20261108-round4-finale)
+
+- [2026-11-08 · Round3 다리 높이·회전 막대·통나무 재생성](Changes.md#change-20261108-round3-sweeper-log-respawn)
+
+- [2026-11-08 · Round3 2층·흔들다리·주기 분수](Changes.md#change-20261108-round3-upper-bridge-jets)
+
 - [2026-11-07 · Round3 장애물 전투 아레나 재구성](Changes.md#change-20261107-round3-arena)
 
 - [2026-11-07 · Round3 장애물 코스 초안](Changes.md#change-20261107-round3-draft)
