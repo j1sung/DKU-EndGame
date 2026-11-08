@@ -8,7 +8,7 @@
 |---|---|---|
 | Network | [개요](Network/Overview.md) | [LAN 세션·연결 종료](Network/ListenServerSessions.md), [로그인·로비 진입](Network/LoginEntry.md), [자동 매칭 티켓](Network/MatchmakingTickets.md) |
 | UI | [개요](UI/Overview.md) | [메인 메뉴](UI/MainMenu.md), [연습 로비](UI/Lobby.md), [대기 UI](UI/WaitingRoomUI.md) |
-| Gameplay | [개요](Gameplay/Overview.md) | [경기 시작](MatchStart.md), [탈락·관전](RoundEnd.md), [라운드 점수](RoundProgression.md), [최종 결과·복귀](FinalResults.md), [스폰 위치 연결](Gameplay/RoundSpawns.md) |
+| Gameplay | [개요](Gameplay/Overview.md) | [경기 시작](MatchStart.md), [탈락·관전](RoundEnd.md), [라운드 점수](RoundProgression.md), [최종 결과·복귀](FinalResults.md), [스폰 위치 연결](Gameplay/RoundSpawns.md), [경기 설정](Gameplay/RoundGameplaySetup.md) |
 | Animation | [개요](Animation/Overview.md) | [기본 상태](Animation/BasicAnimations.md), [서기·걷기](Animation/StandWalkAnimations.md), [넘어짐](Animation/DirectionalKnockdown.md) |
 | EOS 자동 매칭 | [클라이언트 인계](EOS/unreal-client-handoff.md) | [API 계약](EOS/unreal-matchmaking-ticket-api.md), [백엔드 운영](../Backend-Infra/README.md) |
 

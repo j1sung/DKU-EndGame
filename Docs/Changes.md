@@ -1,5 +1,13 @@
 # 변경 이력
 
+<a id="change-20261108-round-gameplay-setup"></a>
+### 2026-11-08 · 네 라운드 경기 GameMode 준비 코드
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+- 변경: 스폰 적용 커밋 `8c50f59`를 받은 뒤 별도 `CFRoundGameMode`를 구현했다. 기존 경기·입력·UI를 재사용하며 최소 4인과 스폰 예약을 제공한다. 에디터 도구는 백업 후 GameMode Override와 네 미리보기의 태그·클라이언트 로드 제외를 연결한다. 서버는 명시된 미리보기만 초기 정리한다.
+- 확인 범위: Python 보호 검사 19개 통과. C++ 자동화는 작성했으며 Unreal 미설치로 빌드·실제 적용·4인 생성은 미실행이다. EOS 입장·자동 시작·라운드별 맵 전환은 후속 범위다.
+- 문서: [경기 설정·검증](Gameplay/RoundGameplaySetup.md), [경기 상태](Gameplay/Overview.md#match), [계획](EOS/superpowers/plans/2026-11-08-round-gameplay-setup.md).
+
 <a id="change-20261108-round-spawn-link-apply"></a>
 ### 2026-11-08 · 네 라운드 맵에 스폰 위치 적용
 
