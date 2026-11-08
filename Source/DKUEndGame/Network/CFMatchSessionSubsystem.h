@@ -67,6 +67,7 @@ private:
     bool LocalRoundReady() const;
     void Create();
     void Find();
+    static FString BuildRoundTravelURL(const FString& Address, const FString& AssignedMatchId, int32 Attempt);
     void ClearSessionDelegates();
     void Abort(const TCHAR* Reason);
     void BeginCleanup();
@@ -76,4 +77,5 @@ private:
     void TravelFailure(UWorld* World, ETravelFailure::Type Type, const FString& Detail);
     bool OwnsWorld(UWorld* World, UNetDriver* Driver) const;
     friend class FCFMatchSessionResponseTest;
+    friend class FCFMatchSessionTravelURLTest;
 };

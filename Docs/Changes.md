@@ -1,5 +1,12 @@
 # 변경 이력
 
+<a id="change-20261108-eos-travel-url"></a>
+### 2026-11-08 · EOS 참가 주소의 대괄호 손실 수정
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+- 변경: 실계정 매칭 후 참가자가 Round1 이동에서 실패한 로그를 확인했다. FURL 재직렬화로 EOS 주소의 대괄호가 사라지는 문제를 막기 위해 OSS 주소 원문에 승인 옵션만 추가한다.
+- 확인: 기존 방식에서 InvalidURL을 재현한 회귀 검사 추가. 수정 후 Editor 빌드 및 EOS 검사 3개 통과. 실제 네 PC 재접속·자동 시작은 미검증이다. [상세 기록](Network/EOSRound1Session.md#검증-기록).
+
 <a id="change-20261108-eos-session-build-fix"></a>
 ### 2026-11-08 · EOS 세션 코드의 Editor 빌드 오류 수정
 

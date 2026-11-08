@@ -3,6 +3,7 @@
 #include "Network/CFMatchSessionContract.h"
 #include "Network/CFMatchSessionSubsystem.h"
 #include "Engine/GameInstance.h"
+#include "Engine/EngineBaseTypes.h"
 #include "UObject/StrongObjectPtr.h"
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FCFMatchSessionContractTest, "ChickenFight.EOS.MatchSessionContract",
@@ -64,6 +65,23 @@ bool FCFMatchSessionResponseTest::RunTest(const FString& Parameters)
     const uint64 Serial = Provider->HttpSerial;
     Provider->Receive(Serial, 3, TEXT("started"), 200, TEXT("{}"), TEXT(""), TEXT(""));
     TestEqual(TEXT("Shutdown rejects completion"), Provider->HttpSerial, Serial);
+    return true;
+}
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FCFMatchSessionTravelURLTest, "ChickenFight.EOS.MatchSessionTravelURL",
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FCFMatchSessionTravelURLTest::RunTest(const FString& Parameters)
+{
+    const FString AssignedMatchId = TEXT("019a0000-0000-7000-8000-000000000001");
+    const FString Address = TEXT("[EOS:00000000000000000000000000000001]");
+    const FString Travel = UCFMatchSessionSubsystem::BuildRoundTravelURL(Address, AssignedMatchId, 1);
+    TestEqual(TEXT("EOS resolved address is preserved including brackets"), Travel,
+        Address + TEXT("?CFMatch=") + AssignedMatchId + TEXT("?CFAttempt=1"));
+    const FURL Parsed(nullptr, *Travel, TRAVEL_Absolute);
+    TestEqual(TEXT("ClientTravel receives a valid URL"), Parsed.Valid, 1);
+    TestEqual(TEXT("EOS target stays in Host instead of Map"), Parsed.Host, FString(TEXT("EOS:00000000000000000000000000000001")));
+    TestEqual(TEXT("Match option survives parsing"), FString(Parsed.GetOption(TEXT("CFMatch="), TEXT(""))), AssignedMatchId);
+    TestEqual(TEXT("Attempt option survives parsing"), FString(Parsed.GetOption(TEXT("CFAttempt="), TEXT(""))), FString(TEXT("1")));
     return true;
 }
 #endif

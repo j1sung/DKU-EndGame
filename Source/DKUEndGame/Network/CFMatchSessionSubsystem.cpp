@@ -404,11 +404,8 @@ void UCFMatchSessionSubsystem::Find()
                         { Abort(TEXT("EOS 세션에 참가하지 못했습니다.")); return; }
                         APlayerController* PC = GetGameInstance()->GetFirstLocalPlayerController();
                         if (!PC) { Abort(TEXT("로컬 플레이어가 없습니다.")); return; }
-                        FURL URL(nullptr, *Address, TRAVEL_Absolute);
-                        URL.AddOption(*FString::Printf(TEXT("CFMatch=%s"), *MatchId));
-                        URL.AddOption(*FString::Printf(TEXT("CFAttempt=%d"), Match.Attempt));
                         Connection = EConnection::ClientTravel;
-                        PC->ClientTravel(URL.ToString(), TRAVEL_Absolute);
+                        PC->ClientTravel(BuildRoundTravelURL(Address, MatchId, Match.Attempt), TRAVEL_Absolute);
                     }));
                 if (!Sessions->JoinSession(0, NAME_GameSession, Result))
                 {
@@ -434,6 +431,13 @@ void UCFMatchSessionSubsystem::NotifyPlaying()
         bPlaying = true;
         UE_LOG(LogCFMatchSession, Display, TEXT("Round1 Playing confirmed; reporting started."));
     }
+}
+
+FString UCFMatchSessionSubsystem::BuildRoundTravelURL(const FString& Address, const FString& AssignedMatchId, int32 Attempt)
+{
+    // FURL 재직렬화는 기본 포트의 [EOS:PUID] 대괄호를 없애 다음 파싱에서 맵으로 오인하게 한다.
+    // OSS가 반환한 접속 주소를 그대로 유지하고 서버 승인에 필요한 옵션만 덧붙인다.
+    return Address + FString::Printf(TEXT("?CFMatch=%s?CFAttempt=%d"), *AssignedMatchId, Attempt);
 }
 
 void UCFMatchSessionSubsystem::NotifyPlayerLeft() { if (IsActive() && !IsStopping()) Abort(TEXT("참가자가 나가 경기를 종료합니다.")); }

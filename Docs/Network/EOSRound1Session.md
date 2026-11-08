@@ -74,7 +74,8 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\Tools\Network\Start-EO
 
 ## 검증 기록
 
+- 2026-11-08 실계정 4인 첫 시도의 이 PC 로그는 `Host=0`, `SESSION_READY`, EOS 검색 1건 이후 `InvalidURL`을 기록했다. 따라서 이 로그에서 확인한 실패는 호스트 세션 생성이 아니라 참가자의 접속 주소 처리다. `[EOS:PUID]`를 `FURL`로 파싱·재직렬화하면서 대괄호가 사라지고 기본 맵이 붙어 다음 파싱에서 잘못된 맵 이름으로 해석됐다. OSS 주소 원문에 승인 옵션만 추가하도록 수정했다. `MatchSessionTravelURL`에서 기존 동작의 실패를 재현하고 수정 후 성공을 확인했으며, Editor 빌드와 EOS 검사 3개가 모두 통과했다. 검사 로그는 `Saved/Logs/EOSTravelURL-red.log`·`EOSTravelURL-green.log`이며 수정 후 실제 네 PC 재시도는 아직 필요하다.
 - 로컬 PowerShell 가짜 자격 증명 테스트: 기존 로그인 전용 설정 거절, Secret 보존 무출력 업그레이드, 반복 실행, 잘못된 dev ID 거절, Git 제외/추적 방지 및 기존 검사 통과.
 - native `ChickenFight.EOS.MatchSessionContract`와 `MatchSessionResponseGuards` 추가: 정상 명단, 다른 계정/매치, 중복 명단, 세션 누락/길이/제어 문자, 알 수 없는 상태, 잘못된 시도와 준비 인원 거절, 지연/중복/종료 콜백 거절, 멱등 키 보존, 쓰기 응답 후 GET 확인을 검사한다. 2026-11-08 UE 5.8.4 Editor에서 두 검사 모두 통과했다.
 - 빌드 실패 원인인 `OnlineReplStructs.h` include를 실제 경로 `GameFramework/OnlineReplStructs.h`로 수정하고, 계약 검사 두 곳의 `FString::Replace` 치환 인수를 `const TCHAR*`로 전달하도록 수정했다. Editor 정식 빌드 성공 후 `Saved/Logs/EOSBuildFixTests.log`에서 EOS 검사 두 개의 Success를 확인했다.
-- EOS 세션 광고/참가, 다른 PC 4인 접속·자동 시작, 인증 만료·연결 실패 실환경 검증은 **실행 전**. 패키징의 Round1 cook 포함과 EOS 재배포 설정도 별도 확인이 필요하다.
+- 실제 EOS 세션 등록·검색·Join 완료 콜백까지 진행한 첫 시도에서 위 주소 오류를 발견했다. 수정 후 다른 PC 4인 접속·자동 시작과 인증 만료·연결 실패 복구의 실환경 검증은 **미완료**다. 패키징의 Round1 cook 포함과 EOS 재배포 설정도 별도 확인이 필요하다.

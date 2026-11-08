@@ -36,6 +36,8 @@ LAN 개발 메뉴 → 방 생성/참가 → 걷기 대기 → 경기·라운드 
 
 > 최근 기능 변경: 2026-11-08 · Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
 
+실계정 첫 시도에서 참가자의 EOS 접속 주소 재직렬화에 따른 `InvalidURL`을 발견해 주소 원문 보존으로 수정했다. Editor 빌드와 EOS 검사 3개는 통과했으며 실제 네 PC 재접속·자동 시작은 재검증이 필요하다. [실패 원인과 검증 기록](EOSRound1Session.md#검증-기록).
+
 `UCFMatchSessionSubsystem`이 배정 명단과 호스트를 조회하고 실제 EOS 세션 생성·검색·참가와 Round1 이동을 연결한다. `CFRoundGameMode`는 EOS PUID 명단·중복 접속을 검사하고 실제 4명의 맵 로드·Pawn 준비와 백엔드 READY_TO_START를 확인한 후 자동 카운트다운한다. Playing 이후에만 `/started`를 보고한다. 실패는 `/left`·서버 종료 확인과 로컬 세션 정리 후 복구하며 가짜 참가/시작 보고를 하지 않는다.
 
 EOSLocal 설정에서만 기본 OSS=EOS 및 UE5.8 EOS P2P NetDriver를 사용한다. 기존 파일은 `Set-EOSLocal.ps1 -Upgrade`로 Secret 출력 없이 갱신한다. 일반 실행의 NULL/LAN 경로는 유지한다. 새 코드의 UE 5.8.4 Editor 빌드와 EOS 자동 검사 2개는 통과했다. 실제 4PC EOS 접속은 미검증이며 다음 맵 이동과 최종 종료 보고는 후속 범위다. [실행 순서·성공 기준·검증 제한](EOSRound1Session.md).

@@ -19,6 +19,8 @@
 
 ## 최근 기록
 
+- [2026-11-08 · EOS 참가 주소의 대괄호 손실 수정](Changes.md#change-20261108-eos-travel-url)
+
 - [2026-11-08 · EOS 세션 코드의 Editor 빌드 오류 수정](Changes.md#change-20261108-eos-session-build-fix)
 
 - [2026-11-08 · EOS Round1 4인 접속과 자동 시작 연결 코드](Changes.md#change-20261108-eos-round1-session)
