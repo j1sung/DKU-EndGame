@@ -1,0 +1,21 @@
+version = 0.1
+
+[dev.deploy.parameters]
+stack_name = "chickengame-backend-dev"
+region = "ap-northeast-2"
+profile = "dku-dev"
+capabilities = "CAPABILITY_IAM"
+confirm_changeset = true
+resolve_s3 = true
+resolve_image_repos = true
+parameter_overrides = "EosProductId=16646f3bec4d46d1a546820856e47486 EosSandboxId=f4a9863af26845ac90dbcaae53c6375f EosDeploymentId=f9dbca2f19ea4980b305355ff3bdbcea EosClientId=xyza7891MHpvCZ6hgPhGFHQwn6KZNTp9 VerifierTimeoutMs=8000 VerifierMaxOutputBytes=65536"
+
+[dev-timeout.deploy.parameters]
+stack_name = "chickengame-backend-dev"
+region = "ap-northeast-2"
+profile = "dku-dev"
+capabilities = "CAPABILITY_IAM"
+confirm_changeset = true
+resolve_s3 = true
+resolve_image_repos = true
+parameter_overrides = "EosProductId=16646f3bec4d46d1a546820856e47486 EosSandboxId=f4a9863af26845ac90dbcaae53c6375f EosDeploymentId=f9dbca2f19ea4980b305355ff3bdbcea EosClientId=xyza7891MHpvCZ6hgPhGFHQwn6KZNTp9 VerifierTimeoutMs=1 VerifierMaxOutputBytes=65536"
