@@ -11,8 +11,11 @@
 ## 전투 기본 6개 상태
 > 최근 기능 변경: 2026-09-30 · 작성자 GitHub ID 확인 필요 (Git 작성자: 정규민, `4553e07`)
 
-`UChickenAnimInstance`는 Idle→ChargeStart→ChargeLoop→JumpStart→AirLoop→Land 상태를 캐릭터에서 계산한다. 공중 충전은 공중 표현을 유지하며 TakeoffSerial로 새 점프를 감지한다. ChargeStartDuration 0.4초, JumpStartDuration 0.15초, LandPlayRate는 0.7/LandingRecoveryTime. 기존 LandMontage를 별도로 재생하지 않는 경로.
+`UChickenAnimInstance`는 Idle→ChargeStart→ChargeLoop→JumpStart→AirLoop→Land 상태를 캐릭터에서 계산한다. 공중 충전은 공중 표현을 유지하며 TakeoffSerial로 새 점프를 감지한다. ChargeStartDuration 0.4초, 점프 시작의 실효 기본 길이 0.22초, LandPlayRate는 0.7/GetLandingRecoveryTime()이다. 기존 LandMontage를 별도로 재생하지 않는 경로.
+2026-11-05 보완(Codex 수행, 요청자 GitHub ID 확인 필요, 미커밋): 점프 시작의 실효 길이는 `max(JumpStartDuration, MinimumJumpStartDuration)`이며 새 최소값은 0.22초다. 발사 직후 이동 모드가 아직 지상이어도 JumpStart를 유지하되 실제 착지 회복이 우선한다. 착지 모션은 `GetLandingRecoveryTime()`의 실효 회복 시간(기본 최소 0.3초)을 사용한다. AnimBP 전환 블렌드 에셋 자체는 변경하지 않았으며 에디터에서 내부 연결과 재생을 재확인하지 않았다.
 - 상세: [기본 애니메이션](BasicAnimations.md).
+
+2026-11-06 상체 조정(Codex 수행, 요청자 GitHub ID 확인 필요, 미커밋): 기존 AnimBP 참조 `CurrentTilt`를 보간된 표현값으로 분리했다. `RawTiltInput`은 즉시 게임플레이에 반영·복제하며, 상체 입력은 응답률 6과 최대 4 입력 단위/초로 보간한다. 에셋 참조 문자열은 확인했으나 내부 그래프·실제 재생은 미확인이며 AnimBP 바이너리는 변경하지 않았다. 강한 점프·충돌 후의 균형은 [일시적 불안정 상태](../Gameplay/Overview.md#unstable-balance)를 따른다.
 
 <a id="waiting"></a>
 ## 대기 서기·걷기

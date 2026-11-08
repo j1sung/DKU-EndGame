@@ -37,10 +37,12 @@ Events와 Frames는 독립 설정이다. 완전히 끄려면 둘 다 0으로 설
 
 ### 기울기
 
+- UnstableBalance: 강한 방향 점프·충돌로 불안정 시간이 시작되거나 갱신된 사건. Remaining, Body, TiltVelocity를 표시한다.
+
 - Input: W/S 또는 A/D 원시 축값, 기울기 축 부호, 키 해제, 현재 Body·TiltVelocity. Body.X는 전후, Body.Y는 좌우이며 오른쪽 입력 D는 음수다.
 - ServerInput: 서버에 수신된 기울기 입력 변화. 서버는 일반 이동 입력 대신 복제된 기울기 입력을 관측한다.
-- BalanceBegin/BalanceEnd: 프레임 계산 전후 Body·TiltVelocity, 입력 정규화, 계산 분할 수, 기본 입력 가속도(BaseInputAcceleration), 첫 분할 시작 시 중력 가속도, 기본 분할당 감쇠 계수(BaseDampingFactor). 역입력 중에는 축별 입력 힘 2배와 바깥 방향 관성에만 추가 제동 6이 적용되므로 기본값 로그는 실제 보정 후 가속도·감쇠가 아니다. 중력 항은 각 분할에서 다시 계산되므로 첫 값이 프레임 전체에 일정하다는 뜻은 아니다.
-- RestoringForce=0: 현재 구현에는 중심 복원력이 없다. TiltDamping은 속도 감쇠이고 BodyTilt×TiltGravityStrength는 기울어진 방향으로 작용한다. InputReleased=1 이후 값을 비교해 입력 해제 후 변화를 확인한다.
+- BalanceBegin/BalanceEnd: 프레임 계산 전후 Body·TiltVelocity, 원시 입력 Raw, 제한된 목표 Target, 계산 분할 수, 스프링 응답 Response를 표시한다. 기본 입력 목표는 넘어짐 한계의 35%이며 대각 입력은 정규화한다.
+- RestoringForce=1: 제한된 입력 목표를 따라가는 임계 감쇠 스프링이 적용된다. InputReleased=1이면 목표가 0이므로 중심 복귀를 확인한다. RestoringForce=0은 현재 프레임 시작 시 불안정 상태임을 뜻하며 UnstableRemaining으로 남은 시간을 확인한다. 과거 BaseInputAcceleration/GravityAcceleration/BaseDampingFactor 필드는 이전 로그 형식이다. 프레임 도중 타이머가 만료되면 다음 계산 분할부터 안정 상태로 돌아간다.
 - Threshold: 축별 한계 도달. 한계에 머무르는 동안 기본 로그를 반복하지 않는다. BalanceFailure는 넘어짐 요청의 Accepted와 방향을 반복 설정이 켜졌을 때 출력한다.
 - State: Fallen·Pending·Round 전환. PreviousMask=255는 최초 관측이다. 상태 비트는 Fallen=1, Pending=2, RoundInputEnabled=4다. 서버의 넘어짐 전환은 즉시, 복제 수신 상태는 Tick에서 관측한다.
 
@@ -55,10 +57,20 @@ Events와 Frames는 독립 설정이다. 완전히 끄려면 둘 다 0으로 설
 
 ## Unreal Editor 플레이 테스트
 
+### Live Coding 이후 종료 크래시 확인
+
+2026-11-06 종료 크래시에서는 `AChickenCharacter` 소멸 중 `RecentCollisionTimes`의 SparseArray 정리 경로에서 접근 위반이 발생했다. 같은 실행 로그에 Live Coding 및 타입 변경 경고가 있고 기본 DLL은 2026-10-23 빌드였다. 클래스 멤버 추가 후 이전 객체와 패치 소멸자의 메모리 배치 불일치가 유력하지만 덤프 디버깅으로 확정한 것은 아니다. `TMap` 자체의 결함으로 단정하거나 정리 코드를 우회하지 않는다.
+
+복구는 에디터를 완전히 종료한 상태에서 `DKUEndGameEditor Win64 Development` 정식 빌드를 수행하고 새로 실행하여 확인한다. 클래스 멤버 구조 변경은 Live Coding만으로 검증하지 않는다. 정식 빌드 후 PIE 시작·종료와 에디터 종료를 재검증하며, 재발하면 새 크래시 덤프를 분석한다. [Epic Live Coding 문서](https://dev.epicgames.com/documentation/unreal-engine/using-live-coding-to-recompile-unreal-engine-applications-at-runtime?lang=ko).
+
+### 이동·충돌 검증
+
+시점을 회전하는 도중 W/A/S/D가 시점의 수평 축을 즉시 따르는지 확인한다. 점프도 같은 축을 사용한다. 키 해제 후 공중 관성 및 균형 실패는 별도로 구분해서 관측한다. 2026-11-06부터 일반 입력은 제한된 기울기 목표를 따라가며 입력 해제 시 중심으로 자동 복귀한다. 충돌 또는 50% 이상 방향 점프 후 2초 동안은 자동 복귀가 중단되는지, 반대 입력으로 버틸 수 있는지, 약한 충격 뒤 만료하면 복귀하는지 확인한다. 재충돌 시 2초로 갱신되며 착지·충전 시작으로 취소되지 않아야 한다. 탈락·라운드 전환 시에는 초기화된다.
+
 1. Development Editor / Win64로 빌드하고 프로젝트를 연다. Output Log에서 위 카테고리를 검색한다.
 2. 실제 전투 Pawn이 BP_ChickenCharacter인 경기 경로를 사용한다. 메인 메뉴에서 호스트/참가 후 경기를 시작하거나, 준비된 테스트 맵의 GameMode·빙의 설정을 먼저 확인한다. Test_CF_Knockdown의 R 재생성·4구역이 현재 연결되어 있다고 가정하지 않는다.
 3. 2인 충돌은 Listen Server와 클라이언트로 실행한다. Events=1, Frames=1로 설정하고 정면·측면·스침·벽 근처·공중 충돌을 재현한다. MovementBlocked → Hit → PushDispatch → 양쪽 PushApplied → PostPush를 비교한다. 이후 지연된 캡슐 Hit가 Cooldown으로 거절되어 한 쌍에 충격이 한 번만 적용되는지 확인한다. 정면 접촉에서 HitSkipped Reason=ClosingSpeed가 나오는지와 지상·공중 경로의 차이도 확인한다. 접근 속도 30 미만인 접촉은 거절되고, 더 빠른 정면 충돌일수록 밀림·수직 충격이 증가하는지 확인한다. 바닥에서 살짝 뜨는지, 몸이 밀린 방향으로 서서히 기우는지도 확인한다.
-4. Frames=2로 변경하고 W/S/A/D를 각각 유지·해제·반대로 입력한다. InputReleased 이후 BalanceBegin/End를 비교하고 Threshold → State 전환을 확인한다. 대각선과 캐릭터 회전 상태도 확인한다. 한쪽으로 기운 뒤 반대 입력 시 관성이 빨리 멈추는지, 중심 통과 후 보정이 해제되는지, 입력을 놓으면 자동 복원되지 않는지 확인한다.
+4. Frames=2로 변경하고 W/S/A/D를 각각 유지·해제·반대로 입력한다. InputReleased 이후 BalanceBegin/End를 비교하고 Threshold → State 전환을 확인한다. 대각선과 캐릭터 회전 상태도 확인한다. 한쪽으로 기운 뒤 반대 입력 시 관성이 빨리 멈추는지, 지속 입력에서 목표 기울기(기본 한계의 35%)에 안정되는지, 입력을 놓으면 중심으로 자동 복귀하는지 확인한다.
 5. Frames=4로 변경하고 지상 및 공중에서 왼쪽 마우스를 누르고 해제한다. ChargePressed → JumpLaunch → MovementUpdate → Landed → AutoHop을 확인한다. 기존 공중 속도 정지와 반복 공중 발사도 관측 대상이다.
 6. 넘어진 상태와 공중 Pending 상태에서 WASD를 누른다. Input의 BlockMask와 Fallen/Pending, MOVE_None 및 실제 속도를 확인한다. 아레나에서는 Pawn 제거 전에 관측한다.
 7. 호스트/원격 클라이언트, 30/60/120 FPS 및 필요 시 네트워크 지연 조건을 비교한다. 각 실행의 시간·Actor·World·Role을 함께 보존한다.
