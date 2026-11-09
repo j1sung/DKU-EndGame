@@ -144,6 +144,8 @@ protected:
     UFUNCTION(Server,Reliable) void ServerRequestReturnToWaiting();
     UFUNCTION(Server,Reliable) void ServerAcknowledgeFinalResults(const FString& CompletedMatchId);
 private:
+    bool CanUpdateMatchDisplay() const;
+    friend class FCFMatchDisplayOwnershipTest;
     UPROPERTY() TObjectPtr<class UCFWaitingRoomWidget> WaitingWidget;
     void ResetRoundDisplay();
     UPROPERTY() TSubclassOf<class UCFWaitingRoomWidget> WaitingWidgetClass;

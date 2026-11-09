@@ -19,6 +19,8 @@
 
 ## 최근 기록
 
+- [2026-11-09 · 라운드 맵 이동 중 HUD 크래시 수정](Changes.md#change-20261109-travel-hud-owner)
+
 - [2026-11-09 · 플레이어 색상 머티리얼 적용과 Editor 빌드](Changes.md#change-20261109-player-tint-apply)
 
 - [2026-11-09 · 플레이어 식별·네 맵 랜덤 이동·개인 결과 복귀 코드](Changes.md#change-20261109-round-travel-presentation)

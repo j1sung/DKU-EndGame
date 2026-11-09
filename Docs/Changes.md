@@ -1,5 +1,12 @@
 # 변경 이력
 
+<a id="change-20261109-travel-hud-owner"></a>
+### 2026-11-09 · 라운드 맵 이동 중 HUD 크래시 수정
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+- 변경: 실계정 경기의 첫 라운드 이동 로그에서 플레이어가 분리된 Controller의 위젯 생성 실패와 null 접근을 확인했다. 현재 LocalPlayer 소유권·월드 상태를 확인하고 위젯 생성·화면 등록 실패를 재시도하도록 보완했다.
+- 확인: Editor 정식 빌드 및 MatchRounds 자동 검사 3개 통과. 실제 EOS 4PC 재검증은 남아 있다. [상세 검증](Gameplay/MatchPresentationAndTravel.md#검증-기록과-남은-작업), [경기 상태](Gameplay/Overview.md#match).
+
 <a id="change-20261109-player-tint-apply"></a>
 ### 2026-11-09 · 플레이어 색상 머티리얼 적용과 Editor 빌드
 

@@ -86,7 +86,7 @@ BP 캐릭터의 `ChickenAudio` 컴포넌트에서 `SoundOverrides`에 이벤트�
 
 2026-11-08 후속 코드: 배정된 EOS Round1에서는 명단 검사와 서버의 실제 4인 준비 확인 후 자동 카운트다운하도록 연결했다. 일반 LAN/맵 직접 실행은 기존 수동 시작을 유지한다. 새 Editor 빌드·실계정 4PC 검증은 아직 수행하지 않았으며 다음 맵 이동은 포함하지 않는다. [EOS Round1 연결](../Network/EOSRound1Session.md).
 
-2026-11-09 후속 코드: [플레이어 식별과 네 맵 랜덤 경기](MatchPresentationAndTravel.md)를 추가했다. 서버가 맵·색상 순서를 정하고 Seamless Travel 시 점수/이름/PlayerId를 복구한다. 캐릭터 이름표, 복제 색상 슬롯, 걷기 준비 숨김, 4인 결과 수신 확인 후 정상 종료와 개인별 결과 유지·복귀를 연결했다. UE 5.8.4 Editor 정식 빌드 후 기존 캐릭터 Material Instance에 프로젝트 전용 Tint 부모를 연결·저장하고 원본 보존·재로딩·동적 색상 설정을 확인했다. Tint 보호 검사 9개와 맵/색상·결과 사본 native 검사 2개 통과. 실제 렌더링·새 다중 맵 흐름의 4PC 검증은 남아 있다.
+2026-11-09 후속 코드: [플레이어 식별과 네 맵 랜덤 경기](MatchPresentationAndTravel.md)를 추가했다. 서버가 맵·색상 순서를 정하고 Seamless Travel 시 점수/이름/PlayerId를 복구한다. 캐릭터 이름표, 복제 색상 슬롯, 걷기 준비 숨김, 4인 결과 수신 확인 후 정상 종료와 개인별 결과 유지·복귀를 연결했다. UE 5.8.4 Editor 정식 빌드 후 기존 캐릭터 Material Instance에 프로젝트 전용 Tint 부모를 연결·저장하고 원본 보존·재로딩·동적 색상 설정을 확인했다. Tint 보호 검사 9개 통과. 사용자 4인 경기 시작 확인 후 첫 맵 이동에서 발생한 HUD 크래시를 수정했다. 현재 LocalPlayer 소유권이 복구될 때까지 갱신을 보류하며 위젯 생성 실패를 처리한다. 정식 재빌드와 소유권 회귀 검사를 포함한 MatchRounds native 검사 3개 통과. 실제 렌더링·수정 후 다중 맵 흐름의 4PC 검증은 남아 있다.
 
 <a id="debug-logging"></a>
 ## 디버깅 로그

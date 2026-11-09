@@ -74,6 +74,8 @@ Editor 검사가 패키징 검증을 대신하지 않는다. 현재 저장소에
 
 ## 검증 기록과 남은 작업
 
+- 2026-11-09 사용자는 재빌드 후 실계정 4인 경기가 시작됐지만 첫 라운드 종료 후 이동 중 클라이언트가 크래시했다고 보고했다. 로그에서 Seamless Travel 직후 `CreateWidget cannot be used on Player Controller with no attached player`와 `UpdateMatchDisplay` 크래시를 확인했다. HUD/입력 갱신은 유효한 월드와 현재 LocalPlayer 소유 Controller에서만 수행하고, 위젯 생성·화면 등록 실패 시 다음 타이머에서 다시 시도하도록 수정했다. 플레이어 분리·Controller 교체·재연결·월드 종료 회귀 검사는 수정 전 실패, 수정 후 통과했다. Editor 정식 빌드와 `ChickenFight.MatchRounds` 3개 검사 통과. 실제 EOS 4PC 전체 경기 재검증은 남아 있다.
+- 추가 로컬 2인 PIE(`-nullrhi`)에서 최초 호스트·클라이언트 HUD의 소유자와 Viewport 등록을 확인했다. 수동 Seamless Travel은 서버 목적지 로드까지 관찰했지만 양쪽 이동 완료 검사는 시간 제한에 걸려 통과로 기록하지 않는다. 실제 매칭 배정·4인 경기·렌더링을 대체하는 검사가 아니다. 자료: `Saved/Logs/MatchDisplay-green.log`, `MatchDisplay-pie.log`, `MatchDisplay-pie.json`.
 - 초기 코드 작성 시 Python 보호 검사 25개 통과(기존 스폰/경기 19 + Tint 계획 6). 이번 실제 Material Instance 지원 시 정상 복제·임의 부모/기존 목적지 거절·재실행 보호를 추가해 Tint 검사 9개를 통과했다. 새 지원 검사는 수정 전 실패·수정 후 통과를 확인했다.
 - native 순서/색상/결과 사본 검사 2개(`ChickenFight.MatchRounds`)를 UE 5.8.4에서 실행해 통과했다. EOS 주소 회귀 검사의 새 프로토콜 옵션은 이 브랜치에서 재실행 전이다.
 - 저장된 에셋을 새 Editor에서 로드해 기존 인스턴스의 직렬화 설정을 원본 백업과 비교했다. 공용 부모의 원본 연결·85개 노드, 프로젝트 부모의 BaseColor 외 출력·BlendMode·TwoSided 보존과 노드 2개 추가(총 87개)를 확인했다. Tint 기본 흰색, Multiply와 원본 BaseColor 연결, 동적 인스턴스의 네 가지 색상 설정·조회, 머티리얼 재컴파일 오류 0개와 도구 재조회 `unchanged`를 확인했다. `-nullrhi` 검사이므로 실제 화면 외형 검증은 아니다. 자료는 `Saved/PlayerTintSetup/verified.json`·`verify.log`·`matchrounds_tests.log`에 남긴다.

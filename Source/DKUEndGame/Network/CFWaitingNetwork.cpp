@@ -619,6 +619,7 @@ void ACFWaitingPlayerController::ClientReturnRejected_Implementation(const FText
 
 void ACFWaitingPlayerController::SetMatchInputMode()
 {
+    if (!CanUpdateMatchDisplay()) return;
     const bool bWaiting=LastPhase==ECFMatchPhase::Waiting;
     bShowMouseCursor=bWaiting || bMatchMenuOpen || LastPhase==ECFMatchPhase::FinalResult;
     if (bShowMouseCursor) { FInputModeGameAndUI Mode; Mode.SetHideCursorDuringCapture(false); SetInputMode(Mode); }
@@ -635,8 +636,18 @@ void ACFWaitingPlayerController::ToggleMatchMenu()
     bMatchMenuOpen=!bMatchMenuOpen; SetMatchInputMode();
 }
 
+bool ACFWaitingPlayerController::CanUpdateMatchDisplay() const
+{
+    const UWorld* World = GetWorld();
+    const ULocalPlayer* LocalPlayer = GetLocalPlayer();
+    // Seamless Travel 중 이전 Controller의 타이머가 플레이어 연결 복구보다 먼저 실행될 수 있다.
+    return IsLocalController() && IsValid(World) && !World->bIsTearingDown && IsValid(LocalPlayer) &&
+        LocalPlayer->GetPlayerController(nullptr) == this;
+}
+
 void ACFWaitingPlayerController::UpdateMatchDisplay()
 {
+    if (!CanUpdateMatchDisplay()) return;
     const auto* GS=GetWorld()->GetGameState<ACFWaitingGameState>(); if (!GS) return;
     UpdateSpectatorCamera();
     if (LastPhase!=GS->Phase || LastInputPawn.Get()!=GetPawn())
@@ -656,13 +667,22 @@ void ACFWaitingPlayerController::UpdateMatchDisplay()
     if (GS->Phase==ECFMatchPhase::Waiting && !GS->bAutomaticMatch)
     {
         if (MatchWidget) { MatchWidget->RemoveFromParent(); MatchWidget=nullptr; }
-        if (!WaitingWidget && WaitingWidgetClass)
-        { auto* Widget=CreateWidget<UCFWaitingRoomWidget>(this,WaitingWidgetClass); Widget->AddToPlayerScreen(); }
+        if (!IsValid(WaitingWidget) && WaitingWidgetClass)
+        {
+            auto* Widget=CreateWidget<UCFWaitingRoomWidget>(this,WaitingWidgetClass);
+            if (!IsValid(Widget)) return; // 플레이어/Viewport 준비 후 다음 타이머에서 다시 시도한다.
+            Widget->AddToPlayerScreen();
+        }
     }
     else
     {
         if (WaitingWidget) { WaitingWidget->RemoveFromParent(); WaitingWidget=nullptr; }
-        if (!MatchWidget) { MatchWidget=CreateWidget<UCFMatchStatusWidget>(this,UCFMatchStatusWidget::StaticClass()); MatchWidget->AddToPlayerScreen(10); }
+        if (!IsValid(MatchWidget))
+        {
+            MatchWidget=CreateWidget<UCFMatchStatusWidget>(this,UCFMatchStatusWidget::StaticClass());
+            if (!IsValid(MatchWidget)) return;
+            if (!MatchWidget->AddToPlayerScreen(10)) { MatchWidget=nullptr; return; }
+        }
         MatchWidget->Refresh(GS,bMatchMenuOpen,bRoundEliminated);
     }
 }
