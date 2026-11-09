@@ -15,6 +15,8 @@ public:
     ACFRoundGameMode();
     virtual void InitGame(const FString& MapName, const FString& Options, FString& ErrorMessage) override;
     virtual void InitGameState() override;
+    virtual void RestartPlayer(AController* NewPlayer) override;
+    virtual void HandleSeamlessTravelPlayer(AController*& Controller) override;
     virtual void PreLogin(const FString& Options, const FString& Address, const FUniqueNetIdRepl& UniqueId, FString& ErrorMessage) override;
     virtual void PostLogin(APlayerController* NewPlayer) override;
     virtual bool TryStartRound(ACFWaitingPlayerController* Requester) override;
@@ -26,11 +28,12 @@ public:
 
 protected:
     virtual void OnRoundPlaying() override;
+    virtual void OnFinalResults() override;
+    virtual bool TravelForNextRound() override;
 
 private:
     bool bRoundSetupReady = false;
     bool bAssignedMatch = false;
-    bool bStartingAssignedRound = false;
     TSet<TWeakObjectPtr<AController>> AdmittedPlayers;
     TMap<TWeakObjectPtr<AController>, TWeakObjectPtr<APlayerStart>> AssignedStarts;
 };

@@ -1,0 +1,78 @@
+# 플레이어 식별과 네 맵 랜덤 경기
+
+> 2026-11-09 · Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+>
+> 상위: [경기 상태](Overview.md#match) · [Network](../Network/Overview.md#eos-round1) · 선행: [EOS 연결](../Network/EOSRound1Session.md), [네 맵 준비](RoundGameplaySetup.md)
+
+## 사용자 확인과 이번 변경
+
+사용자는 선행 `codex/eos-session-integration`에서 실계정 4인 접속·플레이·같은 월드의 4라운드와 화면 종료 흐름 성공을 보고했다. 이후 빌드/EOS 주소 수정까지 PR #51로 dev에 병합했고 `3ffa8e6` 기준 `codex/match-presentation-and-round-travel`에서 후속 코드를 작성했다. **이번 새 다중 맵 코드의 Unreal 빌드·실행 결과는 아니다.**
+
+이번 요청은 머리 위 닉네임, 서로 다른 랜덤 색상, 네 실제 맵의 무중복 랜덤 순서, 매칭 후 경기 전 걷기 제거다. 추가 선택은 ‘각자 최종 결과 확인 후 연습 로비 복귀’이며 로그인 후 연습 로비는 유지한다.
+
+## 구성
+
+| 위치 | 책임 |
+|---|---|
+| `CFMatchRuntimeSubsystem` | 서버 맵/색상 순서, 라운드 이동 전 점수·PlayerId·닉네임 사본, 클라이언트 최종 결과와 독립 화면 |
+| `CFRoundGameMode` / `CFWaitingNetwork` | Seamless Travel, 서버 승인 4인 로드 확인, 점수 복구와 다음 라운드 준비, 결과 RPC/ACK, 이동 후 Controller UI 재설정 |
+| `CFMatchSessionSubsystem` | 최초 맵 광고·검증, 기존 세션 유지, 첫 joined/started와 마지막 finished, 종료·실패 정리 |
+| `CFPlayerPresentationComponent` | 복제된 색상 슬롯으로 MID 갱신, PlayerState의 현재 이름을 화면 공간 UMG 이름표로 표시 |
+| `CFMatchStatusWidget` | 걷기 준비 UI를 숨기고 불투명 접속 준비 화면 표시, 기존 카운트다운·경기 HUD 재사용 |
+| `CFCompletedMatchWidget` | 세션/월드와 독립적으로 받은 최종 결과 표시, 종료 정리 후 본인 확인 버튼 |
+| `configure_player_tint.py` | 기존 머티리얼의 BaseColor 출력에 흰색 기본 Tint를 곱하는 보존형 에디터 적용 도구 |
+
+## 흐름과 경계
+
+서버는 네 맵 번호와 구분 가능한 파랑·주황·자홍·초록 4색을 각각 한 번 섞는다. 맵 순서는 예를 들어 1→4→2→3이 될 수 있고, 첫 라운드가 반드시 L_Round1일 필요가 없다. 라운드 번호는 진행 순서이며 화면의 ROUND 1~4를 따른다. 색상은 서버의 멤버 PUID별 배정으로 정하고 Pawn 재생성·맵 이동에도 유지한다. 이름은 복제 PlayerState에서 읽어 늦은 이름 갱신도 반영한다.
+
+세션 설정 `CF_FIRST_MAP`과 `CF_FLOW_PROTOCOL=2`를 광고한다. 클라이언트는 정확한 세션·호스트·매치·버전 외에도 프로토콜과 맵 whitelist를 확인한다. 이동 승인 URL에도 `CFProtocol=2`를 넣는다. 백엔드 mode/version은 기존 `standard`/`0.1.0`이며 서버 배포 변경은 없다. **구버전 실행 파일과 섞지 말고 4PC 모두 이 브랜치로 빌드한다.**
+
+최초 경기장과 이후 경기장에서는 숨긴 대기 Pawn의 서버 이동을 비활성화한다. 접속 준비 화면 뒤에서 실제 4인 로드·소유 Pawn을 확인하고 3초 카운트다운으로 전환한다. 기본 NULL/LAN 검사는 기존 수동/걷기 대기를 유지한다.
+
+각 라운드 결과 표시가 끝나면 서버가 누적 점수·PlayerId·닉네임을 저장하고 `ServerTravel`로 다음 맵에 이동한다. `bUseSeamlessTravel`로 기존 연결을 유지하며 새 GameState에 점수를 복구한다. 서버 `HandleSeamlessTravelPlayer`와 로컬 `NotifyLoadedWorld(bFinalDest)`에서 신원·화면을 복구한다. 네 명의 다음 맵 준비 최대 시간은 60초다. 새 EOS 세션이나 joined/started 보고를 라운드마다 만들지 않는다. [Epic Seamless Travel 설명](https://dev.epicgames.com/documentation/en-us/unreal-engine/travelling-in-multiplayer-in-unreal-engine) 참고.
+
+4라운드 최종 결과는 reliable RPC로 각 클라이언트 GameInstance에 복사하고 4명 ACK 이후 호스트가 멱등 `/finished`를 보고한다. ACK는 소유 Controller의 실제 EOS PUID로 확인하고 최대 60초를 기다린다. 수신 실패·중간 이탈은 정상 완료로 꾸미지 않고 기존 전체 실패로 처리한다. 정상 종료 확인과 로컬 세션 정리가 끝나면 연습 로비를 로드하되 불투명 결과 화면은 각 PC에 남긴다. 본인이 확인해야 로비 UI를 다시 사용할 수 있다. 따라서 호스트가 먼저 확인해도 다른 사람의 결과는 유지된다.
+
+인증 만료 시 결과 사본을 지우지 않고 덮개를 잠시 내려 재로그인할 수 있게 한다. 같은 계정으로 서버 종료를 확인하고 정리가 끝나면 결과 화면을 다시 표시한다. 결과/세션이 불명확한 상태에서 새 매칭을 허용하지 않는다.
+
+## Unreal PC 적용과 검사
+
+이 PC에는 Unreal이 없다. 네 맵 에셋은 선행 적용본을 유지하며 **색상 머티리얼은 아직 변경·저장하지 않았다.** 아래 에디터 도구 적용이 필수다. 적용 전 기본값이 흰색이므로 기존 외형은 그대로다.
+
+1. 동일 브랜치 소스로 Editor를 정식 재빌드한다. 새 UCLASS/컴포넌트/RPC가 있으므로 Live Coding만으로 검증하지 않는다. EOSLocal 준비/실행 명령은 [기존 절차](../Network/EOSRound1Session.md#각-테스트-pc-준비)를 따른다.
+2. PythonScriptPlugin을 켠 Editor에서 PIE와 미저장 머티리얼 편집을 종료하고 Output Log의 Python으로 조회한다.
+
+```python
+import runpy, unreal
+from pathlib import Path
+tool = runpy.run_path(str(Path(unreal.Paths.project_dir()) / "Tools/Editor/configure_player_tint.py"))
+tool["run"]()  # 조회
+tool["run"](apply=True)  # 확인 후 적용·저장
+```
+
+도구는 `/Game/Characters/WhiteRound/Mesh/M_White_Matte`만 대상으로 하고 기존 BaseColor 연결·출력과 다른 속성을 유지한다. `Saved/PlayerTintSetup/`에 원본 uasset을 먼저 복사한다. 같은 이름의 외부 매개변수·변형 표식·연결 없는 BaseColor·PIE·미저장 파일은 거절한다. 적용 오류는 저장하지 않으며 Editor의 Undo/백업을 확인해야 한다. 실제 머티리얼 그래프 조회와 셰이더 컴파일은 이 PC에서 실행하지 않았다. 적용한 uasset은 테스트 PC에서 검증 후 브랜치에 반영해야 다른 PC도 색을 본다.
+
+3. Automation에서 `ChickenFight.MatchRounds`, `ChickenFight.EOS`, 기존 `ChickenFight.Matchmaking`, `ChickenFight.RoundSetup.SpawnReservations`를 확인한다. native 새 검사들은 이 PC에서 **미실행**이다.
+4. 실제 다른 Epic 계정 4PC로 아래를 확인한다.
+
+| 검사 | 성공 기준 |
+|---|---|
+| 최초 접속 | 연습 로비 유지, 매칭 후 걷기/UI 노출 없이 준비 화면, 4인 로드 후 카운트다운 |
+| 식별 | 한글 이름표가 각자의 프로필과 일치, 네 색 중복 없음, 모든 화면의 색상 일치 |
+| 맵 순서 | 4라운드 동안 L_Round1~4 각각 한 번, 네 화면의 같은 맵/라운드 |
+| 상태 이전 | 각 맵의 네 스폰, 이름·색·PlayerId·누적 점수 유지, 결과/탈락/관전 정상 |
+| 다음 맵 준비 | 느린 클라이언트가 있는 동안 3인 시작 금지, 60초 실패 후 복구 |
+| 최종 종료 | 4명 결과 수신 후 finished 200와 FINISHED 조회, 각자 확인해 로비 복귀 |
+| 호스트 먼저 확인 | 다른 PC 결과 유지, 남은 사람이 확인 후 로비와 새 빠른 대전 사용 가능 |
+| 재경기 | 새 매칭 정상, 이전 결과/점수 없음, 맵/색상 재배정 |
+| 실패 | 이동 중 종료·인증 만료·호스트 연결 끊김이 정상 완료로 처리되지 않음 |
+
+Editor 검사가 패키징 검증을 대신하지 않는다. 현재 저장소에는 명시적인 `MapsToCook` 목록이 없으므로 패키징 시 새로 문자열로 선택하는 네 맵의 cook 포함을 반드시 구성·검증해야 한다. 이번 작업에서는 패키징 설정이나 패키지 빌드를 변경/실행하지 않았다.
+
+## 검증 기록과 남은 작업
+
+- Python 보호 검사 25개 통과(기존 스폰/경기 19 + Tint 계획 6). Tint 검사는 구현 전 실패 후 구현 후 통과했다.
+- native 순서/색상/결과 사본 검사 추가, EOS 주소 회귀 검사의 새 프로토콜 옵션 반영. Unreal 미설치로 실행 전.
+- 독립 정적 리뷰의 `TObjectPtr` 형식 문제를 수정하고 클라이언트 로드 완료 UI 경로를 보완했다. 후속 리뷰에서 확정 P0/P1 추가 없음. 실제 UE API/UHT 빌드와 4PC 실행 증거를 대신하지 않는다.
+- 캐릭터 원본의 비 UTF-8 주석 인코딩은 변환하지 않고 ASCII include/컴포넌트 코드만 보존 편집했다.

@@ -3,6 +3,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Network/CFWaitingNetwork.h"
+#include "Character/CFPlayerPresentationComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "HAL/IConsoleManager.h"
 
@@ -134,6 +135,7 @@ void AChickenCharacter::OnMovementModeChanged(
 
 AChickenCharacter::AChickenCharacter()
 {
+    PlayerPresentation = CreateDefaultSubobject<UCFPlayerPresentationComponent>(TEXT("PlayerPresentation"));
 	PrimaryActorTick.bCanEverTick = true;
     bReplicates = true;
     SetReplicateMovement(true);

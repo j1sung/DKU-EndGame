@@ -15,6 +15,7 @@ class UCFMatchmakingSubsystem;
 class UCFLobbySubsystem;
 class IHttpRequest;
 class ACFWaitingPlayerController;
+struct FCFFinalStanding;
 
 /** 티켓 배정 이후 실제 EOS 세션과 매치 API의 단일 소유자. */
 UCLASS()
@@ -31,6 +32,10 @@ public:
     void NotifyPlaying();
     void NotifyPlayerLeft();
     void RequestLeave();
+    const FString& GetMatchId() const { return MatchId; }
+    FString TravelOptions() const;
+    void PublishFinalResults(const TArray<FCFFinalStanding>& Rows);
+    void AcknowledgeFinalResults(const FString& CompletedMatchId, const FString& Player);
     static FString ProductUserId(const FUniqueNetId& Id);
 
 private:
@@ -39,6 +44,10 @@ private:
     UPROPERTY(Transient) TObjectPtr<UCFMatchmakingSubsystem> Tickets;
     UPROPERTY(Transient) TObjectPtr<UCFLobbySubsystem> Lobby;
     FString MatchId, PlayerId, PublishedSessionId, PendingAction, PendingKey;
+    FString FirstMap;
+    TSet<FString> FinalAcknowledgements;
+    bool bFinalPublished = false, bFinishReported = false;
+    double FinalAckDeadline = 0;
     FCFSessionMatch Match;
     EConnection Connection = EConnection::None;
     IOnlineSessionPtr Sessions;

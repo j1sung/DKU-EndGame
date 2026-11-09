@@ -49,6 +49,7 @@ public:
     UPROPERTY(Replicated,BlueprintReadOnly) int32 RoomCapacity = 4;
     UPROPERTY(Replicated,BlueprintReadOnly) int32 MinimumPlayers = 2;
     UPROPERTY(Replicated,BlueprintReadOnly) bool bRoomClosing = false;
+    UPROPERTY(Replicated,BlueprintReadOnly) bool bAutomaticMatch = false;
     UPROPERTY(Replicated,BlueprintReadOnly,Category="CF|Match") ECFMatchPhase Phase = ECFMatchPhase::Waiting;
     UPROPERTY(Replicated,BlueprintReadOnly,Category="CF|Match") int32 CurrentRound = 0;
     UPROPERTY(Replicated,BlueprintReadOnly,Category="CF|Match") int32 TotalRounds = 4;
@@ -85,6 +86,9 @@ public:
     virtual void EndPlay(const EEndPlayReason::Type Reason) override;
 protected:
     virtual void OnRoundPlaying() {}
+    virtual void OnFinalResults() {}
+    virtual bool TravelForNextRound() { return false; }
+    bool PrepareRound(int32 RoundNumber,FString& Error);
     UPROPERTY(EditDefaultsOnly,Category="CF|Match") TSubclassOf<class AChickenCharacter> CombatPawnClass;
     UPROPERTY(EditDefaultsOnly,Category="CF|Match",meta=(ClampMin="1",ClampMax="10")) float CountdownDuration = 3.f;
     // Current fall clips are 1.4 s; allow their transition to complete as well.
@@ -100,7 +104,6 @@ private:
     FTimerHandle CountdownTimer;
     FTimerHandle RoundResolutionTimer;
     TMap<TWeakObjectPtr<class AChickenCharacter>,FTimerHandle> PendingRemovals;
-    bool PrepareRound(int32 RoundNumber,FString& Error);
     void AdvanceRound();
     void ScoreRound();
     void ShowFinalResults();
@@ -118,6 +121,9 @@ class DKUENDGAME_API ACFWaitingPlayerController : public ADKUEndGamePlayerContro
     GENERATED_BODY()
 public:
     virtual void BeginPlay() override;
+    virtual void PostSeamlessTravel() override;
+    virtual void NotifyLoadedWorld(FName WorldPackageName, bool bFinalDest) override;
+    virtual void PreClientTravel(const FString& PendingURL, ETravelType TravelType, bool bIsSeamlessTravel) override;
     virtual void EndPlay(const EEndPlayReason::Type Reason) override;
     virtual void SetupInputComponent() override;
     virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
@@ -131,12 +137,15 @@ public:
     UFUNCTION(Client,Reliable) void ClientRoomClosed();
     UFUNCTION(Client,Reliable) void ClientStartRejected(const FText& Reason);
     void RegisterWaitingWidget(class UCFWaitingRoomWidget* Widget);
+    UFUNCTION(Client,Reliable) void ClientCacheFinalResults(const FString& CompletedMatchId, const TArray<FCFFinalStanding>& Rows);
 protected:
     UFUNCTION(Server,Reliable) void ServerSetNickname(const FString& Nickname);
     UFUNCTION(Server,Reliable) void ServerRequestStartGame();
     UFUNCTION(Server,Reliable) void ServerRequestReturnToWaiting();
+    UFUNCTION(Server,Reliable) void ServerAcknowledgeFinalResults(const FString& CompletedMatchId);
 private:
     UPROPERTY() TObjectPtr<class UCFWaitingRoomWidget> WaitingWidget;
+    void ResetRoundDisplay();
     UPROPERTY() TSubclassOf<class UCFWaitingRoomWidget> WaitingWidgetClass;
     UPROPERTY() TObjectPtr<class UCFMatchStatusWidget> MatchWidget;
     UPROPERTY(ReplicatedUsing=OnRep_RoundParticipation) bool bRoundEliminated = false;

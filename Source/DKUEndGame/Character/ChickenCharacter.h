@@ -50,6 +50,8 @@ protected:
     virtual void OnMovementModeChanged(EMovementMode PrevMovementMode, uint8 PreviousCustomMode = 0) override;
 
 private:
+    UPROPERTY(VisibleAnywhere, Category="Chicken|Presentation")
+    TObjectPtr<class UCFPlayerPresentationComponent> PlayerPresentation;
     UPROPERTY(VisibleAnywhere, Category="Chicken|Audio")
     TObjectPtr<UChickenAudioComponent> ChickenAudio;
 

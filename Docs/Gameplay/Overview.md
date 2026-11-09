@@ -86,6 +86,8 @@ BP 캐릭터의 `ChickenAudio` 컴포넌트에서 `SoundOverrides`에 이벤트�
 
 2026-11-08 후속 코드: 배정된 EOS Round1에서는 명단 검사와 서버의 실제 4인 준비 확인 후 자동 카운트다운하도록 연결했다. 일반 LAN/맵 직접 실행은 기존 수동 시작을 유지한다. 새 Editor 빌드·실계정 4PC 검증은 아직 수행하지 않았으며 다음 맵 이동은 포함하지 않는다. [EOS Round1 연결](../Network/EOSRound1Session.md).
 
+2026-11-09 후속 코드: [플레이어 식별과 네 맵 랜덤 경기](MatchPresentationAndTravel.md)를 추가했다. 서버가 맵·색상 순서를 정하고 Seamless Travel 시 점수/이름/PlayerId를 복구한다. 캐릭터 이름표, 복제 색상 슬롯, 걷기 준비 숨김, 4인 결과 수신 확인 후 정상 종료와 개인별 결과 유지·복귀를 연결했다. Python 보호 검사 25개 통과. 새 Editor 빌드·색상 머티리얼 적용·실제 4PC는 미검증이다.
+
 <a id="debug-logging"></a>
 ## 디버깅 로그
 > 최근 기능 변경: 2026-10-23 · Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋

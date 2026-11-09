@@ -1,5 +1,14 @@
 # 변경 이력
 
+<a id="change-20261109-round-travel-presentation"></a>
+### 2026-11-09 · 플레이어 식별·네 맵 랜덤 이동·개인 결과 복귀 코드
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+- 배경: 사용자가 선행 EOS 실계정 4인·같은 월드 4라운드 성공을 확인한 뒤 닉네임/색상 식별, 네 맵 랜덤 순서, 경기 전 걷기 제거와 각자 결과 확인 후 연습 로비 복귀를 요청했다.
+- 변경: GI의 서버 맵·색상 순서와 점수/신원 이전, 서버 Seamless Travel, 이름표·복제 Tint, 접속 준비 화면, 최종 reliable 결과/4인 ACK 후 finished, 개인별 결과 유지·복귀를 연결했다. 머티리얼은 원본 BaseColor를 보존하는 별도 Editor 적용 도구로 준비한다.
+- 확인: Python 보호 검사 25개 통과, native 검사 추가·정적 코드 리뷰 수행. 이 PC에는 Unreal이 없어 새 Editor 빌드·실제 에셋 적용·4PC 맵 이동/결과 검증은 미완료다.
+- 문서: [구현과 QA](Gameplay/MatchPresentationAndTravel.md), [Network](Network/Overview.md#eos-round1), [계획](EOS/superpowers/plans/2026-11-09-round-travel-presentation.md).
+
 <a id="change-20261108-eos-travel-url"></a>
 ### 2026-11-08 · EOS 참가 주소의 대괄호 손실 수정
 
