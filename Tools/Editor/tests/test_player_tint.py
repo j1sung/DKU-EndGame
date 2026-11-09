@@ -37,5 +37,24 @@ class PlayerTintPlanTests(unittest.TestCase):
         data = self.snapshot(); data["has_base"] = False
         with self.assertRaises(ValueError): module.make_plan(data)
 
+    def test_known_instance_uses_project_parent_copy(self):
+        data = self.snapshot()
+        data.update(kind="MaterialInstanceConstant", parent="/InterchangeAssets/Materials/FBXLegacyPhongSurfaceMaterial.FBXLegacyPhongSurfaceMaterial", destination_exists=False)
+        self.assertEqual(module.make_plan(data), "duplicate_parent")
+
+    def test_unknown_instance_parent_and_existing_destination_rejected(self):
+        data = self.snapshot()
+        data.update(kind="MaterialInstanceConstant", parent="/Game/Other.Other", destination_exists=False)
+        with self.assertRaises(ValueError): module.make_plan(data)
+        data["parent"] = "/InterchangeAssets/Materials/FBXLegacyPhongSurfaceMaterial.FBXLegacyPhongSurfaceMaterial"
+        data["destination_exists"] = True
+        with self.assertRaises(ValueError): module.make_plan(data)
+
+    def test_managed_instance_is_repeatable(self):
+        data = self.snapshot()
+        data.update(kind="MaterialInstanceConstant", parent="/Game/Characters/WhiteRound/Mesh/M_CF_PlayerTintBase.M_CF_PlayerTintBase", destination_exists=True,
+                    parameters=[module.PARAMETER], marker=module.MARKER, base_marker=module.MARKER)
+        self.assertEqual(module.make_plan(data), "unchanged")
+
 
 if __name__ == "__main__": unittest.main()

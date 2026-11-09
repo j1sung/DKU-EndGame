@@ -38,10 +38,10 @@
 
 ## Unreal PC 적용과 검사
 
-이 PC에는 Unreal이 없다. 네 맵 에셋은 선행 적용본을 유지하며 **색상 머티리얼은 아직 변경·저장하지 않았다.** 아래 에디터 도구 적용이 필수다. 적용 전 기본값이 흰색이므로 기존 외형은 그대로다.
+2026-11-09 Unreal 5.8.4 설치 PC에서 Editor 정식 빌드와 색상 머티리얼 적용·저장·새 Editor 재조회까지 완료했다. 복제 매크로가 요구하는 `OutLifetimeProps` 인수 이름을 `CFPlayerPresentationComponent`에 맞춰 빌드 오류를 수정했다. 네 맵 에셋은 변경하지 않았다. Tint 기본값은 흰색이다. 실제 렌더링과 실계정 4PC 검증은 별도다.
 
 1. 동일 브랜치 소스로 Editor를 정식 재빌드한다. 새 UCLASS/컴포넌트/RPC가 있으므로 Live Coding만으로 검증하지 않는다. EOSLocal 준비/실행 명령은 [기존 절차](../Network/EOSRound1Session.md#각-테스트-pc-준비)를 따른다.
-2. PythonScriptPlugin을 켠 Editor에서 PIE와 미저장 머티리얼 편집을 종료하고 Output Log의 Python으로 조회한다.
+2. `-EnablePlugins=PythonScriptPlugin,EditorScriptingUtilities`로 두 플러그인을 해당 실행에서 활성화한 Editor에서 PIE와 미저장 머티리얼 편집을 종료하고 Output Log의 Python으로 조회한다.
 
 ```python
 import runpy, unreal
@@ -51,9 +51,11 @@ tool["run"]()  # 조회
 tool["run"](apply=True)  # 확인 후 적용·저장
 ```
 
-도구는 `/Game/Characters/WhiteRound/Mesh/M_White_Matte`만 대상으로 하고 기존 BaseColor 연결·출력과 다른 속성을 유지한다. `Saved/PlayerTintSetup/`에 원본 uasset을 먼저 복사한다. 같은 이름의 외부 매개변수·변형 표식·연결 없는 BaseColor·PIE·미저장 파일은 거절한다. 적용 오류는 저장하지 않으며 Editor의 Undo/백업을 확인해야 한다. 실제 머티리얼 그래프 조회와 셰이더 컴파일은 이 PC에서 실행하지 않았다. 적용한 uasset은 테스트 PC에서 검증 후 브랜치에 반영해야 다른 PC도 색을 본다.
+실제 캐릭터 슬롯 0의 `/Game/Characters/WhiteRound/Mesh/M_White_Matte`는 MaterialInstanceConstant이고, 부모는 `/InterchangeAssets/Materials/FBXLegacyPhongSurfaceMaterial`이다. 최초 도구가 일반 Material로 가정해 적용 전 중단된 것을 확인하고 보완했다. 공용 Interchange 부모는 수정하지 않고 프로젝트의 `/Game/Characters/WhiteRound/Mesh/M_CF_PlayerTintBase`로 복제해 기존 BaseColor 출력에 `CF_PlayerTint`(기본 흰색)를 곱한다. 기존 인스턴스는 이 부모로 연결하며 vector/scalar/texture 값과 BasePropertyOverrides는 보존한다. 다른 Material 또는 임의 부모 체인으로 우회하지 않는다.
 
-3. Automation에서 `ChickenFight.MatchRounds`, `ChickenFight.EOS`, 기존 `ChickenFight.Matchmaking`, `ChickenFight.RoundSetup.SpawnReservations`를 확인한다. native 새 검사들은 이 PC에서 **미실행**이다.
+도구는 `Saved/PlayerTintSetup/`에 원본 인스턴스 uasset을 백업한다. 이번 백업은 `Saved/PlayerTintSetup/20261109_212451_211945/`다. 같은 이름의 외부 매개변수·변형 표식·연결 없는 BaseColor·PIE·미저장 파일·기존의 알 수 없는 복제 경로를 거절한다. 적용 실패 시 이미 생성된 부모 에셋이나 미저장 변경이 남을 수 있으므로 임의 전체 저장·재적용하지 말고 Undo/백업과 로그를 확인한다. 다른 PC에 전달할 에셋은 **수정된 `M_White_Matte.uasset`과 새 `M_CF_PlayerTintBase.uasset` 두 개**다. 브랜치에 반영하기 전에는 다른 PC에 전달되지 않는다.
+
+3. Automation에서 `ChickenFight.MatchRounds`, `ChickenFight.EOS`, 기존 `ChickenFight.Matchmaking`, `ChickenFight.RoundSetup.SpawnReservations`를 확인한다. 이 PC에서는 새 `MatchRounds.Plan`·`MatchRounds.ResultCache` 두 개를 실행해 통과했다. 나머지 검사를 이 브랜치에서 재실행한 것은 아니다.
 4. 실제 다른 Epic 계정 4PC로 아래를 확인한다.
 
 | 검사 | 성공 기준 |
@@ -72,7 +74,8 @@ Editor 검사가 패키징 검증을 대신하지 않는다. 현재 저장소에
 
 ## 검증 기록과 남은 작업
 
-- Python 보호 검사 25개 통과(기존 스폰/경기 19 + Tint 계획 6). Tint 검사는 구현 전 실패 후 구현 후 통과했다.
-- native 순서/색상/결과 사본 검사 추가, EOS 주소 회귀 검사의 새 프로토콜 옵션 반영. Unreal 미설치로 실행 전.
+- 초기 코드 작성 시 Python 보호 검사 25개 통과(기존 스폰/경기 19 + Tint 계획 6). 이번 실제 Material Instance 지원 시 정상 복제·임의 부모/기존 목적지 거절·재실행 보호를 추가해 Tint 검사 9개를 통과했다. 새 지원 검사는 수정 전 실패·수정 후 통과를 확인했다.
+- native 순서/색상/결과 사본 검사 2개(`ChickenFight.MatchRounds`)를 UE 5.8.4에서 실행해 통과했다. EOS 주소 회귀 검사의 새 프로토콜 옵션은 이 브랜치에서 재실행 전이다.
+- 저장된 에셋을 새 Editor에서 로드해 기존 인스턴스의 직렬화 설정을 원본 백업과 비교했다. 공용 부모의 원본 연결·85개 노드, 프로젝트 부모의 BaseColor 외 출력·BlendMode·TwoSided 보존과 노드 2개 추가(총 87개)를 확인했다. Tint 기본 흰색, Multiply와 원본 BaseColor 연결, 동적 인스턴스의 네 가지 색상 설정·조회, 머티리얼 재컴파일 오류 0개와 도구 재조회 `unchanged`를 확인했다. `-nullrhi` 검사이므로 실제 화면 외형 검증은 아니다. 자료는 `Saved/PlayerTintSetup/verified.json`·`verify.log`·`matchrounds_tests.log`에 남긴다.
 - 독립 정적 리뷰의 `TObjectPtr` 형식 문제를 수정하고 클라이언트 로드 완료 UI 경로를 보완했다. 후속 리뷰에서 확정 P0/P1 추가 없음. 실제 UE API/UHT 빌드와 4PC 실행 증거를 대신하지 않는다.
 - 캐릭터 원본의 비 UTF-8 주석 인코딩은 변환하지 않고 ASCII include/컴포넌트 코드만 보존 편집했다.

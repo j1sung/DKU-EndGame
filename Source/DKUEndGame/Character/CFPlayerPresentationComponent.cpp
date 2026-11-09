@@ -79,7 +79,7 @@ void UCFPlayerPresentationComponent::TickComponent(float Delta, ELevelTick TickT
     Nameplate->SetVisibility(State && !State->GetPlayerName().IsEmpty());
     if (Widget && State) Widget->SetName(State->GetPlayerName(), UCFMatchRuntimeSubsystem::PlayerColour(ColourSlot));
 }
-void UCFPlayerPresentationComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out) const
+void UCFPlayerPresentationComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
-    Super::GetLifetimeReplicatedProps(Out); DOREPLIFETIME(UCFPlayerPresentationComponent, ColourSlot);
+    Super::GetLifetimeReplicatedProps(OutLifetimeProps); DOREPLIFETIME(UCFPlayerPresentationComponent, ColourSlot);
 }

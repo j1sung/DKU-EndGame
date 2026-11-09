@@ -1,5 +1,12 @@
 # 변경 이력
 
+<a id="change-20261109-player-tint-apply"></a>
+### 2026-11-09 · 플레이어 색상 머티리얼 적용과 Editor 빌드
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+- 변경: 복제 매크로 인수명 오류를 수정해 UE 5.8.4 Editor 정식 빌드를 완료했다. 실제 M_White_Matte가 Material Instance임을 확인해 도구를 보완하고, 공용 부모를 프로젝트의 M_CF_PlayerTintBase로 복제해 기존 BaseColor에 흰색 기본 Tint를 곱하도록 연결했다. 원본 인스턴스를 백업하고 기존 설정을 보존했다.
+- 확인: Tint 보호 검사 9개와 MatchRounds native 검사 2개 통과. 새 Editor에서 저장된 에셋·백업 비교, 공용 원본/기존 출력 보존, 동적 4색 설정·조회와 재컴파일 오류 0개 확인. 실제 화면·4PC 맵 이동/결과 흐름은 미검증이다. [적용 결과와 한계](Gameplay/MatchPresentationAndTravel.md#검증-기록과-남은-작업).
+
 <a id="change-20261109-round-travel-presentation"></a>
 ### 2026-11-09 · 플레이어 식별·네 맵 랜덤 이동·개인 결과 복귀 코드
 

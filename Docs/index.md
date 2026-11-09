@@ -2,7 +2,7 @@
 
 카테고리 대표 문서는 현재 구조를 설명하고, 상세 문서는 설정·연결·기술 설명을 보충한다. 코드·에셋 확인 범위는 각 문서의 제한을 참고한다.
 
-현재 LAN 방 생성·수동 시작은 게임플레이 테스트 구현이다. 목표 흐름은 [EOS 자동 4인 매칭 인계서](EOS/unreal-client-handoff.md)와 [매칭 API 계약](EOS/unreal-matchmaking-ticket-api.md)을 따른다. 백엔드는 `Backend-Infra/`에 개발 배포됐고, 선행 EOS 연결은 사용자 실계정 4인·같은 월드 4라운드 성공 보고를 받았다. 후속 [플레이어 식별·랜덤 맵 이동 코드](Gameplay/MatchPresentationAndTravel.md)는 새 Unreal 빌드·에셋 적용·실계정 검증 전이다.
+현재 LAN 방 생성·수동 시작은 게임플레이 테스트 구현이다. 목표 흐름은 [EOS 자동 4인 매칭 인계서](EOS/unreal-client-handoff.md)와 [매칭 API 계약](EOS/unreal-matchmaking-ticket-api.md)을 따른다. 백엔드는 `Backend-Infra/`에 개발 배포됐고, 선행 EOS 연결은 사용자 실계정 4인·같은 월드 4라운드 성공 보고를 받았다. 후속 [플레이어 식별·랜덤 맵 이동 코드](Gameplay/MatchPresentationAndTravel.md)는 UE 5.8.4 빌드·색상 머티리얼 적용과 자동 검사 일부를 완료했으며, 새 흐름의 실계정 4PC 검증은 남아 있다.
 
 | 카테고리 | 대표 문서 | 상세 문서 |
 |---|---|---|
@@ -18,6 +18,8 @@
 - [전체 문서 갱신 요청문](../.agents/prompts/refresh-project-docs.md)
 
 ## 최근 기록
+
+- [2026-11-09 · 플레이어 색상 머티리얼 적용과 Editor 빌드](Changes.md#change-20261109-player-tint-apply)
 
 - [2026-11-09 · 플레이어 식별·네 맵 랜덤 이동·개인 결과 복귀 코드](Changes.md#change-20261109-round-travel-presentation)
 

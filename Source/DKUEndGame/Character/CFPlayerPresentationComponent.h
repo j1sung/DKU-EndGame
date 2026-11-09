@@ -24,7 +24,7 @@ class DKUENDGAME_API UCFPlayerPresentationComponent : public UActorComponent
 public:
     UCFPlayerPresentationComponent();
     void SetColourSlot(int32 Slot);
-    virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out) const override;
+    virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 protected:
     virtual void BeginPlay() override;
     virtual void TickComponent(float Delta, ELevelTick TickType, FActorComponentTickFunction* Function) override;
