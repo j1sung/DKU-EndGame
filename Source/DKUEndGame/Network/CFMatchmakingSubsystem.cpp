@@ -66,11 +66,28 @@ void UCFMatchmakingSubsystem::Cancel(int32 FlowId)
 
 void UCFMatchmakingSubsystem::Recover(int32 FlowId)
 {
+    if (bAssignmentClaimed) return;
     if (bDeinitializing || FlowId <= 0 || Lobby->ActiveFlowId != FlowId) return;
     if (Flow.Id == 0) Flow.Begin(FlowId, FString(), false);
     if (Flow.Id != FlowId || HttpRequest) return;
     if (Lobby->bCancelRequested) Flow.WantCancel();
     Send(Flow.RecoveryRequest());
+}
+
+bool UCFMatchmakingSubsystem::ClaimAssignment(const FString& MatchId)
+{
+    if (bAssignmentClaimed || MatchId.IsEmpty() || MatchId != Flow.MatchId) return false;
+    bAssignmentClaimed = true; StopIo();
+    return true;
+}
+
+void UCFMatchmakingSubsystem::CompleteAssignment(const FText& Message)
+{
+    if (!bAssignmentClaimed) return;
+    StopIo(); bAssignmentClaimed = false;
+    const int32 Id = Flow.Id;
+    Flow = FCFMatchmakingFlow();
+    Lobby->ReportIdle(Id, Message);
 }
 
 void UCFMatchmakingSubsystem::AuthenticationRequired()
@@ -101,7 +118,7 @@ void UCFMatchmakingSubsystem::Schedule(ECFMatchRequest Kind, float Delay)
 
 void UCFMatchmakingSubsystem::Send(ECFMatchRequest Kind)
 {
-    if (bDeinitializing || Kind == ECFMatchRequest::None || Flow.Id <= 0 || Flow.Id != Lobby->ActiveFlowId || HttpRequest) return;
+    if (bDeinitializing || bAssignmentClaimed || Kind == ECFMatchRequest::None || Flow.Id <= 0 || Flow.Id != Lobby->ActiveFlowId || HttpRequest) return;
     const double RemainingDelay = NextAllowedAt - FPlatformTime::Seconds();
     if (RemainingDelay > .01) { Schedule(Kind, static_cast<float>(RemainingDelay)); return; }
     GetGameInstance()->GetTimerManager().ClearTimer(PollTimer);

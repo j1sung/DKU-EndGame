@@ -65,7 +65,11 @@ pwsh -NoProfile -File .\Tools\Network\Set-EOSLocal.ps1
 
 도구는 `Backend-Infra/samconfig.toml`의 dev 식별자를 읽고 `Config/Custom/EOSLocal/DefaultEngine.ini`를 만든다. 이 경로는 `.gitignore`로 제외되며, 추적 중인 파일로 바뀌면 입력/검사를 거절한다. 저장한 파일은 해당 PC에서만 사용하고 동료에게 복사하거나 Git에 추가하지 않는다. 다른 PC에서도 도구를 실행해 로컬로 입력한다. 설정을 다시 실행하면 기존 로컬 자격 증명을 갱신한다.
 
-이 파일에는 `ChickenGameDev` Artifact와 현재 dev ID, 해당 Client Secret이 들어간다. `bUseNamedPlatformConfig=false`로 이 Artifact를 선택하고, 현재 사용하지 않는 Player/Title Data Storage의 EncryptionKey는 Epic 문서의 개발 예시값(64개의 `1`)을 쓴다. 파일 저장 기능을 도입할 때에는 이 키 정책을 다시 정한다. 기본 `NULL` LAN 설정과 인증 코드의 명시적 `EOS` 선택은 유지한다.
+이 파일에는 `ChickenGameDev` Artifact와 현재 dev ID, 해당 Client Secret이 들어간다. `bUseNamedPlatformConfig=false`로 이 Artifact를 선택하고, 현재 사용하지 않는 Player/Title Data Storage의 EncryptionKey는 Epic 문서의 개발 예시값(64개의 `1`)을 쓴다. 파일 저장 기능을 도입할 때에는 이 키 정책을 다시 정한다. 2026-11-08부터 **EOSLocal 실행에서만 기본 OSS=EOS와 UE5.8 EOS P2P NetDriver**를 적용해 게임 세션의 접속 ID와 전송을 일치시킨다. 일반 실행의 NULL/LAN 설정은 유지한다. 이전 도구로 만든 파일은 Secret 재입력 없이 아래 명령으로 갱신한다. [Round1 세션 검증](EOSRound1Session.md) 참고.
+
+```powershell
+pwsh -NoProfile -File .\Tools\Network\Set-EOSLocal.ps1 -Upgrade
+```
 
 입력 없이 저장 상태만 검사할 때:
 

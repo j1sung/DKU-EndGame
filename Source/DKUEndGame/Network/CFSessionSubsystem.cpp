@@ -1,4 +1,5 @@
 #include "Network/CFSessionSubsystem.h"
+#include "Network/CFMatchSessionSubsystem.h"
 #include "Network/CFWaitingNetwork.h"
 #include "Engine/Engine.h"
 #include "Engine/GameInstance.h"
@@ -223,12 +224,21 @@ void UCFSessionSubsystem::TravelToHost(const FString& URL)
 
 void UCFSessionSubsystem::NotifyEnteredRoom()
 {
+    if (const auto* Bridge = GetGameInstance()->GetSubsystem<UCFMatchSessionSubsystem>(); Bridge && Bridge->IsActive()) return;
     if (State==ECFSessionState::Leaving || bDeinitializing) return;
     ClearOperationDelegates(); SetState(ECFSessionState::InRoom,CFSession::Text(TEXT("경기 대기 중입니다.")));
 }
 
-void UCFSessionSubsystem::LeaveRoom() { BeginReturn(CFSession::Text(TEXT("방에서 나왔습니다."))); }
-void UCFSessionSubsystem::HostClosedRoom() { BeginReturn(CFSession::Text(TEXT("호스트가 방을 종료했습니다."))); }
+void UCFSessionSubsystem::LeaveRoom()
+{
+    if (auto* Bridge = GetGameInstance()->GetSubsystem<UCFMatchSessionSubsystem>(); Bridge && Bridge->IsActive()) { Bridge->RequestLeave(); return; }
+    BeginReturn(CFSession::Text(TEXT("방에서 나왔습니다.")));
+}
+void UCFSessionSubsystem::HostClosedRoom()
+{
+    if (auto* Bridge = GetGameInstance()->GetSubsystem<UCFMatchSessionSubsystem>(); Bridge && Bridge->IsActive()) { Bridge->RequestLeave(); return; }
+    BeginReturn(CFSession::Text(TEXT("호스트가 방을 종료했습니다.")));
+}
 
 void UCFSessionSubsystem::BeginReturn(const FText& Reason)
 {

@@ -21,6 +21,8 @@ public:
     virtual void Deinitialize() override;
     const FString& GetAssignedMatchId() const { return Flow.MatchId; }
     FCFMatchAssigned OnMatchAssigned;
+    bool ClaimAssignment(const FString& MatchId);
+    void CompleteAssignment(const FText& Message);
 
 private:
     UPROPERTY(Transient) TObjectPtr<UCFEntrySubsystem> Entry;
@@ -31,6 +33,7 @@ private:
     FDelegateHandle AuthenticationHandle;
     uint64 HttpSerial = 0;
     bool bDeinitializing = false;
+    bool bAssignmentClaimed = false;
     double NextAllowedAt = 0;
 
     UFUNCTION() void Start(int32 FlowId);

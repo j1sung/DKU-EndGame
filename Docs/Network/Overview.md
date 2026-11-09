@@ -6,7 +6,7 @@
 
 ## 범위와 흐름
 
-이 문서는 현재 LAN 기반 테스트 세션과 별도 인증·연습 로비 진입·매칭 티켓 연결을 설명한다. 제품 목표인 EOS 자동 4인 배정·세션 연결은 [클라이언트 인계서](../EOS/unreal-client-handoff.md)와 [API 계약](../EOS/unreal-matchmaking-ticket-api.md)을 따른다. 실제 Unreal EOS 세션 연결은 아직 구현·검증 전이다.
+이 문서는 LAN 기반 테스트 세션과 인증·연습 로비 진입·매칭 티켓·EOS Round1 연결을 설명한다. 제품 목표인 EOS 자동 4인 배정·세션 연결은 [클라이언트 인계서](../EOS/unreal-client-handoff.md)와 [API 계약](../EOS/unreal-matchmaking-ticket-api.md)을 따른다. EOS Round1 연결 코드의 UE 5.8.4 Editor 빌드와 EOS 자동 검사 2개는 통과했으며 실계정 4인 검증은 아직 수행하지 않았다.
 
 LAN 개발 메뉴 → 방 생성/참가 → 걷기 대기 → 경기·라운드 결과 → 최종 결과 → 같은 방 걷기 대기. 퇴장·연결 오류는 메뉴로 복귀한다. 2026-11-04부터 기본 진입은 새 타이틀이며, LAN 검증에는 F9 또는 `-CFLanMenu`를 사용한다. `CFFrontendSubsystem`은 별도 UI 상태 관리자이며 현재 LAN 세션을 EOS로 바꾸지 않는다. [진입 방법](../UI/MainMenu.md#기존-lan-개발-메뉴) 참고.
 `OnlineSubsystemNull`을 사용하는 호스트 포함 최대 4인, 최소 시작 인원 2명의 리슨 서버 구조. Steam/EOS·인터넷 검색·NAT·호스트 이전은 포함하지 않는다.
@@ -27,9 +27,20 @@ LAN 개발 메뉴 → 방 생성/참가 → 걷기 대기 → 경기·라운드 
 
 > 최근 기능 변경: 2026-11-06 · Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
 
-`UCFMatchmakingSubsystem`이 로비의 시작·취소·복구 이벤트를 실제 티켓 API에 연결하고 `FCFMatchmakingFlow`가 응답 검증·멱등 키·취소 의도를 관리한다. `standard`/`0.1.0`, 최대 180초, 정상 2초 조회를 사용한다. 배정 전 본인 취소만 가능하며 서버 종료 확정 전 새 매칭을 차단한다. 배정 ID는 다음 EOS 세션 단계에 넘기는 연결점만 마련했다. 실제 세션 생성·참가·게임 시작은 아직 없다.
+`UCFMatchmakingSubsystem`이 로비의 시작·취소·복구 이벤트를 실제 티켓 API에 연결하고 `FCFMatchmakingFlow`가 응답 검증·멱등 키·취소 의도를 관리한다. `standard`/`0.1.0`, 최대 180초, 정상 2초 조회를 사용한다. 배정 전 본인 취소만 가능하며 서버 종료 확정 전 새 매칭을 차단한다. 배정 후 세션 계층이 `ClaimAssignment`로 소유권을 넘겨받으면 티켓 폴링을 멈추고 매치 API로 진행한다.
 
 인증 만료는 취소 완료로 처리하지 않고 로그인 복귀와 계정별 상태 복구로 안내한다. 코드 검토와 Unreal 실실행을 구분한다. 상세: [티켓 연결과 검증 순서](MatchmakingTickets.md).
+
+<a id="eos-round1"></a>
+## EOS Round1 접속과 자동 시작
+
+> 최근 기능 변경: 2026-11-08 · Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+
+실계정 첫 시도에서 참가자의 EOS 접속 주소 재직렬화에 따른 `InvalidURL`을 발견해 주소 원문 보존으로 수정했다. Editor 빌드와 EOS 검사 3개는 통과했으며 실제 네 PC 재접속·자동 시작은 재검증이 필요하다. [실패 원인과 검증 기록](EOSRound1Session.md#검증-기록).
+
+`UCFMatchSessionSubsystem`이 배정 명단과 호스트를 조회하고 실제 EOS 세션 생성·검색·참가와 Round1 이동을 연결한다. `CFRoundGameMode`는 EOS PUID 명단·중복 접속을 검사하고 실제 4명의 맵 로드·Pawn 준비와 백엔드 READY_TO_START를 확인한 후 자동 카운트다운한다. Playing 이후에만 `/started`를 보고한다. 실패는 `/left`·서버 종료 확인과 로컬 세션 정리 후 복구하며 가짜 참가/시작 보고를 하지 않는다.
+
+EOSLocal 설정에서만 기본 OSS=EOS 및 UE5.8 EOS P2P NetDriver를 사용한다. 기존 파일은 `Set-EOSLocal.ps1 -Upgrade`로 Secret 출력 없이 갱신한다. 일반 실행의 NULL/LAN 경로는 유지한다. 새 코드의 UE 5.8.4 Editor 빌드와 EOS 자동 검사 2개는 통과했다. 실제 4PC EOS 접속은 미검증이며 다음 맵 이동과 최종 종료 보고는 후속 범위다. [실행 순서·성공 기준·검증 제한](EOSRound1Session.md).
 
 <a id="sessions"></a>
 ## 세션 생성·검색·참가

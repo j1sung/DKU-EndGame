@@ -78,12 +78,13 @@ public:
     virtual void PreLogin(const FString& Options,const FString& Address,const FUniqueNetIdRepl& UniqueId,FString& ErrorMessage) override;
     virtual void PostLogin(APlayerController* NewPlayer) override;
     virtual void Logout(AController* Exiting) override;
-    bool TryStartRound(class ACFWaitingPlayerController* Requester);
+    virtual bool TryStartRound(class ACFWaitingPlayerController* Requester);
     bool TryReturnToWaiting(class ACFWaitingPlayerController* Requester);
     bool MarkPlayerEliminated(APlayerState* Player);
     void ScheduleEliminatedPawnRemoval(class AChickenCharacter* Pawn);
     virtual void EndPlay(const EEndPlayReason::Type Reason) override;
 protected:
+    virtual void OnRoundPlaying() {}
     UPROPERTY(EditDefaultsOnly,Category="CF|Match") TSubclassOf<class AChickenCharacter> CombatPawnClass;
     UPROPERTY(EditDefaultsOnly,Category="CF|Match",meta=(ClampMin="1",ClampMax="10")) float CountdownDuration = 3.f;
     // Current fall clips are 1.4 s; allow their transition to complete as well.
