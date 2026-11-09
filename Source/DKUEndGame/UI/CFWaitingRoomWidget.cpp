@@ -8,6 +8,7 @@
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/PlayerState.h"
 #include "Network/CFSessionSubsystem.h"
+#include "Network/CFMatchSessionSubsystem.h"
 #include "Network/CFWaitingNetwork.h"
 #include "Engine/GameInstance.h"
 #include "TimerManager.h"
@@ -88,7 +89,10 @@ void UCFWaitingRoomWidget::UseWorldRoster()
 
 void UCFWaitingRoomWidget::ApplyDisplay(const TArray<FText>& Names,int32 HostIndex,int32 Capacity,bool bLocalHost,bool bCanStart)
 {
-    FString Key=FString::Printf(TEXT("%d/%d/%d/%d/%d"),Names.Num(),HostIndex,Capacity,bLocalHost,bCanStart);
+    const auto* Instance = GetGameInstance();
+    const auto* Bridge = Instance ? Instance->GetSubsystem<UCFMatchSessionSubsystem>() : nullptr;
+    const bool bAutomatic = Bridge && Bridge->IsActive();
+    FString Key=FString::Printf(TEXT("%d/%d/%d/%d/%d/%d"),Names.Num(),HostIndex,Capacity,bLocalHost,bCanStart,bAutomatic);
     for (const auto& Name:Names) Key+=TEXT("|")+Name.ToString();
     if (Key==LastDisplayKey) return;
     LastDisplayKey=Key;
@@ -110,11 +114,12 @@ void UCFWaitingRoomWidget::ApplyDisplay(const TArray<FText>& Names,int32 HostInd
             Empty->SetPlayer(FText::FromString(TEXT("참가 대기 중")),false,true);
         }
     }
-    bStartPermitted=bLocalHost && bCanStart && Names.Num()>=2;
-    StartButton->SetVisibility(bLocalHost ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+    bStartPermitted=!bAutomatic && bLocalHost && bCanStart && Names.Num()>=2;
+    StartButton->SetVisibility(!bAutomatic && bLocalHost ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
     StartButton->SetIsEnabled(bStartPermitted);
     FString Message;
-    if (!bLocalHost) Message=TEXT("호스트가 경기를 시작할 때까지 기다려 주세요.");
+    if (bAutomatic) Message=TEXT("네 명의 접속을 확인한 뒤 자동으로 시작합니다.");
+    else if (!bLocalHost) Message=TEXT("호스트가 경기를 시작할 때까지 기다려 주세요.");
     else if (Names.Num()<2) Message=TEXT("다른 플레이어를 기다리고 있습니다.");
     else Message=bCanStart ? TEXT("경기를 시작할 수 있습니다.") : TEXT("경기 시작을 준비하고 있습니다.");
     StatusText->SetText(FText::FromString(Message));

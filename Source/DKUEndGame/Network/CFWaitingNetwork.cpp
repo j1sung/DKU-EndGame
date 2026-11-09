@@ -1,5 +1,7 @@
 #include "Network/CFWaitingNetwork.h"
 #include "Network/CFSessionSubsystem.h"
+#include "Network/CFMatchSessionSubsystem.h"
+#include "UI/CFFrontendSubsystem.h"
 #include "Character/ChickenCharacter.h"
 #include "Character/CFWaitingCharacter.h"
 #include "Camera/CameraActor.h"
@@ -111,7 +113,7 @@ bool ACFWaitingGameMode::TryStartRound(ACFWaitingPlayerController* Requester)
     auto Reject=[Requester](const TCHAR* Text) { Requester->ClientStartRejected(FText::FromString(Text)); return false; };
     if (!Requester->IsLocalController() || Requester->PlayerState!=GS->HostPlayerState)
         return Reject(TEXT("호스트만 경기를 시작할 수 있습니다."));
-    if (!GS->CanStartRound()) return Reject(TEXT("대기 중인 플레이어가 2명 이상일 때 시작할 수 있습니다."));
+    if (!GS->CanStartRound()) return Reject(*FString::Printf(TEXT("대기 중인 플레이어가 %d명 이상일 때 시작할 수 있습니다."), GS->MinimumPlayers));
     FString Error;
     if (!PrepareRound(1,Error)) return Reject(*Error);
     return true;
@@ -313,6 +315,7 @@ void ACFWaitingGameMode::BeginRound()
         if (auto* Pawn=Cast<AChickenCharacter>(It->Get()->GetPawn())) Pawn->SetRoundInputEnabled(true);
     GS->ForceNetUpdate();
     UE_LOG(LogTemp,Display,TEXT("CF_MATCH playing round=%d players=%d"),GS->CurrentRound,GS->Participants.Num());
+    OnRoundPlaying();
 }
 
 void ACFWaitingGameMode::CancelCountdown()
@@ -501,7 +504,13 @@ void ACFWaitingPlayerController::BeginPlay()
     Super::BeginPlay();
     if (IsLocalController())
     {
-        if (auto* Service=GetGameInstance()->GetSubsystem<UCFSessionSubsystem>())
+        const auto* Bridge = GetGameInstance()->GetSubsystem<UCFMatchSessionSubsystem>();
+        if (Bridge && Bridge->IsActive())
+        {
+            if (const auto* Frontend = GetGameInstance()->GetSubsystem<UCFFrontendSubsystem>())
+                ServerSetNickname(Frontend->ProfileNickname);
+        }
+        else if (auto* Service=GetGameInstance()->GetSubsystem<UCFSessionSubsystem>())
         {
             if (!Service->LocalNickname.IsEmpty()) ServerSetNickname(Service->LocalNickname);
             Service->NotifyEnteredRoom();

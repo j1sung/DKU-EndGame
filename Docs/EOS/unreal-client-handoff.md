@@ -12,9 +12,9 @@
 
 개발 AWS에서는 서로 다른 Epic 계정 네 개로 인증, 4인 배정, 배정 전 취소, 이탈, 시간 초과를 검증했다. **EOS 세션 생성·참가·게임 시작·종료는 테스트 도구가 API에 모의 보고한 결과**다. 패키징된 언리얼 빌드의 실제 EOS 세션과 4인 동시 플레이는 아직 확인하지 않았다.
 
-현재 `dev`의 LAN 방 생성·검색, 2명 이상 수동 시작, 같은 방 대기 복귀는 게임플레이 테스트 구현이다. **제품 방향은 EOS 기반 자동 4인 매칭**이며, 기존 LAN 화면·세션 경로가 자동 매칭에 이미 연결됐다는 뜻은 아니다. 현재 코드와 에셋은 [UI 개요](../UI/Overview.md), [Network 개요](../Network/Overview.md), [경기 결과](../FinalResults.md)를 기준으로 확인한다.
+현재 `dev`의 LAN 방 생성·검색, 2명 이상 수동 시작, 같은 방 대기 복귀는 게임플레이 테스트 구현이다. **제품 방향은 EOS 기반 자동 4인 매칭**이다. 로그인·프로필·매칭 티켓은 실제 사용자 검증이 진행됐고, 2026-11-08 작업 브랜치 `codex/eos-session-integration`에 [EOS Round1 연결과 자동 시작 코드](../Network/EOSRound1Session.md)를 추가했다. 새 Editor 빌드와 실제 EOS 4인 접속은 검증 전이며 전체 4맵 경기 완료를 뜻하지 않는다. 현재 코드와 에셋은 [UI 개요](../UI/Overview.md), [Network 개요](../Network/Overview.md), [경기 결과](../FinalResults.md)를 기준으로 확인한다.
 
-2026-11-05 CKM 작업에는 기존 Figma 진입 UI에 `UCFEntrySubsystem`을 연결했다. Epic Account Portal·Connect 인증, 프로필 조회·최초 닉네임 등록과 `L_Lobby_Playground` 이동 코드를 구현했다. **클라이언트 EOS 설정·권한은 미구성이며 실계정 인증·인증된 HTTP는 미검증이다.** 통합 담당은 [Entry 설정·확인 항목](../Network/LoginEntry.md)과 [메인 메뉴 이벤트 계약](../UI/MainMenu.md#상태와-통합-연결)을 기준으로 현재 제공자를 재사용한다. Figma의 타이틀 `게임 시작`은 인증 진입이며, 아래 메인/매칭 버튼은 별도 연습 로비 화면에서의 매칭 시작을 뜻한다.
+2026-11-05 CKM 작업에는 기존 Figma 진입 UI에 `UCFEntrySubsystem`을 연결했다. Epic Account Portal·Connect 인증, 프로필 조회·최초 닉네임 등록과 `L_Lobby_Playground` 이동 코드를 구현했다. 2026-11-06 사용자가 클라이언트 설정 후 실제 로그인→로비 입장 성공을 보고했다. 이어 별도 브랜치에 [티켓 API 제공자](../Network/MatchmakingTickets.md)를 구현했으며 해당 코드의 Unreal 빌드·실계정 매칭은 검증 전이다. 통합 담당은 [Entry 설정·확인 항목](../Network/LoginEntry.md)과 [메인 메뉴 이벤트 계약](../UI/MainMenu.md#상태와-통합-연결)을 기준으로 현재 제공자를 재사용한다. Figma의 타이틀 `게임 시작`은 인증 진입이며, 아래 메인/매칭 버튼은 별도 연습 로비 화면에서의 매칭 시작을 뜻한다.
 
 ## 2. 담당 범위
 
@@ -26,7 +26,7 @@
 | 캐릭터, 경기 규칙, 승패 판정, 게임 내 네트워크 동기화 | 통합 시 연결 지원 | 기존 LAN 구현을 EOS 매치 흐름에 맞게 조정하고 4인 플레이 검증 |
 | 패키징된 Windows 빌드의 4인 통합 검증 | 함께 수행 | 함께 수행 |
 
-게임 담당자는 API 요청 형식이나 EOS 인증을 화면 코드에 중복 구현하지 않는다. 통합 담당이 제공할 **클라이언트 상태·동작 인터페이스**를 UI와 게임 흐름에 연결한다. 타이틀 인증·프로필·로비 진입에는 `UCFFrontendSubsystem`을 연결점으로 사용하며, 자동 매칭 화면에는 `UCFLobbySubsystem`의 요청/응답 인터페이스를 추가했으며 [로비 연결 계약](../UI/Lobby.md#매칭-통합-연결)을 사용한다. 인증·프로필 HTTP 제공자는 Entry에 추가했고, 매칭 HTTP·실제 EOS 세션 동작은 후속 통합 범위다. `dev`에는 `CFMainMenuWidget`, `CFWaitingRoomWidget`, `CFMatchStatusWidget`과 LAN 세션 기반 게임 흐름이 있으므로 이를 재사용·수정할 지점을 함께 정한다. EOS 로그인 코드는 Editor 빌드·응답/화면/맵 이동 검사까지 확인했다. 실계정 로그인과 자동 매칭·실제 EOS 세션 연결의 완료를 의미하지 않는다.
+게임 담당자는 API 요청 형식이나 EOS 인증을 화면 코드에 중복 구현하지 않는다. 통합 담당이 제공하는 **클라이언트 상태·동작 인터페이스**를 UI와 게임 흐름에 연결한다. 타이틀 인증·프로필·로비 진입에는 `UCFFrontendSubsystem`, 매칭 화면에는 `UCFLobbySubsystem`의 [로비 연결 계약](../UI/Lobby.md#매칭-통합-연결)을 사용한다. 인증·프로필 HTTP는 Entry, 티켓 HTTP는 Matchmaking, 작업 브랜치의 실제 EOS 세션/매치 HTTP는 MatchSession이 소유한다. 기존 `CFWaitingRoomWidget`·`CFMatchStatusWidget`과 경기 코드를 재사용한다. 실제 로그인·티켓 배정의 사용자 검증과 새 EOS 세션 코드의 검증을 구분한다. 최신 확인 범위는 [Network 개요](../Network/Overview.md)에 기록한다.
 
 ## 3. 화면별 구현 항목
 

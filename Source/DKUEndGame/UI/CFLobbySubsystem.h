@@ -5,7 +5,7 @@
 #include "CFLobbySubsystem.generated.h"
 
 UENUM(BlueprintType)
-enum class ECFQueueScreen : uint8 { Idle, Starting, Waiting, Cancelling, Connecting, Recovering };
+enum class ECFQueueScreen : uint8 { Idle, Starting, Waiting, Cancelling, Connecting, Recovering, AuthenticationRequired };
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FCFLobbyChanged);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FCFLobbyRequest, int32, FlowId);
@@ -49,6 +49,8 @@ public:
     UFUNCTION(BlueprintCallable, Category="CF|Lobby|Integration") void ReportAssigned(int32 FlowId, const FText& Stage);
     UFUNCTION(BlueprintCallable, Category="CF|Lobby|Integration") void ReportIdle(int32 FlowId, const FText& Message);
     UFUNCTION(BlueprintCallable, Category="CF|Lobby|Integration") void ReportUncertain(int32 FlowId, const FText& Message);
+    void ReportAuthenticationRequired(int32 FlowId);
+    int32 BeginAccountRecovery();
 
 private:
     int32 FlowSerial = 0;

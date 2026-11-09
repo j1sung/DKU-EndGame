@@ -1,5 +1,66 @@
 # 변경 이력
 
+<a id="change-20261108-eos-travel-url"></a>
+### 2026-11-08 · EOS 참가 주소의 대괄호 손실 수정
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+- 변경: 실계정 매칭 후 참가자가 Round1 이동에서 실패한 로그를 확인했다. FURL 재직렬화로 EOS 주소의 대괄호가 사라지는 문제를 막기 위해 OSS 주소 원문에 승인 옵션만 추가한다.
+- 확인: 기존 방식에서 InvalidURL을 재현한 회귀 검사 추가. 수정 후 Editor 빌드 및 EOS 검사 3개 통과. 실제 네 PC 재접속·자동 시작은 미검증이다. [상세 기록](Network/EOSRound1Session.md#검증-기록).
+
+<a id="change-20261108-eos-session-build-fix"></a>
+### 2026-11-08 · EOS 세션 코드의 Editor 빌드 오류 수정
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+- 변경: UE 5.8.4의 실제 OnlineReplStructs 헤더 경로를 사용하고 계약 검사 두 곳의 FString 치환 인수 타입을 수정했다.
+- 확인: Editor 정식 빌드와 EOS 계약·응답 보호 검사 2개 통과. 실제 EOS 4PC 접속은 미검증이다. [검증 기록](Network/EOSRound1Session.md#검증-기록).
+
+<a id="change-20261108-eos-round1-session"></a>
+### 2026-11-08 · EOS Round1 4인 접속과 자동 시작 연결 코드
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+- 변경: 원격 `8578b23` 반영 후 티켓 배정 인계, 실제 EOS 세션 생성/명단 제한 검색·참가·Round1 P2P 이동, 실제 접속 후 joined·Playing 후 started 보고, 서버 4인 준비와 자동 시작 승인을 연결했다. 실패·인증·세션 정리 경로와 일반 LAN 분리를 포함한다. EOSLocal은 Secret 보존 `-Upgrade`로 갱신한다.
+- 확인: 가짜 자격 증명의 PowerShell 설정 검사 통과. native 계약 검사 추가와 코드 리뷰를 수행했다. Unreal 미설치로 새 C++ 빌드·실제 EOS 4인 접속은 아직 미검증이다. 맵 전환·최종 finished 보고는 후속 범위다.
+- 문서: [Network 개요](Network/Overview.md#eos-round1), [구조·테스트 순서·한계](Network/EOSRound1Session.md), [구현 계획](EOS/superpowers/plans/2026-11-08-eos-round1-session.md).
+
+<a id="change-20261108-round-gameplay-apply"></a>
+### 2026-11-08 · 라운드 경기 설정 적용과 로컬 다인 생성 검증
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+- 변경: `CFRoundGameMode`의 기존 Actor 멤버와 겹친 지역 변수명을 수정해 Editor 정식 빌드를 완료했다. 네 맵을 백업한 뒤 경기 GameMode와 미리보기 태그·클라이언트 로드 제외 설정을 적용하고 원본 배치·스폰 보존과 저장·재로딩을 확인했다.
+- 확인: Python 19개와 C++ 스폰 예약 검사 통과. 네 맵의 같은 프로세스 Listen Server/PIE 클라이언트에서 3인 시작 거절·4인 대기/전투 Pawn 생성·소유·미리보기 제외·카운트다운 복제 통과. 추가 검사에서 서버 시작 XY·시점 Yaw를 확인했다. 입력·렌더링·전체 경기·다른 PC·EOS·맵 전환은 미검증이다.
+- 문서: [적용 결과·제한](Gameplay/RoundGameplaySetup.md#이-pc에서-확인한-결과), [경기 상태](Gameplay/Overview.md#match).
+
+<a id="change-20261108-round-gameplay-setup"></a>
+### 2026-11-08 · 네 라운드 경기 GameMode 준비 코드
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+- 변경: 스폰 적용 커밋 `8c50f59`를 받은 뒤 별도 `CFRoundGameMode`를 구현했다. 기존 경기·입력·UI를 재사용하며 최소 4인과 스폰 예약을 제공한다. 에디터 도구는 백업 후 GameMode Override와 네 미리보기의 태그·클라이언트 로드 제외를 연결한다. 서버는 명시된 미리보기만 초기 정리한다.
+- 확인 범위: Python 보호 검사 19개 통과. C++ 자동화는 작성했으며 Unreal 미설치로 빌드·실제 적용·4인 생성은 미실행이다. EOS 입장·자동 시작·라운드별 맵 전환은 후속 범위다.
+- 문서: [경기 설정·검증](Gameplay/RoundGameplaySetup.md), [경기 상태](Gameplay/Overview.md#match), [계획](EOS/superpowers/plans/2026-11-08-round-gameplay-setup.md).
+
+<a id="change-20261108-round-spawn-link-apply"></a>
+### 2026-11-08 · 네 라운드 맵에 스폰 위치 적용
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+- 변경: 기존 연결 도구를 Unreal 5.8.4 Editor에서 조회 후 적용했다. Round1~3에 PlayerStart 4개씩 생성하고 Round4의 기존 4개를 재사용해 `ArenaSpawn`·`CFLinkedRoundSpawn` 태그와 배치 캐릭터의 위치·회전을 연결했다. 적용 전 네 맵을 `Saved/RoundSpawnLink/20261108_210436_365321/`에 백업했다.
+- 확인: 대상 선정·보호 검사 11개 통과, 네 맵 저장·재로딩 후 스폰 4개와 원본 캐릭터/GameMode 보존 검사 통과. 시각 확인·실제 충돌·4인 경기·맵 전환은 미검증이다.
+- 문서: [적용 결과와 다음 작업](Gameplay/RoundSpawns.md), [경기 상태](Gameplay/Overview.md#match).
+
+<a id="change-20261108-round-spawn-link-tool"></a>
+### 2026-11-08 · 배치 캐릭터 기반 라운드 스폰 연결 도구
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+- 변경: 작업 브랜치에 최신 dev `e5401e9`를 반영하고, 각 라운드의 캐릭터 4곳을 기존 경기 코드의 `ArenaSpawn` PlayerStart에 연결하는 도구를 추가했다. 기본 조회와 명시적 적용을 구분하고 미저장 작업·모호한 대상·캡슐 겹침을 거절한다. 적용 시 네 맵 백업·저장·재로딩 확인을 수행하며 캐릭터/GameMode는 바꾸지 않는다.
+- 확인 범위: 일반 Python 대상 선정·보호 검사 11개 통과. Unreal 미설치로 실제 에셋 적용·4인 스폰은 미실행이며 `.umap`을 수정하지 않았다.
+- 문서: [시작 위치 연결](Gameplay/RoundSpawns.md), [경기 상태](Gameplay/Overview.md#match).
+
+<a id="change-20261108-round1-ring-expand"></a>
+### 2026-11-08 · Round1 중앙 스파링장을 16m로 확대
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+- 변경: 4인 교전 공간을 위해 `L_Round1` 링을 12×12m에서 16×16m로 넓히고 로프·표식·기단·마감·계단·관중석과 배치 캐릭터 위치를 맞췄다. 기둥·캐릭터 크기와 주변 도심 배치는 유지했다.
+- 확인: 저장·재로딩 후 바닥 충돌 25곳과 네 방향 관중석 앞 캡슐 통과, 관련 없는 액터 변환 보존을 확인했다. 4인 전투 밸런스는 미검증이다. [현재 크기와 적용 도구](Gameplay/Overview.md#round1-sparring-ring).
+
 <a id="change-20261108-round4-finale"></a>
 ### 2026-11-08 · Round4 복합 순환 전투 맵 초안
 
@@ -83,6 +144,14 @@
 - 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
 - 변경: `L_Lobby_Playground`의 회전판 장식 19개를 배치 형상이 포함된 전용 메시로 교체하고, 장식·오뚝이가 얇은 판의 비균일 스케일을 상속하지 않도록 수정했다. 기존 6방향 놀이터 디자인·부착·오뚝이 몸체 시뮬레이션과 다른 액터는 유지했다.
 - 확인: 저장 후 맵 재로딩, 전용 메시·부착·스케일·단순 충돌 없음과 액터 204개 보존 및 에디터 외형 확인. PIE는 미실행. [구성·복구 도구](Gameplay/Overview.md#playground-roundabout-repair).
+
+<a id="change-20261106-matchmaking-tickets"></a>
+### 2026-11-06 · 로비 자동 매칭 티켓 API 연결
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+- 변경: 새 `codex/unreal-matchmaking-api` 브랜치에서 로비 이벤트를 티켓 생성·조회·본인 취소에 연결했다. 네이티브 흐름이 미확정 쓰기의 동일 키·본문 재시도와 취소/배정 경합을 처리하고, HTTP 제공자가 FlowId·응답 순서·계정 전환을 검증한다. 인증 만료의 로그인 복귀와 서버 확인 전 재시작 차단, 배정 ID 인계 이벤트를 추가했다. EOS 세션 생성·참가는 범위 밖이다.
+- 확인 범위: 회귀 검사 `ChickenFight.Matchmaking.TicketFlow`·`ResponseGuards` 작성. Unreal 미설치로 Editor 빌드·검사 실행·실계정 매칭은 미확인이다. 사용자가 보고한 기존 로그인→로비 성공과 구분한다.
+- 문서: [Network 개요](Network/Overview.md#matchmaking-tickets), [티켓 제공자](Network/MatchmakingTickets.md), [로비 UI](UI/Lobby.md), [구현 계획](EOS/superpowers/plans/2026-11-06-unreal-matchmaking-api.md).
 
 <a id="change-20261105-profile-api-url-quoting"></a>
 ### 2026-11-05 · 프로필 API URL 설정 문자열 잘림 수정

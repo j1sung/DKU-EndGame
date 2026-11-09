@@ -18,6 +18,9 @@ $config = New-EOSLocalConfig -Context $context -ClientSecret $fakeSecret
 Assert-True (Test-EOSLocalText -Context $context -Text $config) 'Valid artifact configuration rejected'
 Assert-True ($config.Contains('DefaultArtifactName=ChickenGameDev')) 'Default artifact missing'
 Assert-True ($config.Contains('bUseNamedPlatformConfig=false')) 'Named platform must not override local artifact'
+Assert-True ($config.Contains('DefaultPlatformService=EOS')) 'EOS must own game session identity'
+Assert-True ($config.Contains('/Script/SocketSubsystemEOS.NetDriverEOSBase')) 'UE5.8 EOS net driver missing'
+Assert-True ($config.Contains('bIsUsingP2PSockets=true')) 'EOS P2P sockets missing'
 Assert-True (-not (Test-EOSLocalText -Context $context -Text ($config.Replace($context.ClientId, 'xyzWrongClient')))) 'Wrong client accepted'
 Assert-True (-not (Test-EOSLocalText -Context $context -Text ($config.Replace($fakeSecret, '')))) 'Empty secret accepted'
 Assert-True (-not (Test-EOSLocalText -Context $context -Text ($config.Replace('ChickenGameDev', 'OtherArtifact')))) 'Wrong artifact accepted'
@@ -49,6 +52,18 @@ try {
     finally { $secure.Dispose() }
     Assert-True ($captured.Count -eq 0) 'Credential save unexpectedly writes output'
     Assert-EOSLocalReady -Context $testContext
+    $legacy = ($config -split '\[OnlineSubsystem\]')[0].TrimEnd()
+    [IO.File]::WriteAllText($testContext.ConfigPath, $legacy)
+    Assert-Rejected { Assert-EOSLocalReady -Context $testContext } 'Login-only settings accepted for P2P'
+    $captured = @(Update-EOSLocalConfig -Context $testContext *>&1)
+    Assert-True ($captured.Count -eq 0) 'Upgrade unexpectedly writes output'
+    Assert-EOSLocalReady -Context $testContext
+    $before = [IO.File]::ReadAllText($testContext.ConfigPath)
+    Update-EOSLocalConfig -Context $testContext
+    Assert-True ($before -ceq [IO.File]::ReadAllText($testContext.ConfigPath)) 'Upgrade must be repeatable'
+    [IO.File]::WriteAllText($testContext.ConfigPath, $legacy.Replace($testContext.ClientId, 'wrong'))
+    Assert-Rejected { Update-EOSLocalConfig -Context $testContext } 'Upgrade accepted wrong client IDs'
+    [IO.File]::WriteAllText($testContext.ConfigPath, $before)
     Assert-True ([IO.File]::ReadAllText($testContext.ConfigPath).Contains($fakeSecret)) 'Expected local credential not written'
     $untracked = @(& git -C $fixture ls-files --others --exclude-standard)
     Assert-True (-not ($untracked -match 'EOSLocal')) 'Credential file visible to Git'

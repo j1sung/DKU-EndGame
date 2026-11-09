@@ -81,6 +81,10 @@ BP 캐릭터의 `ChickenAudio` 컴포넌트에서 `SoundOverrides`에 이벤트�
 정원 4명·최소 2명, 호스트 시작 → 3초 카운트다운 → 경기 → 결과 6초를 4R까지 진행한다. 서버가 참가자·생존자·탈락 순서·5/3/1/0점·누적 점수를 관리한다. 최후 1인 승리, 동시 마지막 탈락은 무승부·공동 순위다. 최종 누적 순위·MVP를 표시한 뒤 호스트가 같은 연결을 유지하며 전원을 걷기 대기로 돌려보낼 수 있다. 새 경기는 1R·0점으로 초기화한다.
 - 상태 소유자: `ACFWaitingGameMode`, 복제: `ACFWaitingGameState`, 소유 플레이어 입력·관전: `ACFWaitingPlayerController`.
 - 상세: [경기 시작](../MatchStart.md), [탈락·관전](../RoundEnd.md), [점수·라운드](../RoundProgression.md), [최종 결과·복귀](../FinalResults.md).
+- 2026-11-08: 최신 dev의 네 라운드 배치를 작업 브랜치에 반영하고 [배치 캐릭터 기반 스폰 연결 도구](RoundSpawns.md)를 Unreal 5.8.4 Editor에서 적용했다. 네 맵의 `ArenaSpawn` 4개씩 저장·재로딩과 원본 캐릭터/GameMode 보존을 확인했다. 경기 GameMode 연결·배치 테스트 캐릭터 처리·실제 4인 스폰·라운드별 맵 전환은 후속 작업이다.
+- 후속 [경기 준비 GameMode와 적용 도구](RoundGameplaySetup.md)는 Unreal 5.8.4에서 정식 빌드하고 네 맵에 적용했다. 최소 4인, 미리보기의 서버 정리·클라이언트 로드 제외, 스폰 예약을 제공한다. 같은 프로세스의 Listen Server/PIE 클라이언트로 네 맵 모두 3인 시작 거절과 4인 생성·소유·전투 Pawn 교체·첫 카운트다운 복제를 확인했다. 서버의 시작 XY·시점 Yaw도 확인했다. 전체 경기·입력/렌더링·EOS 입장·라운드별 맵 전환은 별도다.
+
+2026-11-08 후속 코드: 배정된 EOS Round1에서는 명단 검사와 서버의 실제 4인 준비 확인 후 자동 카운트다운하도록 연결했다. 일반 LAN/맵 직접 실행은 기존 수동 시작을 유지한다. 새 Editor 빌드·실계정 4PC 검증은 아직 수행하지 않았으며 다음 맵 이동은 포함하지 않는다. [EOS Round1 연결](../Network/EOSRound1Session.md).
 
 <a id="debug-logging"></a>
 ## 디버깅 로그
@@ -147,6 +151,18 @@ BP 캐릭터의 `ChickenAudio` 컴포넌트에서 `SoundOverrides`에 이벤트�
 - 생성 원본: `Tools/Editor/generate_urban_arena_sources.py`를 일반 Python과 Pillow에서 실행하면 `Saved/UrbanArenaWork/Source`에 OBJ·MTL·간판 PNG·manifest를 만든다. 간판 글꼴은 Windows `malgunbd.ttf`를 사용한다. 에디터에서 `apply_urban_arena.py`, 이어서 `finish_urban_arena.py`를 실행하는 최초 생성용 흐름이다. 현재 생성본에는 재실행하지 않는다. 각 스크립트는 기존 생성 에셋 또는 완료 표시가 있으면 중단한다.
 - 렌더링 정리: OBJ 면을 재질별로 묶고, 건물 11종·광장 포장 메시의 Nanite를 활성화했다. `Tools/Editor/optimize_urban_arena_meshes.py`는 생성 원본에서 이 전용 메시만 재임포트하고 재질·충돌·Nanite 설정을 다시 적용한다.
 - 확인: 에디터 외형·개별 에셋 저장·맵 저장, 기존 액터 생존과 링·캐릭터·계단 변환, 전용 메시 재질 연결을 조회했다. PIE 이동·관중석 충돌·네트워크·패키징 및 목표 기기의 성능은 미검증이다.
+
+<a id="round1-sparring-ring"></a>
+## Round1 도심 스파링장 크기 조정
+
+> 최근 구성 변경: 2026-11-08 · Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+
+`Content/Map/L_Round1.umap`의 중앙 링을 4인 교전 공간 확보를 위해 12×12m에서 16×16m로 확대했다. 바닥 면적은 144㎡에서 256㎡로 약 78% 늘었다. 기존 중심 (50, 590)cm와 보행면 높이 220cm를 유지한다. 위의 `L_TestJS` 원본과 구분한다.
+
+- 링 바닥·하부 단·측면 마감과 네 변의 표식을 넓혔다. 로프는 길이만 늘리고 모서리 기둥·캡과 로프 굵기는 유지했다. 네 계단은 바깥으로 200cm씩 옮겨 높이와 폭을 보존했다.
+- 관중석 4개와 주변 이동식 펜스는 각 방향으로 200cm 이동해 기존 통로 여유를 유지했다. 배치 캐릭터 4개의 시작 위치도 중심에서 수평으로 4/3배 벌렸으며 캐릭터 크기·이동속도·설정은 유지했다. 건물·조명·게임 모드·공유 메시/재질과 다른 맵은 수정하지 않았다. 액터 수는 95개다.
+- 적용 도구 `Tools/Editor/expand_round1_sparring_ring.py`는 12m 링에 최초 1회 적용하며 이미 크기가 바뀌었으면 중단한다. 적용 전 백업은 `Saved/Round1Expand/L_Round1_before_20261108_184537.umap`에 있다.
+- 확인: 저장·재로딩 후 16m 치수와 바닥 충돌 25곳, 실제 지면 높이에 맞춘 지름 68cm·높이 176cm 캡슐의 네 방향 관중석 앞 통과, 기둥/캐릭터 스케일 및 무관한 액터 변환 보존을 확인했다. 외형 캡처는 `Saved/Round1Expand/expanded.png`다. 실제 4인 전투·진입 계단 보행·네트워크 밸런스는 미검증이다.
 
 <a id="round2-skyplay"></a>
 ## 4단 입체 캐주얼 아레나
