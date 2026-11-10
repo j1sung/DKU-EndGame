@@ -34,4 +34,5 @@ private:
     UFUNCTION(Server, Reliable) void ServerRespawnInLobby();
     UFUNCTION() void ApplyAudio();
     UFUNCTION() void ReturnToTitle();
+    UFUNCTION() void ApplyGameNickname();
 };

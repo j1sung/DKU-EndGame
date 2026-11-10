@@ -19,6 +19,8 @@
 
 ## 최근 기록
 
+- [2026-11-10 · 로비 게임 닉네임·EOS 수동 대기 창 노출 수정](Changes.md#change-20261110-nickname-waiting)
+
 - [2026-11-10 · 모든 라운드 결과표를 누적 순위로 표시](Changes.md#change-20261110-cumulative-score-order)
 
 - [2026-11-10 · 테스트 게임모드 조작 안내 제거](Changes.md#change-20261110-test-controls-hide)

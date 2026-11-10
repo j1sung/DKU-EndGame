@@ -24,6 +24,7 @@ class DKUENDGAME_API UCFPlayerPresentationComponent : public UActorComponent
 public:
     UCFPlayerPresentationComponent();
     void SetColourSlot(int32 Slot);
+    static FString SelectDisplayNickname(const FString& ReplicatedName, const FString& ProfileName, bool bUseProfile);
     virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 protected:
     virtual void BeginPlay() override;

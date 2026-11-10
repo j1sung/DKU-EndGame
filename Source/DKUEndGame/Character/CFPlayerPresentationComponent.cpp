@@ -1,4 +1,8 @@
 #include "Character/CFPlayerPresentationComponent.h"
+#include "UI/CFFrontendSubsystem.h"
+#include "UI/CFLobbyController.h"
+#include "Engine/GameInstance.h"
+#include "Engine/World.h"
 #include "Network/CFMatchRuntimeSubsystem.h"
 #include "Blueprint/WidgetTree.h"
 #include "Components/TextBlock.h"
@@ -95,8 +99,19 @@ void UCFPlayerPresentationComponent::TickComponent(float Delta, ELevelTick TickT
     const auto* State = Pawn ? Pawn->GetPlayerState() : nullptr;
     if (!Nameplate) return;
     auto* Widget = Cast<UCFNameplateWidget>(Nameplate->GetUserWidgetObject());
-    Nameplate->SetVisibility(State && !State->GetPlayerName().IsEmpty());
-    if (Widget && State) Widget->SetName(State->GetPlayerName(), UCFMatchRuntimeSubsystem::PlayerColour(ColourSlot));
+    const auto* Instance = GetWorld() ? GetWorld()->GetGameInstance() : nullptr;
+    const auto* Frontend = Instance ? Instance->GetSubsystem<UCFFrontendSubsystem>() : nullptr;
+    const bool bLocal = Pawn && Pawn->IsLocallyControlled();
+    const bool bUseProfile = bLocal && ((Frontend && Frontend->HasAuthenticatedProfile()) || Cast<ACFLobbyController>(Pawn->GetController()));
+    const FString ProfileName = Frontend && Frontend->HasAuthenticatedProfile() ? Frontend->ProfileNickname : FString();
+    const FString Name = SelectDisplayNickname(State ? State->GetPlayerName() : FString(), ProfileName, bUseProfile);
+    Nameplate->SetVisibility(!Name.IsEmpty());
+    if (Widget) Widget->SetName(Name, UCFMatchRuntimeSubsystem::PlayerColour(ColourSlot));
+}
+FString UCFPlayerPresentationComponent::SelectDisplayNickname(const FString& ReplicatedName, const FString& ProfileName, bool bUseProfile)
+{
+    // 로컬 게임 프로필을 선택했을 때 빈 값을 Epic 이름으로 대체하지 않는다.
+    return bUseProfile ? ProfileName : ReplicatedName;
 }
 void UCFPlayerPresentationComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
