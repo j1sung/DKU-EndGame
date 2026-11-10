@@ -34,14 +34,14 @@ function Assert-EOSLocalIgnored {
 }
 
 function New-EOSLocalConfig {
-    param([Parameter(Mandatory)] $Context, [AllowEmptyString()][string] $ClientSecret)
+    param([Parameter(Mandatory)] $Context, [AllowEmptyString()][string] $ClientSecret, [switch] $Legacy)
     if ([string]::IsNullOrEmpty($ClientSecret) -or $ClientSecret.Length -gt 4096 -or
         $ClientSecret -cnotmatch '\A[A-Za-z0-9._~+/=-]+\z') {
         throw 'The Client Secret is empty or contains unsupported characters. Paste only the credential value.'
     }
     # File-storage encryption is unused in this login/profile test. Epic documents this placeholder.
     $encryptionKey = '1' * 64
-    return @"
+    $artifact = @"
 ; Local development only. Do not commit or share this file.
 [/Script/OnlineSubsystemEOS.EOSSettings]
 bUseNamedPlatformConfig=false
@@ -49,17 +49,56 @@ DefaultArtifactName=ChickenGameDev
 !Artifacts=ClearArray
 +Artifacts=(ArtifactName="ChickenGameDev",ClientId="$($Context.ClientId)",ClientSecret="$ClientSecret",ProductId="$($Context.ProductId)",SandboxId="$($Context.SandboxId)",DeploymentId="$($Context.DeploymentId)",EncryptionKey="$encryptionKey")
 "@
+    if ($Legacy) { return $artifact }
+    return $artifact + @"
+
+
+[OnlineSubsystem]
+DefaultPlatformService=EOS
+
+[/Script/Engine.Engine]
+!NetDriverDefinitions=ClearArray
++NetDriverDefinitions=(DefName="GameNetDriver",DriverClassName="/Script/SocketSubsystemEOS.NetDriverEOSBase",DriverClassNameFallback="/Script/OnlineSubsystemUtils.IpNetDriver")
++NetDriverDefinitions=(DefName="DemoNetDriver",DriverClassName="/Script/Engine.DemoNetDriver",DriverClassNameFallback="/Script/Engine.DemoNetDriver")
+
+[/Script/Engine.GameEngine]
+!NetDriverDefinitions=ClearArray
++NetDriverDefinitions=(DefName="GameNetDriver",DriverClassName="/Script/SocketSubsystemEOS.NetDriverEOSBase",DriverClassNameFallback="/Script/OnlineSubsystemUtils.IpNetDriver")
++NetDriverDefinitions=(DefName="DemoNetDriver",DriverClassName="/Script/Engine.DemoNetDriver",DriverClassNameFallback="/Script/Engine.DemoNetDriver")
+
+[/Script/SocketSubsystemEOS.NetDriverEOSBase]
+bIsUsingP2PSockets=true
+"@
 }
 
 function Test-EOSLocalText {
-    param([Parameter(Mandatory)] $Context, [AllowEmptyString()][string] $Text)
+    param([Parameter(Mandatory)] $Context, [AllowEmptyString()][string] $Text, [switch] $Legacy)
     if ([string]::IsNullOrEmpty($Text)) { return $false }
     $secretMatches = [regex]::Matches($Text, 'ClientSecret="([^"\r\n]*)"')
     if ($secretMatches.Count -ne 1) { return $false }
     try {
-        $expected = New-EOSLocalConfig -Context $Context -ClientSecret $secretMatches[0].Groups[1].Value
+        $expected = New-EOSLocalConfig -Context $Context -ClientSecret $secretMatches[0].Groups[1].Value -Legacy:$Legacy
         return $expected.Replace("`r`n", "`n").Trim() -ceq $Text.Replace("`r`n", "`n").Trim()
     } catch { return $false }
+}
+
+function Update-EOSLocalConfig {
+    param([Parameter(Mandatory)] $Context)
+    Assert-EOSLocalIgnored -ProjectRoot $Context.ProjectRoot
+    $text = [IO.File]::ReadAllText($Context.ConfigPath)
+    if (Test-EOSLocalText -Context $Context -Text $text) { return }
+    if (-not (Test-EOSLocalText -Context $Context -Text $text -Legacy)) {
+        throw 'Only the original generated configuration with matching dev IDs can be upgraded.'
+    }
+    $credential = $null
+    try {
+        $value = [regex]::Match($text, 'ClientSecret="([^"\r\n]*)"').Groups[1].Value
+        $credential = ConvertTo-SecureString $value -AsPlainText -Force
+        Save-EOSLocalConfig -Context $Context -ClientSecret $credential
+    } finally {
+        if ($credential) { $credential.Dispose() }
+        $value = $null; $text = $null
+    }
 }
 
 function Assert-EOSLocalReady {
@@ -100,4 +139,4 @@ function Get-EOSLoginArguments {
     return @(('"' + $project + '"'), '-game', '-CustomConfig=EOSLocal', '-windowed', '-ResX=1280', '-ResY=720')
 }
 
-Export-ModuleMember -Function Get-EOSDevContext, Assert-EOSLocalIgnored, New-EOSLocalConfig, Test-EOSLocalText, Assert-EOSLocalReady, Save-EOSLocalConfig, Get-EOSLoginArguments
+Export-ModuleMember -Function Get-EOSDevContext, Assert-EOSLocalIgnored, New-EOSLocalConfig, Test-EOSLocalText, Assert-EOSLocalReady, Save-EOSLocalConfig, Update-EOSLocalConfig, Get-EOSLoginArguments

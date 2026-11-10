@@ -381,6 +381,23 @@ void UCFEntrySubsystem::RequireLogin()
     bNeedsReauthentication = true;
     ClearOperation();
     if (Frontend) Frontend->RequireLogin(CFEntry::Text(TEXT("로그인 정보가 만료되었습니다. 다시 로그인해 주세요.")));
+    OnAuthenticationRequired.Broadcast();
+}
+
+bool UCFEntrySubsystem::GetMatchmakingContext(FString& BaseUrl, FString& Token, FString& PlayerId)
+{
+    BaseUrl.Reset(); Token.Reset(); PlayerId.Reset();
+    if (bDeinitializing || bNeedsReauthentication || !Frontend || !Frontend->HasAuthenticatedProfile() ||
+        !ValidApiBase(ProfileApiBaseUrl) || !EOS || !Identity || !CopyConnectToken(Token)) return false;
+    BaseUrl = ProfileApiBaseUrl;
+    while (BaseUrl.EndsWith(TEXT("/"))) BaseUrl.LeftChopInline(1);
+    PlayerId = ExpectedPlayerId;
+    return !PlayerId.IsEmpty();
+}
+
+void UCFEntrySubsystem::InvalidateAuthentication()
+{
+    RequireLogin();
 }
 
 void UCFEntrySubsystem::EnterLobby(int32 Id)

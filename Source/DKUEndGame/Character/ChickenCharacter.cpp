@@ -3,6 +3,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Network/CFWaitingNetwork.h"
+#include "Character/CFPlayerPresentationComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "HAL/IConsoleManager.h"
 
@@ -123,6 +124,15 @@ void AChickenCharacter::OnMovementModeChanged(
     }
 
     // 4. 이동 상태 출력
+    if (HasAuthority() && !MoveComp->IsMovingOnGround())
+    {
+        // Cancel accumulated power in the air; a held input resumes on landing.
+        bIsCharging = false;
+        JumpAim = FVector2D::ZeroVector;
+        CurrentJumpPower = 0.f;
+        TiltAccumulator = 0.f;
+    }
+
     UE_LOG(LogTemp, Warning,
         TEXT("[ModeChange-3] Prev=%d Current=%d "
             "Custom=%u Fallen=%d"),
@@ -134,6 +144,7 @@ void AChickenCharacter::OnMovementModeChanged(
 
 AChickenCharacter::AChickenCharacter()
 {
+    PlayerPresentation = CreateDefaultSubobject<UCFPlayerPresentationComponent>(TEXT("PlayerPresentation"));
 	PrimaryActorTick.bCanEverTick = true;
     bReplicates = true;
     SetReplicateMovement(true);
@@ -211,7 +222,14 @@ void AChickenCharacter::Tick(float DeltaTime)
 	if (!bRoundInputEnabled || bIsFallen || bKnockdownPending) return;
 
 	// 차징 점프 게이지 채우기.
-	if (HasAuthority() && bIsCharging && !bIsFallen)
+    // Buffered holds win over auto-hop when the movement component reaches ground.
+    if (HasAuthority() && bLocalChargeHeld && !bIsCharging &&
+        GetCharacterMovement()->IsMovingOnGround() && GetCharacterMovement()->PendingLaunchVelocity.IsZero())
+    {
+        StartJumpCharge();
+    }
+
+    if (HasAuthority() && bIsCharging && !bIsFallen)
 	{
         UpdateJumpAim();
 		CurrentJumpPower = FMath::Clamp(CurrentJumpPower + (ChargeRate * DeltaTime), MinJumpPower, FMath::Max(MinJumpPower, MaxJumpPower));
@@ -268,6 +286,8 @@ void AChickenCharacter::Landed(const FHitResult& Hit)
         *GetNameSafe(Hit.GetActor()), *Hit.ImpactPoint.ToString(), *GetVelocity().ToString(),
         *GetCharacterMovement()->GetMovementName(), bIsFallen, bKnockdownPending);
     Super::Landed(Hit);
+    AirborneAttackCharge = 0.f;
+    AirborneAttackDirection = FVector::ZeroVector;
     if (!HasAuthority() || !bRoundInputEnabled) return;
     MulticastPlaySound(EChickenSound::Land, FMath::Clamp(FMath::Abs(GetVelocity().Z) / 700.f, 0.15f, 1.f));
     if (bKnockdownPending)
@@ -322,6 +342,10 @@ void AChickenCharacter::MoveRight(float Value)
 
 void AChickenCharacter::FallOver()
 {
+    // Airborne tilt is balance state, not an elimination request.
+    const auto* Movement = GetCharacterMovement();
+    if (!Movement->IsMovingOnGround() || !Movement->PendingLaunchVelocity.IsZero()) return;
+
     // BodyTilt.Y uses the opposite sign to the character's local right axis.
     const ECFKnockdownDirection Direction = FMath::Abs(BodyTilt.X) >= FMath::Abs(BodyTilt.Y)
         ? (BodyTilt.X >= 0.f ? ECFKnockdownDirection::Forward : ECFKnockdownDirection::Back)
@@ -336,6 +360,9 @@ bool AChickenCharacter::StartKnockdown(ECFKnockdownDirection Direction)
     if (!HasAuthority() || !bRoundInputEnabled || bIsFallen || bKnockdownPending || static_cast<uint8>(Direction) > 3) return false;
     if (auto* Mode=GetWorld()->GetAuthGameMode<ACFWaitingGameMode>())
         if (!Mode->MarkPlayerEliminated(GetPlayerState())) return false;
+    AirborneAttackCharge = 0.f;
+    AirborneAttackDirection = FVector::ZeroVector;
+    bLocalChargeHeld = false;
     KnockdownDirection = Direction;
     UnstableBalanceRemaining = 0.f;
     CurrentTilt = FVector2D::ZeroVector;
@@ -388,12 +415,18 @@ void AChickenCharacter::StartJumpCharge()
     CF_EVENT(LogChickenMovement, "ChargePressed Before=%s Round=%d Fallen=%d Pending=%d",
         *GetVelocity().ToString(), bRoundInputEnabled, bIsFallen, bKnockdownPending);
 	// 입력하자마자 로컬에서 잠금.
-	bLocalChargeHeld = true;
+    if (!bRoundInputEnabled || bIsFallen || bKnockdownPending) return;
+    // Remember the press even in the air, and send it before the ground check.
+    bLocalChargeHeld = true;
+    if (!HasAuthority()) ServerSetCharge(true);
+
+    const auto* Movement = GetCharacterMovement();
+    if (bIsCharging || !Movement->IsMovingOnGround() || !Movement->PendingLaunchVelocity.IsZero()) return;
 
 	GetCharacterMovement()->StopMovementImmediately();
 	ConsumeMovementInputVector();
 
-    if (!HasAuthority()) { if (bRoundInputEnabled) ServerSetCharge(true); return; }
+    if (!HasAuthority()) return;
 	if (!bRoundInputEnabled || bIsFallen || bKnockdownPending) return;
 
 	// 차징 시작하면 자동으로 뛰는 걸 멈춤.
@@ -436,17 +469,30 @@ void AChickenCharacter::UpdateJumpAim()
 
 void AChickenCharacter::ExecuteJump()
 {
+    bLocalChargeHeld = false;
     CF_EVENT(LogChickenMovement, "ChargeReleased Power=%.3f Charging=%d Round=%d Fallen=%d Pending=%d",
         CurrentJumpPower, bIsCharging, bRoundInputEnabled, bIsFallen, bKnockdownPending);
     if (!HasAuthority()) { if (bRoundInputEnabled) ServerSetCharge(false); return; }
 	if (!bRoundInputEnabled || !bIsCharging || bIsFallen || bKnockdownPending) return;
-	bIsCharging = false;
+    bIsCharging = false;
+
+    // Recheck on the server: a charged character can be pushed off a ledge.
+    const auto* Movement = GetCharacterMovement();
+    if (!Movement->IsMovingOnGround() || !Movement->PendingLaunchVelocity.IsZero())
+    {
+        JumpAim = FVector2D::ZeroVector;
+        CurrentJumpPower = 0.f;
+        TiltAccumulator = 0.f;
+        return;
+    }
 
     UpdateJumpAim();
     const FVector AimWorldDirection =
         (GetViewMovementDirection(this, EAxis::X) * JumpAim.X - GetViewMovementDirection(this, EAxis::Y) * JumpAim.Y).GetSafeNormal2D();
     // Charge controls power; balance must not redirect or flatten the jump.
-    FVector LaunchVelocity = (AimWorldDirection * 0.95f + FVector::UpVector) * CurrentJumpPower;
+    FVector LaunchVelocity = (AimWorldDirection * 0.95f + FVector::UpVector * FMath::Max(1.f, ChargedJumpVerticalScale)) * CurrentJumpPower;
+    AirborneAttackCharge = GetNormalizedJumpCharge();
+    AirborneAttackDirection = AimWorldDirection;
 
 	bInLandingRecovery = false;
 	CF_EVENT(LogChickenMovement, "JumpLaunch Kind=Charged Power=%.3f Aim=%s Launch=%s Before=%s SerialNext=%d",
@@ -603,6 +649,9 @@ void AChickenCharacter::SetRoundInputEnabled(bool bEnabled)
 {
     if (!HasAuthority()) return;
     RecentCollisionTimes.Reset();
+    AirborneAttackCharge = 0.f;
+    AirborneAttackDirection = FVector::ZeroVector;
+    bLocalChargeHeld = false;
     bRoundFinished=false;
     bRoundInputEnabled=bEnabled;
 
@@ -622,6 +671,9 @@ void AChickenCharacter::SetRoundInputEnabled(bool bEnabled)
 void AChickenCharacter::FinishRound()
 {
     if (!HasAuthority()) return;
+    AirborneAttackCharge = 0.f;
+    AirborneAttackDirection = FVector::ZeroVector;
+    bLocalChargeHeld = false;
     bRoundFinished=true;
     bRoundInputEnabled=false;
     RawTiltInput=BodyTilt=CurrentTilt=FVector2D::ZeroVector;
@@ -841,15 +893,29 @@ void AChickenCharacter::OnChickenHit(
 		Now
 	);
 
-    CF_EVENT(LogChickenCollision, "PushDispatch Other=%s RelativeVelocity=%s ClosingSpeed=%.3f Direction=%s Mode=ClosingSpeed CalculatedDeltaV=%.3f SelfRequest=%s OtherRequest=%s Cooldown=Passed Limit=%.3f",
+    const float SelfAttackBonus = GetChargedCollisionBonus(Direction);
+    const float OtherAttackBonus = Other->GetChargedCollisionBonus(-Direction);
+    CF_EVENT(LogChickenCollision, "PushDispatch Other=%s RelativeVelocity=%s ClosingSpeed=%.3f Direction=%s Mode=ClosingSpeedAndCharge BaseDeltaV=%.3f SelfRequest=%s OtherRequest=%s Cooldown=Passed Limit=%.3f",
         *Other->GetName(), *(GetVelocity() - Other->GetVelocity()).ToString(),
         ClosingSpeed, *Direction.ToString(),
-        PushSpeed, *(-Direction * PushSpeed).ToString(), *(Direction * PushSpeed).ToString(), CollisionCooldown);
+        PushSpeed, *(-Direction * (PushSpeed + OtherAttackBonus)).ToString(), *(Direction * (PushSpeed + SelfAttackBonus)).ToString(), CollisionCooldown);
 
-	ApplyCollisionResponse(-Direction * PushSpeed);
-	Other->ApplyCollisionResponse(Direction * PushSpeed);
+    // Charge increases the impulse delivered to the opponent, not our own recoil.
+    AirborneAttackCharge = Other->AirborneAttackCharge = 0.f;
+    ApplyCollisionResponse(-Direction * (PushSpeed + OtherAttackBonus));
+    Other->ApplyCollisionResponse(Direction * (PushSpeed + SelfAttackBonus));
     // The accepted pair emits once; the other capsule shares the cooldown.
     MulticastPlaySound(EChickenSound::Collision, FMath::Clamp(ClosingSpeed / 700.f, 0.f, 1.f));
+}
+
+float AChickenCharacter::GetChargedCollisionBonus(const FVector& TowardOther) const
+{
+    const auto* Movement = GetCharacterMovement();
+    if ((!Movement->IsFalling() && Movement->PendingLaunchVelocity.IsZero()) ||
+        FVector::DotProduct(GetVelocity(), TowardOther) <= 0.f) return 0.f;
+    // Glancing hits receive less bonus; being struck from behind is not an attack.
+    const float Alignment = FMath::Clamp(FVector::DotProduct(AirborneAttackDirection, TowardOther), 0.f, 1.f);
+    return FMath::Max(0.f, MaxChargedCollisionBonus) * AirborneAttackCharge * Alignment;
 }
 
 void AChickenCharacter::ApplyCollisionResponse(

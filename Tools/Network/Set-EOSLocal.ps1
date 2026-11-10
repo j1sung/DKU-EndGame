@@ -1,6 +1,6 @@
 ﻿#requires -Version 5.1
 [CmdletBinding()]
-param([switch] $CheckOnly)
+param([switch] $CheckOnly, [switch] $Upgrade)
 $ErrorActionPreference = 'Stop'
 Import-Module (Join-Path $PSScriptRoot 'EOSLocal.psm1') -Force
 
@@ -8,7 +8,9 @@ try {
     $projectRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..'))
     $context = Get-EOSDevContext -ProjectRoot $projectRoot
     Assert-EOSLocalIgnored -ProjectRoot $projectRoot
-    if (-not $CheckOnly) {
+    if ($CheckOnly -and $Upgrade) { throw 'Choose CheckOnly or Upgrade.' }
+    if ($Upgrade) { Update-EOSLocalConfig -Context $context }
+    elseif (-not $CheckOnly) {
         Write-Host 'EOS game-client local configuration / EOS 로컬 개발 설정'
         Write-Host ('Client ID: ' + $context.ClientId)
         Write-Host 'Paste the Client Secret for this existing Peer2Peer client below.'
@@ -22,6 +24,6 @@ try {
     Write-Host '설정 검사가 통과했습니다. 실제 Epic 로그인은 Unreal 실행 후 별도로 확인해야 합니다.'
 } catch {
     # Never echo raw exceptions: a credential must not appear in an error message.
-    Write-Host 'EOS 설정 준비/검사 실패. 최신 브랜치, Git 제외 경로, 입력값을 확인하세요.' -ForegroundColor Red
+    Write-Host 'EOS 설정 준비/검사 실패. 기존 설정은 -Upgrade로 갱신하세요. 실패하면 최신 브랜치, Git 제외 경로, 입력값을 확인하세요.' -ForegroundColor Red
     exit 1
 }

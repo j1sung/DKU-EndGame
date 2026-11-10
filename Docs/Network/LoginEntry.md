@@ -10,6 +10,8 @@
 
 사용자 확인: Dev Auth Tool과 별도 SDK 도구의 Connect 로그인·백엔드 인증은 검증했지만, Unreal 클라이언트 설정과 권한은 통합 작업에서 확인·구성한다. 해당 도구의 성공을 현재 Unreal 빌드의 실계정 검증으로 간주하지 않는다. Client Secret과 토큰은 공유·저장소 추가하지 않았다.
 
+2026-11-06 추가 사용자 보고: 실제 Epic 로그인부터 연습 로비 진입까지 성공했다. 이 PC에서 직접 실행한 검증은 아니며 계정별 최초 등록·인증 만료·패키징 전체 완료를 뜻하지 않는다. 이후 [로비 매칭 티켓 제공자](MatchmakingTickets.md)를 추가했으며 해당 기능의 Unreal 빌드·실계정 실행은 별도로 확인해야 한다.
+
 ## 실행 흐름
 
 1. `Lvl_CF_MainMenu`의 게임 시작 → LOG IN NOW.
@@ -63,7 +65,11 @@ pwsh -NoProfile -File .\Tools\Network\Set-EOSLocal.ps1
 
 도구는 `Backend-Infra/samconfig.toml`의 dev 식별자를 읽고 `Config/Custom/EOSLocal/DefaultEngine.ini`를 만든다. 이 경로는 `.gitignore`로 제외되며, 추적 중인 파일로 바뀌면 입력/검사를 거절한다. 저장한 파일은 해당 PC에서만 사용하고 동료에게 복사하거나 Git에 추가하지 않는다. 다른 PC에서도 도구를 실행해 로컬로 입력한다. 설정을 다시 실행하면 기존 로컬 자격 증명을 갱신한다.
 
-이 파일에는 `ChickenGameDev` Artifact와 현재 dev ID, 해당 Client Secret이 들어간다. `bUseNamedPlatformConfig=false`로 이 Artifact를 선택하고, 현재 사용하지 않는 Player/Title Data Storage의 EncryptionKey는 Epic 문서의 개발 예시값(64개의 `1`)을 쓴다. 파일 저장 기능을 도입할 때에는 이 키 정책을 다시 정한다. 기본 `NULL` LAN 설정과 인증 코드의 명시적 `EOS` 선택은 유지한다.
+이 파일에는 `ChickenGameDev` Artifact와 현재 dev ID, 해당 Client Secret이 들어간다. `bUseNamedPlatformConfig=false`로 이 Artifact를 선택하고, 현재 사용하지 않는 Player/Title Data Storage의 EncryptionKey는 Epic 문서의 개발 예시값(64개의 `1`)을 쓴다. 파일 저장 기능을 도입할 때에는 이 키 정책을 다시 정한다. 2026-11-08부터 **EOSLocal 실행에서만 기본 OSS=EOS와 UE5.8 EOS P2P NetDriver**를 적용해 게임 세션의 접속 ID와 전송을 일치시킨다. 일반 실행의 NULL/LAN 설정은 유지한다. 이전 도구로 만든 파일은 Secret 재입력 없이 아래 명령으로 갱신한다. [Round1 세션 검증](EOSRound1Session.md) 참고.
+
+```powershell
+pwsh -NoProfile -File .\Tools\Network\Set-EOSLocal.ps1 -Upgrade
+```
 
 입력 없이 저장 상태만 검사할 때:
 
@@ -89,7 +95,7 @@ pwsh -NoProfile -File .\Tools\Network\Start-EOSLoginTest.ps1 -UnrealEditorPath '
 4. 다른 계정의 중복 이름을 입력하면 화면에 오류가 나오고 다른 이름으로 다시 입력할 수 있는지 확인한다.
 5. Account Portal 취소와 로그인 중 뒤로가기, 재시도, 인증 만료 후 재로그인을 확인한다. 연습 로비에서 인증이 끊겼을 때의 표시와 복구도 별도 확인한다.
 
-자동 매칭 API와 4인 EOS 세션 제공자는 아직 연결되지 않았다. 여기서 성공 판정은 실계정 인증·프로필·닉네임·연습 로비 진입까지다. 현재 PC에는 Unreal이 없어 이 절차는 아직 재실행하지 않았다. 설정 생성 도구의 검증과 게임 실행 결과를 구분해 기록한다.
+자동 매칭 티켓 API 제공자는 [별도 연결](MatchmakingTickets.md)했고 실제 4인 EOS 세션 제공자는 아직 연결되지 않았다. 이 문서의 로그인 테스트 성공 판정은 실계정 인증·프로필·닉네임·연습 로비 진입까지다. 현재 PC에는 Unreal이 없어 이 절차는 아직 재실행하지 않았다. 설정 생성 도구의 검증과 게임 실행 결과를 구분해 기록한다.
 
 ## 로그인 준비 실패 진단
 
