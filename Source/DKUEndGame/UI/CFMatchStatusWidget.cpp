@@ -88,10 +88,20 @@ void UCFMatchStatusWidget::NativeOnInitialized()
     auto* Label=WidgetTree->ConstructWidget<UTextBlock>(); Label->SetText(FText::FromString(TEXT("방 나가기"))); LeaveButton->SetContent(Label);
     auto* CanvasSlot=Canvas->AddChildToCanvas(LeaveButton); CanvasSlot->SetAnchors(FAnchors(1,0)); CanvasSlot->SetAlignment(FVector2D(1,0)); CanvasSlot->SetPosition(FVector2D(-24,64)); CanvasSlot->SetSize(FVector2D(140,44));
     LeaveButton->OnClicked.AddUniqueDynamic(this,&ThisClass::LeaveRoom);
+    PreparationPanel = WidgetTree->ConstructWidget<UBorder>();
+    PreparationPanel->SetBrushColor(FLinearColor(.02f, .025f, .035f, 1));
+    PreparationPanel->SetHorizontalAlignment(HAlign_Center); PreparationPanel->SetVerticalAlignment(VAlign_Center);
+    auto* PreparationText = MakeText(TEXT("PreparationText"), 28);
+    PreparationText->SetText(FText::FromString(TEXT("경기 접속 준비 중\n플레이어 네 명의 준비를 확인하고 있습니다…")));
+    PreparationPanel->SetContent(PreparationText);
+    auto* PreparationSlot = Canvas->AddChildToCanvas(PreparationPanel);
+    PreparationSlot->SetAnchors(FAnchors(0, 0, 1, 1)); PreparationSlot->SetOffsets(FMargin(0)); PreparationSlot->SetZOrder(100);
+    PreparationPanel->SetVisibility(ESlateVisibility::Collapsed);
 }
 
 void UCFMatchStatusWidget::Refresh(const ACFWaitingGameState* State,bool bMenuOpen,bool bEliminated)
 {
+    PreparationPanel->SetVisibility(State->bAutomaticMatch && State->Phase == ECFMatchPhase::Waiting ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
     RoundText->SetText(FText::FromString(FString::Printf(TEXT("ROUND %d / %d   ·   생존 %d / %d"),State->CurrentRound,State->TotalRounds,State->AlivePlayers.Num(),State->Participants.Num())));
     const bool bCountdown=State->Phase==ECFMatchPhase::Countdown;
     CountdownText->SetVisibility(bCountdown ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
@@ -159,7 +169,12 @@ void UCFMatchStatusWidget::Refresh(const ACFWaitingGameState* State,bool bMenuOp
     RoundProgressText->SetText(FText::FromString(Progress));
     WidgetTree->FindWidget(TEXT("ReturnSize"))->SetVisibility(bFinal && bHost ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
     ReturnButton->SetVisibility(bFinal && bHost ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
-    ReturnButton->SetIsEnabled(bFinal && bHost && !State->bRoomClosing);
+    ReturnButton->SetIsEnabled(bFinal && bHost && !State->bRoomClosing && !State->bAutomaticMatch);
+    if (State->bAutomaticMatch)
+    {
+        ReturnButton->SetVisibility(ESlateVisibility::Collapsed);
+        WidgetTree->FindWidget(TEXT("ReturnSize"))->SetVisibility(ESlateVisibility::Collapsed);
+    }
     SpectatorText->SetVisibility(bEliminated && !bFinal ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
     LeaveButton->SetVisibility(bMenuOpen ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 }

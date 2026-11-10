@@ -14,7 +14,9 @@ class DKUENDGAME_API ACFLobbyController : public ADKUEndGamePlayerController
     GENERATED_BODY()
 public:
     UFUNCTION(BlueprintCallable, Category="CF|Lobby") void ToggleLobbySettings();
+    void RequestLobbyRespawn();
 protected:
+    virtual void OnPossess(APawn* InPawn) override;
     virtual void BeginPlay() override;
     virtual void EndPlay(const EEndPlayReason::Type Reason) override;
     virtual void SetupInputComponent() override;
@@ -27,6 +29,9 @@ private:
     UPROPERTY(Transient) TObjectPtr<UCFLobbyWidget> LobbyWidget;
     UPROPERTY(Transient) TObjectPtr<UCFLobbySubsystem> Lobby;
     bool bMixPushed = false;
+    FTransform LobbySpawnTransform;
+    bool bHasLobbySpawnTransform = false;
+    UFUNCTION(Server, Reliable) void ServerRespawnInLobby();
     UFUNCTION() void ApplyAudio();
     UFUNCTION() void ReturnToTitle();
 };

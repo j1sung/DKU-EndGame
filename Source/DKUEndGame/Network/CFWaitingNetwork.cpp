@@ -1,6 +1,8 @@
 #include "Network/CFWaitingNetwork.h"
 #include "Network/CFSessionSubsystem.h"
 #include "Network/CFMatchSessionSubsystem.h"
+#include "Network/CFMatchRuntimeSubsystem.h"
+#include "Character/CFPlayerPresentationComponent.h"
 #include "UI/CFFrontendSubsystem.h"
 #include "Character/ChickenCharacter.h"
 #include "Character/CFWaitingCharacter.h"
@@ -27,6 +29,7 @@ void ACFWaitingGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& 
     DOREPLIFETIME(ThisClass,RoomCapacity);
     DOREPLIFETIME(ThisClass,MinimumPlayers);
     DOREPLIFETIME(ThisClass,bRoomClosing);
+    DOREPLIFETIME(ThisClass,bAutomaticMatch);
     DOREPLIFETIME(ThisClass,Phase);
     DOREPLIFETIME(ThisClass,CurrentRound);
     DOREPLIFETIME(ThisClass,TotalRounds);
@@ -182,6 +185,10 @@ bool ACFWaitingGameMode::PrepareRound(int32 RoundNumber,FString& Error)
     {
         auto* PC=Players[I];
         PC->UnPossess(); PC->Possess(NewPawns[I]);
+        if (GS->bAutomaticMatch && PC->PlayerState->GetUniqueId().IsValid())
+            if (auto* Appearance = NewPawns[I]->FindComponentByClass<UCFPlayerPresentationComponent>())
+                Appearance->SetColourSlot(GetGameInstance()->GetSubsystem<UCFMatchRuntimeSubsystem>()->ColourFor(
+                    UCFMatchSessionSubsystem::ProductUserId(*PC->PlayerState->GetUniqueId())));
         CastChecked<ACFWaitingPlayerController>(PC)->SetRoundEliminated(false);
         PC->SetControlRotation(Starts[I]->GetActorRotation()); PC->ClientSetRotation(Starts[I]->GetActorRotation(),true);
         GS->Participants.Add(PC->PlayerState); GS->AlivePlayers.Add(PC->PlayerState);
@@ -231,6 +238,7 @@ void ACFWaitingGameMode::ShowFinalResults()
     GS->NextRoundEndServerTime=0; GS->bFinalResultPending=false; GS->Phase=ECFMatchPhase::FinalResult;
     GS->ForceNetUpdate();
     UE_LOG(LogTemp,Display,TEXT("CF_MATCH final results rounds=%d players=%d"),GS->ScoredRound,GS->FinalStandings.Num());
+    OnFinalResults();
 }
 
 bool ACFWaitingGameMode::TryReturnToWaiting(ACFWaitingPlayerController* Requester)
@@ -301,6 +309,7 @@ void ACFWaitingGameMode::AdvanceRound()
 {
     auto* GS=GetGameState<ACFWaitingGameState>();
     if (!GS || GS->Phase!=ECFMatchPhase::RoundResult || GS->bRoomClosing || GS->CurrentRound>=GS->TotalRounds) return;
+    if (TravelForNextRound()) return;
     FString Error;
     if (!PrepareRound(GS->CurrentRound+1,Error)) StopRoundProgression(Error);
 }
@@ -527,6 +536,56 @@ void ACFWaitingPlayerController::EndPlay(const EEndPlayReason::Type Reason)
     Super::EndPlay(Reason);
 }
 
+void ACFWaitingPlayerController::PostSeamlessTravel()
+{
+    Super::PostSeamlessTravel();
+    ResetRoundDisplay();
+}
+void ACFWaitingPlayerController::PreClientTravel(const FString& PendingURL, ETravelType TravelType, bool bIsSeamlessTravel)
+{
+    if (IsLocalController())
+    {
+        GetWorldTimerManager().ClearTimer(DisplayTimer);
+        if (WaitingWidget) WaitingWidget->RemoveFromParent();
+        if (MatchWidget) MatchWidget->RemoveFromParent();
+        WaitingWidget = nullptr; MatchWidget = nullptr;
+        if (bOwnSpectatorCamera && IsValid(RoundSpectatorCamera)) RoundSpectatorCamera->Destroy();
+        RoundSpectatorCamera = nullptr; bOwnSpectatorCamera = false; LastInputPawn.Reset();
+    }
+    Super::PreClientTravel(PendingURL, TravelType, bIsSeamlessTravel);
+}
+void ACFWaitingPlayerController::NotifyLoadedWorld(FName WorldPackageName, bool bFinalDest)
+{
+    Super::NotifyLoadedWorld(WorldPackageName, bFinalDest);
+    if (bFinalDest) ResetRoundDisplay();
+}
+void ACFWaitingPlayerController::ResetRoundDisplay()
+{
+    if (!IsLocalController()) return;
+    GetWorldTimerManager().ClearTimer(DisplayTimer);
+    if (WaitingWidget) WaitingWidget->RemoveFromParent();
+    if (MatchWidget) MatchWidget->RemoveFromParent();
+    WaitingWidget = nullptr; MatchWidget = nullptr;
+    if (bOwnSpectatorCamera && IsValid(RoundSpectatorCamera)) RoundSpectatorCamera->Destroy();
+    RoundSpectatorCamera = nullptr; bOwnSpectatorCamera = false;
+    LastInputPawn.Reset(); LastPhase = ECFMatchPhase::FinalResult;
+    GetWorldTimerManager().SetTimer(DisplayTimer, this, &ThisClass::UpdateMatchDisplay, .1f, true);
+}
+
+void ACFWaitingPlayerController::ClientCacheFinalResults_Implementation(const FString& CompletedMatchId, const TArray<FCFFinalStanding>& Rows)
+{
+    const auto* Bridge = GetGameInstance()->GetSubsystem<UCFMatchSessionSubsystem>();
+    auto* Runtime = GetGameInstance()->GetSubsystem<UCFMatchRuntimeSubsystem>();
+    if (Bridge && Bridge->GetMatchId() == CompletedMatchId && Runtime->CacheResults(Rows))
+        ServerAcknowledgeFinalResults(CompletedMatchId);
+}
+
+void ACFWaitingPlayerController::ServerAcknowledgeFinalResults_Implementation(const FString& CompletedMatchId)
+{
+    if (auto* Bridge = GetGameInstance()->GetSubsystem<UCFMatchSessionSubsystem>(); Bridge && PlayerState && PlayerState->GetUniqueId().IsValid())
+        Bridge->AcknowledgeFinalResults(CompletedMatchId, UCFMatchSessionSubsystem::ProductUserId(*PlayerState->GetUniqueId()));
+}
+
 void ACFWaitingPlayerController::SetupInputComponent()
 {
     Super::SetupInputComponent();
@@ -559,12 +618,14 @@ void ACFWaitingPlayerController::ClientReturnRejected_Implementation(const FText
 
 void ACFWaitingPlayerController::SetMatchInputMode()
 {
+    if (!CanUpdateMatchDisplay()) return;
     const bool bWaiting=LastPhase==ECFMatchPhase::Waiting;
     bShowMouseCursor=bWaiting || bMatchMenuOpen || LastPhase==ECFMatchPhase::FinalResult;
     if (bShowMouseCursor) { FInputModeGameAndUI Mode; Mode.SetHideCursorDuringCapture(false); SetInputMode(Mode); }
     else SetInputMode(FInputModeGameOnly());
     ResetIgnoreMoveInput(); ResetIgnoreLookInput();
-    if (bRoundEliminated || (LastPhase!=ECFMatchPhase::Waiting && LastPhase!=ECFMatchPhase::Playing))
+    const auto* GS = GetWorld()->GetGameState<ACFWaitingGameState>();
+    if ((GS && GS->bAutomaticMatch && LastPhase==ECFMatchPhase::Waiting) || bRoundEliminated || (LastPhase!=ECFMatchPhase::Waiting && LastPhase!=ECFMatchPhase::Playing))
     { SetIgnoreMoveInput(true); SetIgnoreLookInput(true); }
 }
 
@@ -574,8 +635,18 @@ void ACFWaitingPlayerController::ToggleMatchMenu()
     bMatchMenuOpen=!bMatchMenuOpen; SetMatchInputMode();
 }
 
+bool ACFWaitingPlayerController::CanUpdateMatchDisplay() const
+{
+    const UWorld* World = GetWorld();
+    const ULocalPlayer* LocalPlayer = GetLocalPlayer();
+    // Seamless Travel 중 이전 Controller의 타이머가 플레이어 연결 복구보다 먼저 실행될 수 있다.
+    return IsLocalController() && IsValid(World) && !World->bIsTearingDown && IsValid(LocalPlayer) &&
+        LocalPlayer->GetPlayerController(nullptr) == this;
+}
+
 void ACFWaitingPlayerController::UpdateMatchDisplay()
 {
+    if (!CanUpdateMatchDisplay()) return;
     const auto* GS=GetWorld()->GetGameState<ACFWaitingGameState>(); if (!GS) return;
     UpdateSpectatorCamera();
     if (LastPhase!=GS->Phase || LastInputPawn.Get()!=GetPawn())
@@ -592,16 +663,25 @@ void ACFWaitingPlayerController::UpdateMatchDisplay()
         }
         SetMatchInputMode();
     }
-    if (GS->Phase==ECFMatchPhase::Waiting)
+    if (GS->Phase==ECFMatchPhase::Waiting && !GS->bAutomaticMatch)
     {
         if (MatchWidget) { MatchWidget->RemoveFromParent(); MatchWidget=nullptr; }
-        if (!WaitingWidget && WaitingWidgetClass)
-        { auto* Widget=CreateWidget<UCFWaitingRoomWidget>(this,WaitingWidgetClass); Widget->AddToPlayerScreen(); }
+        if (!IsValid(WaitingWidget) && WaitingWidgetClass)
+        {
+            auto* Widget=CreateWidget<UCFWaitingRoomWidget>(this,WaitingWidgetClass);
+            if (!IsValid(Widget)) return; // 플레이어/Viewport 준비 후 다음 타이머에서 다시 시도한다.
+            Widget->AddToPlayerScreen();
+        }
     }
     else
     {
         if (WaitingWidget) { WaitingWidget->RemoveFromParent(); WaitingWidget=nullptr; }
-        if (!MatchWidget) { MatchWidget=CreateWidget<UCFMatchStatusWidget>(this,UCFMatchStatusWidget::StaticClass()); MatchWidget->AddToPlayerScreen(10); }
+        if (!IsValid(MatchWidget))
+        {
+            MatchWidget=CreateWidget<UCFMatchStatusWidget>(this,UCFMatchStatusWidget::StaticClass());
+            if (!IsValid(MatchWidget)) return;
+            if (!MatchWidget->AddToPlayerScreen(10)) { MatchWidget=nullptr; return; }
+        }
         MatchWidget->Refresh(GS,bMatchMenuOpen,bRoundEliminated);
     }
 }

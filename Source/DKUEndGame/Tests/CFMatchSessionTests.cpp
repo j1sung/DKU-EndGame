@@ -76,7 +76,7 @@ bool FCFMatchSessionTravelURLTest::RunTest(const FString& Parameters)
     const FString Address = TEXT("[EOS:00000000000000000000000000000001]");
     const FString Travel = UCFMatchSessionSubsystem::BuildRoundTravelURL(Address, AssignedMatchId, 1);
     TestEqual(TEXT("EOS resolved address is preserved including brackets"), Travel,
-        Address + TEXT("?CFMatch=") + AssignedMatchId + TEXT("?CFAttempt=1"));
+        Address + TEXT("?CFMatch=") + AssignedMatchId + TEXT("?CFAttempt=1?CFProtocol=2"));
     const FURL Parsed(nullptr, *Travel, TRAVEL_Absolute);
     TestEqual(TEXT("ClientTravel receives a valid URL"), Parsed.Valid, 1);
     TestEqual(TEXT("EOS target stays in Host instead of Map"), Parsed.Host, FString(TEXT("EOS:00000000000000000000000000000001")));
