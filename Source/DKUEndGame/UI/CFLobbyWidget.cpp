@@ -1,5 +1,6 @@
 #include "UI/CFLobbyWidget.h"
 #include "UI/CFLobbySubsystem.h"
+#include "UI/CFLobbyController.h"
 #include "Components/Button.h"
 #include "Components/CanvasPanel.h"
 #include "Components/Slider.h"
@@ -119,5 +120,13 @@ void UCFLobbyWidget::NativeTick(const FGeometry& Geometry, float DeltaTime)
 FReply UCFLobbyWidget::NativeOnPreviewKeyDown(const FGeometry& Geometry, const FKeyEvent& Event)
 {
     if (Event.GetKey() == EKeys::Escape) { ToggleSettings(); return FReply::Handled(); }
+    if (Event.GetKey() == EKeys::R)
+    {
+        if (auto* Controller = Cast<ACFLobbyController>(GetOwningPlayer()))
+        {
+            if (!Event.IsRepeat()) Controller->RequestLobbyRespawn();
+            return FReply::Handled();
+        }
+    }
     return Super::NativeOnPreviewKeyDown(Geometry, Event);
 }

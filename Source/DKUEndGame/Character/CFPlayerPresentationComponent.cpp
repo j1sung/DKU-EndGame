@@ -8,6 +8,8 @@
 #include "GameFramework/PlayerState.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Net/UnrealNetwork.h"
+#include "Character/ChickenCharacter.h"
+#include "UI/CFJumpChargeWidget.h"
 
 void UCFNameplateWidget::NativeOnInitialized()
 {
@@ -41,6 +43,19 @@ void UCFPlayerPresentationComponent::BeginPlay()
         Nameplate->SetWidgetClass(UCFNameplateWidget::StaticClass());
         Nameplate->SetCollisionEnabled(ECollisionEnabled::NoCollision); Nameplate->RegisterComponent();
         Nameplate->SetVisibility(false);
+
+        JumpCharge = NewObject<UWidgetComponent>(Character);
+        JumpCharge->SetupAttachment(Character->GetRootComponent());
+        JumpCharge->SetWidgetSpace(EWidgetSpace::Screen);
+        JumpCharge->SetDrawSize(FVector2D(160, 160));
+        JumpCharge->SetPivot(FVector2D(.5f, .5f));
+        JumpCharge->SetWidgetClass(UCFJumpChargeWidget::StaticClass());
+        JumpCharge->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+        JumpCharge->RegisterComponent();
+        JumpCharge->InitWidget();
+        if (auto* Gauge = Cast<UCFJumpChargeWidget>(JumpCharge->GetUserWidgetObject()))
+            Gauge->SetCharacter(Cast<AChickenCharacter>(Character));
+        JumpCharge->SetVisibility(false);
     }
     auto* Mesh = Character->GetMesh();
     if (Mesh && Character->GetNetMode() != NM_DedicatedServer)
@@ -73,6 +88,10 @@ void UCFPlayerPresentationComponent::TickComponent(float Delta, ELevelTick TickT
 {
     Super::TickComponent(Delta, TickType, Function);
     auto* Pawn = Cast<APawn>(GetOwner());
+    const auto* Chicken = Cast<AChickenCharacter>(Pawn);
+    if (JumpCharge)
+        JumpCharge->SetVisibility(Chicken && Chicken->IsLocallyControlled() && Chicken->IsRoundInputEnabled() &&
+            !Chicken->IsFallen() && !Chicken->IsKnockdownPending());
     const auto* State = Pawn ? Pawn->GetPlayerState() : nullptr;
     if (!Nameplate) return;
     auto* Widget = Cast<UCFNameplateWidget>(Nameplate->GetUserWidgetObject());

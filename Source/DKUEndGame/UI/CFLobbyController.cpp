@@ -7,6 +7,19 @@
 #include "Kismet/GameplayStatics.h"
 #include "Sound/SoundClass.h"
 #include "Sound/SoundMix.h"
+#include "Character/ChickenCharacter.h"
+#include "Engine/World.h"
+#include "Network/CFWaitingNetwork.h"
+
+void ACFLobbyController::OnPossess(APawn* InPawn)
+{
+    Super::OnPossess(InPawn);
+    if (!bHasLobbySpawnTransform && Cast<AChickenCharacter>(InPawn))
+    {
+        LobbySpawnTransform = InPawn->GetActorTransform();
+        bHasLobbySpawnTransform = true;
+    }
+}
 
 void ACFLobbyController::BeginPlay()
 {
@@ -36,6 +49,39 @@ void ACFLobbyController::SetupInputComponent()
 {
     Super::SetupInputComponent();
     InputComponent->BindKey(EKeys::Escape, IE_Pressed, this, &ThisClass::ToggleLobbySettings);
+    InputComponent->BindKey(EKeys::R, IE_Pressed, this, &ThisClass::RequestLobbyRespawn);
+}
+
+void ACFLobbyController::RequestLobbyRespawn()
+{
+    const auto* Chicken = Cast<AChickenCharacter>(GetPawn());
+    if (Chicken && (Chicken->IsFallen() || Chicken->IsKnockdownPending())) ServerRespawnInLobby();
+}
+
+void ACFLobbyController::ServerRespawnInLobby_Implementation()
+{
+    auto* Chicken = Cast<AChickenCharacter>(GetPawn());
+    // A lobby controller alone is insufficient: reject round maps and game modes too.
+    if (!Chicken || !bHasLobbySpawnTransform ||
+        (!Chicken->IsFallen() && !Chicken->IsKnockdownPending()) ||
+        UGameplayStatics::GetCurrentLevelName(this, true) != TEXT("L_Lobby_Playground") ||
+        GetWorld()->GetAuthGameMode<ACFWaitingGameMode>()) return;
+
+    FActorSpawnParameters Params;
+    Params.Owner = this;
+    Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButDontSpawnIfColliding;
+    // Keep the original pawn if the spawn point is obstructed or spawning fails.
+    const bool bHadCollision = Chicken->GetActorEnableCollision();
+    Chicken->SetActorEnableCollision(false);
+    auto* Revived = GetWorld()->SpawnActor<AChickenCharacter>(Chicken->GetClass(), LobbySpawnTransform, Params);
+    if (!Revived)
+    {
+        Chicken->SetActorEnableCollision(bHadCollision);
+        return;
+    }
+    Possess(Revived);
+    Chicken->Destroy();
+    ClientSetRotation(LobbySpawnTransform.Rotator(), true);
 }
 
 void ACFLobbyController::ToggleLobbySettings()

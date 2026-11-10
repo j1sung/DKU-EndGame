@@ -205,7 +205,20 @@ protected:
     UPROPERTY(Replicated, BlueprintReadOnly, Category="Chicken|Knockdown")
     bool bKnockdownPending = false;
 
+    // Held intent on the owner and server (via RPC), retained through airborne movement.
 	bool bLocalChargeHeld = false;
+
+    // Server-owned attack bonus, spent on the first accepted contact or landing.
+    float AirborneAttackCharge = 0.f;
+    FVector AirborneAttackDirection = FVector::ZeroVector;
+    float GetChargedCollisionBonus(const FVector& TowardOther) const;
+
+    UPROPERTY(EditDefaultsOnly, Category="Chicken|Collision", meta=(ClampMin="0.0"))
+    float MaxChargedCollisionBonus = 400.f;
+
+    // Separate multiplier also applies to existing Blueprint jump-power overrides.
+    UPROPERTY(EditDefaultsOnly, Category="Jump", meta=(ClampMin="1.0"))
+    float ChargedJumpVerticalScale = 1.15f;
 
     void ApplyCollisionResponse(const FVector& VelocityChange);
     TMap<TWeakObjectPtr<AChickenCharacter>, double> RecentCollisionTimes;

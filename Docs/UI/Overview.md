@@ -27,6 +27,8 @@ EOS 경기 캐릭터는 화면 공간 UMG 이름표와 서버 배정 색상으�
 
 <a id="practice-lobby"></a>
 ## 연습 로비
+2026-11-10 · Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋: 사망 후 R키로 최초 등장 위치에 부활한다. 서버가 로비 맵·사망 상태를 검사해 경기 중 사용을 차단한다. [부활 조건과 제한](Lobby.md#로비에서-r키-부활).
+
 > 최근 기능 변경: 2026-11-05 · Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
 
 `L_Lobby_Playground`는 기존 연습 캐릭터·놀이기구를 유지하며 `BP_CF_LobbyGameMode`와 `WBP_CF_Lobby`를 사용한다. 오른쪽 위 빠른 대전/매칭 중 패널, Esc·톱니바퀴 설정, 배경음·효과음 볼륨 저장, 타이틀 복귀를 제공한다. `CFLobbySubsystem`의 비동기 요청/응답 인터페이스는 중복 시작·취소와 배정 경합·상태 불명·복귀 대기를 처리한다. `UCFMatchmakingSubsystem`이 티켓 제공자를 연결하고 인증 만료 시 로그인 복귀를 안내한다. 실제 EOS 세션 제공자는 후속 작업이다.
@@ -42,6 +44,21 @@ EOS 경기 캐릭터는 화면 공간 UMG 이름표와 서버 배정 색상으�
 - 상세: [대기 UI](WaitingRoomUI.md).
 
 ## 수정 위치와 연결
+<a id="jump-charge-gauge"></a>
+### 캐릭터 옆 점프 게이지
+
+2026-11-10 · Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋.
+
+`UCFPlayerPresentationComponent`가 기존 이름표와 같은 Screen 공간 WidgetComponent로 `UCFJumpChargeWidget`을 생성한다. 내 캐릭터 오른쪽에 18×144 크기의 세로 막대를 표시하며, 밝은 테두리·어두운 빈 영역 안에서 아래→위로 채워진다. 충전량이 높아질수록 노란색에서 빨간색으로 변한다. 게임 입력을 가로채지 않으며 별도 텍스처나 Blueprint 지정은 필요 없다.
+
+게이지는 `IsChargingJump()`와 서버에서 복제되는 `GetNormalizedJumpCharge()`를 읽는다. 발사·충전 취소 시 비워지고 공중 충전 대기는 빈 상태로 표시한다. 로컬 소유의 살아 있는 전투 캐릭터에만 표시하고 라운드 입력 잠금·넘어짐·공중 넘어짐 대기에서는 숨긴다. 다른 플레이어의 게이지는 표시하지 않는다. 로비 R 부활로 생성된 캐릭터에도 자동 연결한다. 전용 서버는 UI를 생성하지 않는다.
+
+위젯은 매 프레임 현재 충전량을 읽고, 표시 가능 상태는 기존 표현 컴포넌트의 0.1초 Tick에서 갱신한다. 로컬 UE 5.8.2의 UMG API와 코드 연결·diff를 확인했으며 빌드·에디터 외형·PIE·네트워크 표시 검증은 미수행이다. 코드: `Source/DKUEndGame/UI/CFJumpChargeWidget.h/.cpp`, `Source/DKUEndGame/Character/CFPlayerPresentationComponent.h/.cpp`.
+
+사용자가 제공한 후속 빌드 로그에서 게이지의 지역 변수 `Slot`이 `UWidget::Slot`을 가리는 C4458 오류를 확인했다. `FrameSlot`으로 변경했으며 수정 후 재빌드 결과는 아직 확인하지 않았다.
+
+### 기존 UI 연결
+
 - 코드: `Source/DKUEndGame/UI/CFTitleMenuWidget.h/.cpp`, `CFTitleMenuController.h/.cpp`, `CFFrontendSubsystem.h/.cpp`. 기존 LAN·대기는 `CFMainMenuWidget.h/.cpp`, `CFWaitingRoomWidget.h/.cpp`.
 - 에셋: `/Game/UI/MainMenu/`, `/Game/UI/Lobby/`, `/Game/UI/WaitingRoom/`. Designer·부모 클래스·맵 설정은 상세 문서의 기존 기록 참고.
 - `BindWidget` 이름은 C++ 연결에 사용하므로 단순 디자인 수정에서 임의 변경 금지.

@@ -19,6 +19,16 @@
 
 ## 최근 기록
 
+- [2026-11-10 · 캐릭터 옆 세로 점프 게이지](Changes.md#change-20261110-jump-charge-gauge)
+
+- [2026-11-10 · 공중에서 누른 차징 입력을 착지 후 처리](Changes.md#change-20261110-charge-held-input)
+
+- [2026-11-10 · 차징 공격 밀침과 점프 높이 상향](Changes.md#change-20261110-charged-hit-power)
+
+- [2026-11-10 · 연습 로비 사망 후 R키 부활](Changes.md#change-20261110-lobby-respawn)
+
+- [2026-11-10 · 공중 연속 점프와 기울기 탈락 수정](Changes.md#change-20261110-airborne-jump-balance)
+
 - [2026-11-09 · 라운드 맵 이동 중 HUD 크래시 수정](Changes.md#change-20261109-travel-hud-owner)
 
 - [2026-11-09 · 플레이어 색상 머티리얼 적용과 Editor 빌드](Changes.md#change-20261109-player-tint-apply)
