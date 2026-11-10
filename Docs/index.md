@@ -19,6 +19,16 @@
 
 ## 최근 기록
 
+- [2026-11-10 · 모든 라운드 결과표를 누적 순위로 표시](Changes.md#change-20261110-cumulative-score-order)
+
+- [2026-11-10 · 테스트 게임모드 조작 안내 제거](Changes.md#change-20261110-test-controls-hide)
+
+- [2026-11-10 · 범퍼의 닭 캐릭터 발사 연결](Changes.md#change-20261110-bumper-character-launch)
+
+- [2026-11-10 · 이동 발판 위·아래 도착 대기 시간](Changes.md#change-20261110-moving-platform-pause)
+
+- [2026-11-10 · Round2 대기창 임시 우회](Changes.md#change-20261110-round2-quick-test)
+
 - [2026-11-08 · EOS 참가 주소의 대괄호 손실 수정](Changes.md#change-20261108-eos-travel-url)
 
 - [2026-11-08 · EOS 세션 코드의 Editor 빌드 오류 수정](Changes.md#change-20261108-eos-session-build-fix)

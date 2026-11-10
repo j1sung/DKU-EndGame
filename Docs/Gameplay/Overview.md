@@ -76,10 +76,13 @@ BP 캐릭터의 `ChickenAudio` 컴포넌트에서 `SoundOverrides`에 이벤트�
 
 <a id="match"></a>
 ## 경기 상태와 라운드
+
+- 2026-11-10 임시 테스트 예외(Codex 수행 · 미커밋): `L_Round2`만 GameMode Override를 `CFKnockdownTestGameMode`로 바꿔 대기창 없이 닭 캐릭터를 바로 조작한다. 원상복구 시 Override만 `CFRoundGameMode`로 되돌린다. [설정·복구 기록](RoundGameplaySetup.md#round2-임시-단독-테스트-2026-11-10).
 > 최근 기능 변경: 2026-10-02 · @KyuminChung (`c8a7452`, `60d0b2f`, `99aeaf1`)
 
 정원 4명·최소 2명, 호스트 시작 → 3초 카운트다운 → 경기 → 결과 6초를 4R까지 진행한다. 서버가 참가자·생존자·탈락 순서·5/3/1/0점·누적 점수를 관리한다. 최후 1인 승리, 동시 마지막 탈락은 무승부·공동 순위다. 최종 누적 순위·MVP를 표시한 뒤 호스트가 같은 연결을 유지하며 전원을 걷기 대기로 돌려보낼 수 있다. 새 경기는 1R·0점으로 초기화한다.
 - 상태 소유자: `ACFWaitingGameMode`, 복제: `ACFWaitingGameState`, 소유 플레이어 입력·관전: `ACFWaitingPlayerController`.
+- 2026-11-10(Codex 수행 · 미커밋): 매 라운드 결과의 행 순서와 표시 순위를 누적 점수 기준으로 통일했다. 누적 동점은 공동 순위이며, 점수 지급용 라운드 순위·이번 점수·승자 안내·최종 MVP는 보존한다. [표시 규칙](../RoundProgression.md#현재-점수-규칙).
 - 상세: [경기 시작](../MatchStart.md), [탈락·관전](../RoundEnd.md), [점수·라운드](../RoundProgression.md), [최종 결과·복귀](../FinalResults.md).
 - 2026-11-08: 최신 dev의 네 라운드 배치를 작업 브랜치에 반영하고 [배치 캐릭터 기반 스폰 연결 도구](RoundSpawns.md)를 Unreal 5.8.4 Editor에서 적용했다. 네 맵의 `ArenaSpawn` 4개씩 저장·재로딩과 원본 캐릭터/GameMode 보존을 확인했다. 경기 GameMode 연결·배치 테스트 캐릭터 처리·실제 4인 스폰·라운드별 맵 전환은 후속 작업이다.
 - 후속 [경기 준비 GameMode와 적용 도구](RoundGameplaySetup.md)는 Unreal 5.8.4에서 정식 빌드하고 네 맵에 적용했다. 최소 4인, 미리보기의 서버 정리·클라이언트 로드 제외, 스폰 예약을 제공한다. 같은 프로세스의 Listen Server/PIE 클라이언트로 네 맵 모두 3인 시작 거절과 4인 생성·소유·전투 Pawn 교체·첫 카운트다운 복제를 확인했다. 서버의 시작 XY·시점 Yaw도 확인했다. 전체 경기·입력/렌더링·EOS 입장·라운드별 맵 전환은 별도다.
@@ -88,6 +91,8 @@ BP 캐릭터의 `ChickenAudio` 컴포넌트에서 `SoundOverrides`에 이벤트�
 
 <a id="debug-logging"></a>
 ## 디버깅 로그
+
+- 2026-11-10(Codex 수행 · 미커밋): `ACFKnockdownTestHUD`의 화면 안내 패널(테스트 제목·WASD/마우스/R 설명·넘어짐 상태)을 제거했다. 실제 조작과 `R` 리셋은 유지하며 FPS/GPU/VSM 진단 출력과 별개다. [Round2 임시 테스트](RoundGameplaySetup.md#round2-임시-단독-테스트-2026-11-10).
 > 최근 기능 변경: 2026-10-23 · Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
 
 충돌·기울기·이동을 LogChickenCollision, LogChickenTilt, LogChickenMovement로 분리했다. Actor·World·프레임·시간·네트워크 역할을 공통 출력한다. 사건 로그는 기본 활성화하고 매 이동 갱신·균형 계산·반복 접촉 로그는 기본 비활성화한다. cf.Debug.Events와 cf.Debug.Frames로 제어한다. 밀치기 요청값과 이후 관측 속도를 구분하며 기존 물리 계산과 게임플레이 상태 전환은 유지한다.
@@ -95,14 +100,28 @@ BP 캐릭터의 `ChickenAudio` 컴포넌트에서 `SoundOverrides`에 이벤트�
 
 <a id="ld-moving-obstacles"></a>
 ## LD_Gym 이동 발판
-> 최근 기능 변경: 2026-11-01 · Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+> 최근 기능 변경: 2026-11-10 · Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
 
 `Content/LD_Gym/Levels/LevelPrototyping/Obstacles/`의 `BP_PhysicsObstacle_MovingPlatform`과 `BP_PhysicsObstacle_TurnTable`은 `BP_KinematicObstacle`을 부모로 사용한다. 새 부모는 Movable Root만 제공하며 Mover 플러그인에 의존하지 않는다. 기존 부모 `BP_PhysicsObstacle`의 저장되지 않은 편집은 보존했고, 그 부모의 Mover 오류 자체를 복구한 것은 아니다.
 
 - 상하 발판: `VerticalMovement` (`InterpToMovementComponent`)의 상대 Control Points `(0,0,0)` → `(0,0,300)`, Duration 3초, Behaviour Type `PingPong`. 기본 자세에서 300cm 위까지 편도 3초·왕복 6초로 반복한다. 이동 중 경로 충돌 Sweep은 끄고, 발판 메시의 충돌은 유지한다.
+- 끝점 대기: `BP_PhysicsObstacle_MovingPlatform`에 `EndpointPause` (`UMovingPlatformEndpointPauseComponent`)를 추가했다. 배치 액터의 Details 상단에서 이 컴포넌트를 선택하고 `Platform → Endpoint Pause`의 `Top Wait Seconds`·`Bottom Wait Seconds`를 초 단위로 조절한다. 각각 기본 0초로 기존 동작을 유지하며, 양 끝점에 도착한 뒤에만 대기한다(시작 직후 대기 없음). 수직 방향을 뒤집어도 월드 높이로 위/아래를 구분한다. 이동 시간은 기존 `VerticalMovement.Duration`이며 대기 시간을 포함하지 않는다. 기본 경로의 왕복 시간은 `2 × Duration + Top Wait Seconds + Bottom Wait Seconds`다.
+- 구현은 기존 이동 컴포넌트의 끝점 반전 이벤트를 사용한다. `PingPong`의 경로 양 끝에서만 활성 플래그·틱을 잠시 중지하고 월드 타이머로 재개하여 경로 시간·방향을 보존한다. 중간 충돌 반전은 대기하지 않는다. 종료 시 타이머와 이벤트 연결을 정리한다. 적용 도구는 `Tools/Editor/add_moving_platform_endpoint_pause.py`이며 기존 컴포넌트·경로·Duration·Sweep 설정을 보존하고 BP만 저장한다. 별도의 서버 권한 이동 복제는 추가하지 않는다.
+- 2026-11-10 확인: Unreal 5.8.2 Editor 빌드 성공, BP 저장 후 별도 Editor에서 다시 로드하여 Round2의 실제 PIE 월드에서 10초 검사했다. 테스트용 발판의 위 1초/아래 0.6초 대기·재개, 방향을 뒤집은 위 0.75초/아래 0.35초, 양쪽 0초 연속 왕복을 확인했다. 반복 구간의 위치 샘플에서 정지 길이는 샘플 간격 한 프레임 이내로 설정값과 일치했다. 자료는 `Saved/MovingPlatformPause/runtime.json`·`verified.json`이다. 임시 테스트 액터와 검사 수치는 맵에 저장하지 않았다. 탑승·다른 PC 간 동기화·패키징은 이번 검사 범위 밖이다.
 - 회전 발판: `TurntableMovement` (`RotatingMovementComponent`)의 Rotation Rate `(Pitch=0, Yaw=45, Roll=0)`, 로컬 축 기준 초당 45도·한 바퀴 8초. 공전이 아니라 발판 중심의 자전이다.
 - 두 컴포넌트는 Auto Activate를 사용한다. 기존 메시·머티리얼·스케일·에셋 경로를 유지하며, 메시의 Simulate Physics는 꺼진 상태다. 이동 범위·시간·회전 속도는 각 Blueprint의 해당 컴포넌트에서 조절한다.
 - 확인 범위: 부모·자식 Blueprint 컴파일과 개별 저장, 설정 재조회, 메시 표시 및 배치된 상하 발판의 Root→Platform 연결 확인. PIE·캐릭터 탑승·멀티플레이 동기화는 미검증이며 서버 권한 기반 이동 복제는 추가하지 않았다.
+
+<a id="ld-bumper-launch"></a>
+## LD_Gym 범퍼 캐릭터 발사
+> 최근 기능 변경: 2026-11-10 · Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+
+`Content/LD_Gym/Levels/LevelPrototyping/Obstacles/BP_SimpleObstacle_Bumper`의 기존 트리거는 판의 타임라인을 재생하며 캐릭터를 직접 발사하지 않았다. `CharacterLauncher` (`UBumperCharacterLaunchComponent`)를 추가하여 실제 `Bumper` 메시가 상승하는 동안 윗면에 닿은 `ACharacter`에 서버가 `LaunchCharacter`를 호출한다. 수평 속도는 유지하고 수직 속도만 지정한다. 같은 상승 구간에서 같은 캐릭터는 한 번만 발사하며, 범퍼 아래·멀리 떨어진 캐릭터와 이동 모드가 `None`인 캐릭터는 제외한다.
+
+- 배치 액터 Details의 `CharacterLauncher → Bumper → Launch → Launch Speed`로 상향 속도를 조절한다. 기본 900cm/s, 0이면 발사하지 않는다. 고급 `Surface Tolerance`는 윗면 발 접촉 허용 범위(기본 45cm)다.
+- 판의 `Duration`·`Location`·곡선·트리거·메시·기존 충돌은 보존한다. 발사 검사는 물리 처리 뒤의 판 상승을 사용하며 트리거 반복 횟수나 클라이언트 요청에 의존하지 않는다. 기존 CharacterMovement 이동 복제를 사용하며 새 RPC는 추가하지 않는다.
+- 적용 도구: `Tools/Editor/add_bumper_character_launch.py`. BP만 저장하고 기존 기본값·컴포넌트 변환·메시·충돌 설정의 보존을 비교한다. 변경 전 사본과 적용 자료는 `Saved/BumperLaunch/`에 둔다.
+- 확인: Unreal 5.8.2 Editor 빌드·BP 저장/별도 로딩 성공. Round2의 실제 PIE 월드에서 검사 전용 범퍼와 `BP_ChickenCharacter`를 사용한 5초 검사로, 기본 900cm/s에서 최대 상향 속도 약 883.7cm/s·시작 높이 대비 약 437.6cm 상승을 확인했다. 범퍼 밖 캐릭터와 Launch Speed 0인 비교 범퍼에서는 상향 발사가 없었다. 검사 액터·수치는 맵에 저장하지 않았다. `Saved/BumperLaunch/runtime.json`·`verified.json`에 자료를 둔다. 별도 PC/EOS·원격 클라이언트 동기화·패키징은 미검증이다.
 
 <a id="ld-window-glass"></a>
 ## LD_Gym 유리창 에셋
