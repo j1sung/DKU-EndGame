@@ -1,6 +1,7 @@
 #include "Network/CFRoundGameMode.h"
 #include "Character/ChickenCharacter.h"
 #include "Character/CFWaitingCharacter.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
 #include "Engine/GameInstance.h"
@@ -10,6 +11,7 @@
 #include "GameFramework/PlayerState.h"
 #include "Kismet/GameplayStatics.h"
 #include "Network/CFMatchSessionSubsystem.h"
+#include "Network/CFMatchRuntimeSubsystem.h"
 #include "UObject/ConstructorHelpers.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogCFRoundSetup, Log, All);
@@ -27,6 +29,7 @@ ACFRoundGameMode::ACFRoundGameMode()
     static ConstructorHelpers::FClassFinder<ACFWaitingPlayerController> Controller(TEXT("/Game/UI/WaitingRoom/BP_CF_ArenaController"));
     DefaultPawnClass = Waiting.Class;
     PlayerControllerClass = Controller.Class;
+    bUseSeamlessTravel = true;
 }
 
 void ACFRoundGameMode::InitGame(const FString& MapName, const FString& Options, FString& ErrorMessage)
@@ -40,7 +43,7 @@ void ACFRoundGameMode::InitGame(const FString& MapName, const FString& Options, 
         const auto* Bridge = GetGameInstance()->GetSubsystem<UCFMatchSessionSubsystem>();
         const auto* Local = GetGameInstance()->GetFirstGamePlayer();
         if (!Bridge || !Local || !Bridge->CanAdmit(Local->GetPreferredUniqueNetId(), Options) ||
-            UWorld::RemovePIEPrefix(GetWorld()->GetOutermost()->GetName()) != TEXT("/Game/Map/L_Round1"))
+            UWorld::RemovePIEPrefix(GetWorld()->GetOutermost()->GetName()) != GetGameInstance()->GetSubsystem<UCFMatchRuntimeSubsystem>()->CurrentMap())
         { ErrorMessage = TEXT("EOS_MATCH_CONTEXT_REQUIRED"); return; }
     }
     const FString Package = UWorld::RemovePIEPrefix(GetWorld()->GetOutermost()->GetName());
@@ -91,6 +94,12 @@ void ACFRoundGameMode::InitGameState()
     if (auto* GS = GetGameState<ACFWaitingGameState>())
     {
         GS->RoomCapacity = 4; GS->MinimumPlayers = 4; GS->TotalRounds = 4;
+        GS->bAutomaticMatch = bAssignedMatch;
+        if (bAssignedMatch)
+        {
+            auto* Runtime = GetGameInstance()->GetSubsystem<UCFMatchRuntimeSubsystem>();
+            GS->CurrentRound = Runtime->RoundNumber; Runtime->Restore(GS);
+        }
     }
 }
 
@@ -106,6 +115,16 @@ int32 ACFRoundGameMode::FindFreeSpawn(const TArray<FName>& SortedSpawns, const T
     for (int32 Index = 0; Index < SortedSpawns.Num(); ++Index)
         if (!Reserved.Contains(SortedSpawns[Index])) return Index;
     return INDEX_NONE;
+}
+
+void ACFRoundGameMode::RestartPlayer(AController* NewPlayer)
+{
+    Super::RestartPlayer(NewPlayer);
+    if (bAssignedMatch && NewPlayer)
+        if (auto* Pawn = Cast<ACFWaitingCharacter>(NewPlayer->GetPawn()))
+        {
+            Pawn->GetCharacterMovement()->DisableMovement(); Pawn->SetActorHiddenInGame(true);
+        }
 }
 
 AActor* ACFRoundGameMode::ChoosePlayerStart_Implementation(AController* Player)
@@ -144,6 +163,8 @@ void ACFRoundGameMode::PreLogin(const FString& Options, const FString& Address, 
 {
     Super::PreLogin(Options, Address, UniqueId, ErrorMessage);
     if (!ErrorMessage.IsEmpty() || !bAssignedMatch) return;
+    if (GetGameInstance()->GetSubsystem<UCFMatchRuntimeSubsystem>()->RoundNumber > 1)
+    { ErrorMessage = TEXT("MATCH_IN_PROGRESS"); return; }
     const auto* Bridge = GetGameInstance()->GetSubsystem<UCFMatchSessionSubsystem>();
     if (!Bridge || !Bridge->CanAdmit(UniqueId, Options)) { ErrorMessage = TEXT("NOT_ASSIGNED_MEMBER"); return; }
     for (const auto& Existing : AdmittedPlayers)
@@ -174,7 +195,7 @@ void ACFRoundGameMode::PostLogin(APlayerController* NewPlayer)
 bool ACFRoundGameMode::TryStartRound(ACFWaitingPlayerController* Requester)
 {
     // 기존 Designer 시작 버튼/RPC가 백엔드 준비 승인을 우회하지 못하게 한다.
-    if (bAssignedMatch && !bStartingAssignedRound) return false;
+    if (bAssignedMatch) return false;
     return Super::TryStartRound(Requester);
 }
 
@@ -182,15 +203,52 @@ bool ACFRoundGameMode::StartAssignedRound(ACFWaitingPlayerController* Requester)
 {
     const auto* Bridge = GetGameInstance()->GetSubsystem<UCFMatchSessionSubsystem>();
     if (!bAssignedMatch || !bRoundSetupReady || !Bridge || !Bridge->CanAutoStart()) return false;
-    TGuardValue<bool> Starting(bStartingAssignedRound, true);
-    UE_LOG(LogCFRoundSetup, Display, TEXT("EOS four-player readiness accepted; starting Round1 countdown."));
-    return TryStartRound(Requester);
+    if (!Requester || !Requester->IsLocalController() || !Requester->PlayerState) return false;
+    auto* GS = GetGameState<ACFWaitingGameState>();
+    if (!GS || GS->Phase != ECFMatchPhase::Waiting) return false;
+    GS->HostPlayerState = Requester->PlayerState;
+    const int32 Number = GetGameInstance()->GetSubsystem<UCFMatchRuntimeSubsystem>()->RoundNumber;
+    UE_LOG(LogCFRoundSetup, Display, TEXT("EOS four-player readiness accepted; starting round=%d"), Number);
+    FString Error;
+    return PrepareRound(Number, Error);
 }
 
 void ACFRoundGameMode::OnRoundPlaying()
 {
     Super::OnRoundPlaying();
     const auto* GS = GetGameState<ACFWaitingGameState>();
-    if (bAssignedMatch && GS && GS->CurrentRound == 1)
-        if (auto* Bridge = GetGameInstance()->GetSubsystem<UCFMatchSessionSubsystem>()) Bridge->NotifyPlaying();
+    if (bAssignedMatch && GS)
+    {
+        GetGameInstance()->GetSubsystem<UCFMatchRuntimeSubsystem>()->RoundStarted();
+        if (GS->CurrentRound == 1)
+            if (auto* Bridge = GetGameInstance()->GetSubsystem<UCFMatchSessionSubsystem>()) Bridge->NotifyPlaying();
+    }
+}
+
+void ACFRoundGameMode::HandleSeamlessTravelPlayer(AController*& Controller)
+{
+    Super::HandleSeamlessTravelPlayer(Controller);
+    if (!bAssignedMatch || !Controller || !Controller->PlayerState) return;
+    const auto* Bridge = GetGameInstance()->GetSubsystem<UCFMatchSessionSubsystem>();
+    if (!Bridge || !Bridge->CanAdmit(Controller->PlayerState->GetUniqueId(), OptionsString))
+    {
+        if (GameSession) GameSession->KickPlayer(Cast<APlayerController>(Controller), FText::FromString(TEXT("NOT_ASSIGNED_MEMBER")));
+        return;
+    }
+    GetGameInstance()->GetSubsystem<UCFMatchRuntimeSubsystem>()->RestoreIdentity(Controller->PlayerState);
+    AdmittedPlayers.Add(TWeakObjectPtr<AController>(Controller));
+}
+bool ACFRoundGameMode::TravelForNextRound()
+{
+    if (!bAssignedMatch) return false;
+    if (!GetGameInstance()->GetSubsystem<UCFMatchRuntimeSubsystem>()->TravelToNext(GetGameState<ACFWaitingGameState>()))
+        GetGameInstance()->GetSubsystem<UCFMatchSessionSubsystem>()->RequestLeave();
+    return true;
+}
+void ACFRoundGameMode::OnFinalResults()
+{
+    if (!bAssignedMatch) return;
+    auto* GS = GetGameState<ACFWaitingGameState>();
+    if (GS && GS->ScoredRound == 4)
+        GetGameInstance()->GetSubsystem<UCFMatchSessionSubsystem>()->PublishFinalResults(GS->FinalStandings);
 }

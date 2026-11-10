@@ -1,5 +1,63 @@
 # 변경 이력
 
+<a id="change-20261110-jump-charge-gauge"></a>
+### 2026-11-10 · 캐릭터 옆 세로 점프 게이지
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+- 변경: 로컬 캐릭터 오른쪽에 아래에서 위로 차오르는 세로 충전 게이지를 추가했다. 기존 복제 충전량을 읽고, 사망·관전·입력 잠금에서는 숨긴다. 로비 부활에도 자동 연결한다.
+- 확인: 로컬 UMG API·소유권/상태 경로 정적 검토와 diff 검사. 빌드·실제 외형·PIE는 미수행. [UI 구현](UI/Overview.md#jump-charge-gauge).
+
+<a id="change-20261110-charge-held-input"></a>
+### 2026-11-10 · 공중에서 누른 차징 입력을 착지 후 처리
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+- 변경: 자동 홉 중 누른 차징 입력이 지상 검사에서 버려지는 경로를 수정했다. 누른 상태를 서버에 전달하고 착지 시 자동 홉보다 먼저 충전을 시작한다. 공중 해제는 대기를 취소하며 공중 연속 발사 금지는 유지한다.
+- 확인: 입력 RPC·해제·사망/라운드 상태 정리·착지 후 처리 순서와 diff 정적 검토. 빌드·PIE는 미수행. [차징 입력](Gameplay/Overview.md#jump).
+
+<a id="change-20261110-charged-hit-power"></a>
+### 2026-11-10 · 차징 공격 밀침과 점프 높이 상향
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+- 변경: 차징 점프의 첫 유효 공중 충돌에서 충전량·공격 방향에 비례한 추가 밀침을 상대에게 적용한다(최대 +400cm/s). 차징 점프 수직 발사 속도를 15% 올리고 수평 속도·충전 시간·일반 홉은 유지한다.
+- 확인: 충격 계산·서버 소유 상태·소진 경로 정적 검토와 diff 공백 검사. 빌드·PIE·실전 밸런스는 미검증. [충돌](Gameplay/Overview.md#knockdown), [점프](Gameplay/Overview.md#jump).
+
+<a id="change-20261110-lobby-respawn"></a>
+### 2026-11-10 · 연습 로비 사망 후 R키 부활
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+- 변경: 로비에서 사망한 캐릭터만 R키로 최초 등장 위치에 다시 생성한다. UI 포커스에서도 입력을 받고, 서버에서 로비 맵·사망 상태·경기 GameMode 제외 조건을 확인한다. 매칭·로비 UI 상태는 유지한다.
+- 확인: 정적 검토 및 diff 공백 검사. 빌드·PIE는 미수행. [로비 개요](UI/Overview.md#practice-lobby), [부활 조건](UI/Lobby.md#로비에서-r키-부활).
+
+<a id="change-20261110-airborne-jump-balance"></a>
+### 2026-11-10 · 공중 연속 점프와 기울기 탈락 수정
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+- 변경: 차징 시작·발사에 지상 및 발사 대기 검사를 추가하고, 지상을 벗어나면 충전을 취소한다. 공중 입력으로 속도를 멈추거나 연속 발사하는 경로를 차단했다. 기울기 한계로 인한 탈락은 지상에서만 요청한다.
+- 확인: 서버 RPC·이동 모드 전환·발사 대기 경로 정적 검토. 빌드·PIE·멀티플레이는 미수행. [점프와 균형 예외](Gameplay/Overview.md#jump).
+
+<a id="change-20261109-travel-hud-owner"></a>
+### 2026-11-09 · 라운드 맵 이동 중 HUD 크래시 수정
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+- 변경: 실계정 경기의 첫 라운드 이동 로그에서 플레이어가 분리된 Controller의 위젯 생성 실패와 null 접근을 확인했다. 현재 LocalPlayer 소유권·월드 상태를 확인하고 위젯 생성·화면 등록 실패를 재시도하도록 보완했다.
+- 확인: Editor 정식 빌드 및 MatchRounds 자동 검사 3개 통과. 실제 EOS 4PC 재검증은 남아 있다. [상세 검증](Gameplay/MatchPresentationAndTravel.md#검증-기록과-남은-작업), [경기 상태](Gameplay/Overview.md#match).
+
+<a id="change-20261109-player-tint-apply"></a>
+### 2026-11-09 · 플레이어 색상 머티리얼 적용과 Editor 빌드
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+- 변경: 복제 매크로 인수명 오류를 수정해 UE 5.8.4 Editor 정식 빌드를 완료했다. 실제 M_White_Matte가 Material Instance임을 확인해 도구를 보완하고, 공용 부모를 프로젝트의 M_CF_PlayerTintBase로 복제해 기존 BaseColor에 흰색 기본 Tint를 곱하도록 연결했다. 원본 인스턴스를 백업하고 기존 설정을 보존했다.
+- 확인: Tint 보호 검사 9개와 MatchRounds native 검사 2개 통과. 새 Editor에서 저장된 에셋·백업 비교, 공용 원본/기존 출력 보존, 동적 4색 설정·조회와 재컴파일 오류 0개 확인. 실제 화면·4PC 맵 이동/결과 흐름은 미검증이다. [적용 결과와 한계](Gameplay/MatchPresentationAndTravel.md#검증-기록과-남은-작업).
+
+<a id="change-20261109-round-travel-presentation"></a>
+### 2026-11-09 · 플레이어 식별·네 맵 랜덤 이동·개인 결과 복귀 코드
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+- 배경: 사용자가 선행 EOS 실계정 4인·같은 월드 4라운드 성공을 확인한 뒤 닉네임/색상 식별, 네 맵 랜덤 순서, 경기 전 걷기 제거와 각자 결과 확인 후 연습 로비 복귀를 요청했다.
+- 변경: GI의 서버 맵·색상 순서와 점수/신원 이전, 서버 Seamless Travel, 이름표·복제 Tint, 접속 준비 화면, 최종 reliable 결과/4인 ACK 후 finished, 개인별 결과 유지·복귀를 연결했다. 머티리얼은 원본 BaseColor를 보존하는 별도 Editor 적용 도구로 준비한다.
+- 확인: Python 보호 검사 25개 통과, native 검사 추가·정적 코드 리뷰 수행. 이 PC에는 Unreal이 없어 새 Editor 빌드·실제 에셋 적용·4PC 맵 이동/결과 검증은 미완료다.
+- 문서: [구현과 QA](Gameplay/MatchPresentationAndTravel.md), [Network](Network/Overview.md#eos-round1), [계획](EOS/superpowers/plans/2026-11-09-round-travel-presentation.md).
+
 <a id="change-20261108-eos-travel-url"></a>
 ### 2026-11-08 · EOS 참가 주소의 대괄호 손실 수정
 

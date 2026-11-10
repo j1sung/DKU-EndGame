@@ -2,6 +2,7 @@
 #include "Network/CFEntrySubsystem.h"
 #include "Network/CFMatchmakingSubsystem.h"
 #include "Network/CFRoundGameMode.h"
+#include "Network/CFMatchRuntimeSubsystem.h"
 #include "UI/CFLobbySubsystem.h"
 #include "Dom/JsonObject.h"
 #include "Engine/Engine.h"
@@ -30,10 +31,11 @@ namespace
 {
 const FName MatchKey(TEXT("CF_MATCH_ID"));
 const FName VersionKey(TEXT("CF_CLIENT_VERSION"));
-const FName RoundOne(TEXT("/Game/Map/L_Round1"));
-bool IsRoundOne(const UWorld* World)
+const FName FirstMapKey(TEXT("CF_FIRST_MAP"));
+const FName ProtocolKey(TEXT("CF_FLOW_PROTOCOL"));
+bool IsGameRound(const UWorld* World)
 {
-    return World && UWorld::RemovePIEPrefix(World->GetOutermost()->GetName()) == RoundOne.ToString();
+    return World && UCFMatchRuntimeSubsystem::MapNumber(UWorld::RemovePIEPrefix(World->GetOutermost()->GetName())) != 0;
 }
 float RetrySeconds(const FString& Header, const FString& Date)
 {
@@ -53,6 +55,7 @@ void UCFMatchSessionSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
     Super::Initialize(Collection);
     Collection.InitializeDependency<UCFMatchmakingSubsystem>();
+    Collection.InitializeDependency<UCFMatchRuntimeSubsystem>();
     Entry = GetGameInstance()->GetSubsystem<UCFEntrySubsystem>();
     Tickets = GetGameInstance()->GetSubsystem<UCFMatchmakingSubsystem>();
     Lobby = GetGameInstance()->GetSubsystem<UCFLobbySubsystem>();
@@ -94,6 +97,7 @@ void UCFMatchSessionSubsystem::Assigned(const FString& Id)
     bHost = bRegistered = bJoined = bPlaying = bStarted = bSessionStarted = bStartPending = false;
     bAborting = bCleaning = bLocalCleaned = bTerminal = false;
     bNeedSnapshot = true; bWriteDispatched = false; NextSearchAt = 0;
+    FirstMap.Reset(); FinalAcknowledgements.Reset(); bFinalPublished = bFinishReported = false;
     PublishedSessionId.Reset(); PendingAction.Reset(); PendingKey.Reset(); PlayerId.Reset();
     NextRequestAt = 0; ConnectionDeadline = FPlatformTime::Seconds() + 65;
     IOnlineSubsystem* Default = Online::GetSubsystem(GetWorld());
@@ -190,6 +194,7 @@ void UCFMatchSessionSubsystem::Receive(uint64 Serial, uint64 Epoch, const FStrin
             if (Action == TEXT("session")) bRegistered = true;
             else if (Action == TEXT("joined")) bJoined = true;
             else if (Action == TEXT("started")) bStarted = true;
+            else if (Action == TEXT("finished")) bFinishReported = true;
         }
         else if (Status != 409) Abort(TEXT("경기 상태 보고가 거절되었습니다. 종료 상태를 확인합니다."));
         PendingAction.Reset(); PendingKey.Reset(); bWriteDispatched = false;
@@ -249,6 +254,10 @@ bool UCFMatchSessionSubsystem::Tick(float Delta)
     if (bTerminal) return true;
     if (!bAborting && Connection != EConnection::Connected && Now > ConnectionDeadline)
         Abort(TEXT("경기장 연결 시간이 초과되었습니다. 종료 상태를 확인합니다."));
+    if (!bAborting && GetGameInstance()->GetSubsystem<UCFMatchRuntimeSubsystem>()->TravelTimedOut())
+        Abort(TEXT("다음 경기장의 4인 준비 시간이 초과되었습니다."));
+    if (!bAborting && bFinalPublished && FinalAcknowledgements.Num() < 4 && Now > FinalAckDeadline)
+        Abort(TEXT("최종 결과 수신 확인 시간이 초과되었습니다."));
     if (!bAborting) Advance();
     if (!Http && Now >= NextRequestAt)
     {
@@ -261,11 +270,14 @@ bool UCFMatchSessionSubsystem::Tick(float Delta)
 bool UCFMatchSessionSubsystem::LocalRoundReady() const
 {
     const UWorld* World = GetWorld();
-    if (!IsRoundOne(World) || !World->HasBegunPlay() || !World->GetNetDriver() ||
+    if (!IsGameRound(World) || !World->HasBegunPlay() || !World->GetNetDriver() ||
         !World->GetNetDriver()->GetClass()->GetName().Contains(TEXT("NetDriverEOS"))) return false;
+    const FString Package = UWorld::RemovePIEPrefix(World->GetOutermost()->GetName());
+    if ((Connection != EConnection::Connected && Package != FirstMap) ||
+        (bHost && Package != GetGameInstance()->GetSubsystem<UCFMatchRuntimeSubsystem>()->CurrentMap())) return false;
     const auto* PC = Cast<ACFWaitingPlayerController>(GetGameInstance()->GetFirstLocalPlayerController());
     const auto* GS = World->GetGameState<ACFWaitingGameState>();
-    return PC && PC->GetPawn() && PC->PlayerState && GS && GS->PlayerArray.Num() >= 1 &&
+    return PC && PC->GetPawn() && PC->PlayerState && GS && GS->bAutomaticMatch && GS->PlayerArray.Num() >= 1 &&
         PC->PlayerState->GetUniqueId().IsValid() && ProductUserId(*PC->PlayerState->GetUniqueId()) == PlayerId &&
         ((bHost && World->GetNetMode() == NM_ListenServer) || (!bHost && World->GetNetMode() == NM_Client));
 }
@@ -274,12 +286,15 @@ bool UCFMatchSessionSubsystem::CanAdmit(const FUniqueNetIdRepl& UniqueId, const 
 {
     return IsActive() && !IsStopping() && bHost && UniqueId.IsValid() && Match.Contains(ProductUserId(*UniqueId)) &&
         UGameplayStatics::ParseOption(Options, TEXT("CFMatch")) == MatchId &&
-        UGameplayStatics::ParseOption(Options, TEXT("CFAttempt")) == FString::FromInt(Match.Attempt);
+        UGameplayStatics::ParseOption(Options, TEXT("CFAttempt")) == FString::FromInt(Match.Attempt) &&
+        UGameplayStatics::ParseOption(Options, TEXT("CFProtocol")) == TEXT("2");
 }
 
 bool UCFMatchSessionSubsystem::CanAutoStart() const
 {
-    if (!IsActive() || IsStopping() || !bHost || !bSessionStarted || Match.Status != TEXT("READY_TO_START") || !bJoined || !LocalRoundReady()) return false;
+    const auto* Runtime = GetGameInstance()->GetSubsystem<UCFMatchRuntimeSubsystem>();
+    const bool bPhaseReady = Runtime->RoundNumber == 1 ? Match.Status == TEXT("READY_TO_START") : Match.Status == TEXT("IN_GAME");
+    if (!IsActive() || IsStopping() || !bHost || !bSessionStarted || !bPhaseReady || !bJoined || !LocalRoundReady()) return false;
     TSet<FString> Connected;
     for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
     {
@@ -337,10 +352,15 @@ void UCFMatchSessionSubsystem::Advance()
             Abort(TEXT("네 명의 경기 캐릭터를 준비하지 못했습니다."));
     }
     if (bHost && bPlaying && !bStarted && PendingAction.IsEmpty()) QueueWrite(TEXT("started"));
+    if (bHost && bFinalPublished && FinalAcknowledgements.Num() == 4 && !bFinishReported &&
+        Match.Status == TEXT("IN_GAME") && PendingAction.IsEmpty()) QueueWrite(TEXT("finished"));
 }
 
 void UCFMatchSessionSubsystem::Create()
 {
+    auto* Runtime = GetGameInstance()->GetSubsystem<UCFMatchRuntimeSubsystem>();
+    Runtime->BeginMatch(Match.Members);
+    FirstMap = Runtime->CurrentMap();
     Connection = EConnection::Creating;
     FOnlineSessionSettings Settings;
     Settings.bIsLANMatch = false; Settings.NumPublicConnections = 4;
@@ -349,6 +369,8 @@ void UCFMatchSessionSubsystem::Create()
     Settings.bUseLobbiesIfAvailable = false;
     Settings.Set(MatchKey, MatchId, EOnlineDataAdvertisementType::ViaOnlineService);
     Settings.Set(VersionKey, FString(TEXT("0.1.0")), EOnlineDataAdvertisementType::ViaOnlineService);
+    Settings.Set(FirstMapKey, FirstMap, EOnlineDataAdvertisementType::ViaOnlineService);
+    Settings.Set(ProtocolKey, FString(TEXT("2")), EOnlineDataAdvertisementType::ViaOnlineService);
     const uint64 Epoch = Generation;
     CreateHandle = Sessions->AddOnCreateSessionCompleteDelegate_Handle(FOnCreateSessionCompleteDelegate::CreateWeakLambda(this,
         [this, Epoch](FName Name, bool bSuccess)
@@ -360,8 +382,7 @@ void UCFMatchSessionSubsystem::Create()
             if (!bSuccess || !Session || !Session->SessionInfo.IsValid()) { Abort(TEXT("EOS 세션 생성에 실패했습니다.")); return; }
             PublishedSessionId = Session->SessionInfo->GetSessionId().ToString();
             Connection = EConnection::HostTravel;
-            const FString Options = FString::Printf(TEXT("listen?CFMatch=%s?CFAttempt=%d"), *MatchId, Match.Attempt);
-            UGameplayStatics::OpenLevel(GetGameInstance(), RoundOne, true, Options);
+            UGameplayStatics::OpenLevel(GetGameInstance(), FName(*FirstMap), true, TEXT("listen") + TravelOptions());
         }));
     if (!Sessions->CreateSession(0, NAME_GameSession, Settings))
     {
@@ -386,12 +407,15 @@ void UCFMatchSessionSubsystem::Find()
             if (IsStopping()) { FinishCleanup(); return; }
             for (const auto& Result : Search->SearchResults)
             {
-                FString ResultMatch, Version;
+                FString ResultMatch, Version, Map, Protocol;
                 if (!bSuccess || !Result.IsValid() || !Result.Session.OwningUserId.IsValid() ||
                     ProductUserId(*Result.Session.OwningUserId) != Match.Host ||
                     Result.GetSessionIdStr() != Match.SessionId ||
                     !Result.Session.SessionSettings.Get(MatchKey, ResultMatch) || ResultMatch != MatchId ||
-                    !Result.Session.SessionSettings.Get(VersionKey, Version) || Version != TEXT("0.1.0")) continue;
+                    !Result.Session.SessionSettings.Get(VersionKey, Version) || Version != TEXT("0.1.0") ||
+                    !Result.Session.SessionSettings.Get(ProtocolKey, Protocol) || Protocol != TEXT("2") ||
+                    !Result.Session.SessionSettings.Get(FirstMapKey, Map) || !UCFMatchRuntimeSubsystem::MapNumber(Map)) continue;
+                FirstMap = Map;
                 Connection = EConnection::Joining;
                 JoinHandle = Sessions->AddOnJoinSessionCompleteDelegate_Handle(FOnJoinSessionCompleteDelegate::CreateWeakLambda(this,
                     [this, Epoch](FName Name, EOnJoinSessionCompleteResult::Type Outcome)
@@ -437,11 +461,33 @@ FString UCFMatchSessionSubsystem::BuildRoundTravelURL(const FString& Address, co
 {
     // FURL 재직렬화는 기본 포트의 [EOS:PUID] 대괄호를 없애 다음 파싱에서 맵으로 오인하게 한다.
     // OSS가 반환한 접속 주소를 그대로 유지하고 서버 승인에 필요한 옵션만 덧붙인다.
-    return Address + FString::Printf(TEXT("?CFMatch=%s?CFAttempt=%d"), *AssignedMatchId, Attempt);
+    return Address + FString::Printf(TEXT("?CFMatch=%s?CFAttempt=%d?CFProtocol=2"), *AssignedMatchId, Attempt);
+}
+
+FString UCFMatchSessionSubsystem::TravelOptions() const
+{
+    return FString::Printf(TEXT("?CFMatch=%s?CFAttempt=%d?CFProtocol=2"), *MatchId, Match.Attempt);
+}
+void UCFMatchSessionSubsystem::PublishFinalResults(const TArray<FCFFinalStanding>& Rows)
+{
+    if (!IsActive() || IsStopping() || !bHost || bFinalPublished || Rows.Num() != 4) return;
+    bFinalPublished = true; FinalAcknowledgements.Reset();
+    FinalAckDeadline = FPlatformTime::Seconds() + 60;
+    for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
+        if (auto* PC = Cast<ACFWaitingPlayerController>(It->Get())) PC->ClientCacheFinalResults(MatchId, Rows);
+}
+void UCFMatchSessionSubsystem::AcknowledgeFinalResults(const FString& CompletedMatchId, const FString& Player)
+{
+    if (IsActive() && !IsStopping() && bHost && bFinalPublished && CompletedMatchId == MatchId && Match.Contains(Player))
+        FinalAcknowledgements.Add(Player);
 }
 
 void UCFMatchSessionSubsystem::NotifyPlayerLeft() { if (IsActive() && !IsStopping()) Abort(TEXT("참가자가 나가 경기를 종료합니다.")); }
-void UCFMatchSessionSubsystem::RequestLeave() { if (IsActive()) Abort(TEXT("경기 연결을 종료합니다.")); }
+void UCFMatchSessionSubsystem::RequestLeave()
+{
+    if (GetGameInstance()->GetSubsystem<UCFMatchRuntimeSubsystem>()->HasResults()) return;
+    if (IsActive()) Abort(TEXT("경기 연결을 종료합니다."));
+}
 
 void UCFMatchSessionSubsystem::ClearSessionDelegates()
 {
@@ -457,6 +503,7 @@ void UCFMatchSessionSubsystem::Abort(const TCHAR* Reason)
 {
     if (!IsActive() || bAborting) return;
     bAborting = true;
+    GetGameInstance()->GetSubsystem<UCFMatchRuntimeSubsystem>()->FailTravel();
     // 아직 보내지 않은 참가/시작 보고를 실패 정리 중 새로 전송하지 않는다.
     if (!bWriteDispatched) { PendingAction.Reset(); PendingKey.Reset(); }
     UE_LOG(LogCFMatchSession, Warning, TEXT("Connection stopped: %s"), Reason);
@@ -495,13 +542,14 @@ void UCFMatchSessionSubsystem::FinishCleanup()
     bLocalCleaned = true; bCleaning = false;
     if (FWorldContext* Context = GetGameInstance()->GetWorldContext(); Context && Context->PendingNetGame)
         GEngine->CancelPending(Context->World());
-    if (IsRoundOne(GetWorld()) || Connection == EConnection::HostTravel || Connection == EConnection::ClientTravel || Connection == EConnection::Connected)
+    if (IsGameRound(GetWorld()) || Connection == EConnection::HostTravel || Connection == EConnection::ClientTravel || Connection == EConnection::Connected)
         UGameplayStatics::OpenLevel(GetGameInstance(), FName(TEXT("/Game/Map/L_Lobby_Playground")), true);
 }
 
 void UCFMatchSessionSubsystem::AuthenticationRequired()
 {
     if (!IsActive()) return;
+    GetGameInstance()->GetSubsystem<UCFMatchRuntimeSubsystem>()->SuspendResultsForLogin();
     CancelHttp(); Abort(TEXT("인증이 만료되었습니다. 같은 계정으로 로그인한 뒤 종료 상태를 확인하세요."));
     Lobby->ReportAuthenticationRequired(DisplayFlow);
 }
