@@ -19,6 +19,8 @@
 
 ## 최근 기록
 
+- [2026-11-10 · Round2 정식 경기 GameMode 복구](Changes.md#change-20261110-round2-match-mode-restore)
+
 - [2026-11-10 · 로비 게임 닉네임·EOS 수동 대기 창 노출 수정](Changes.md#change-20261110-nickname-waiting)
 
 - [2026-11-10 · 모든 라운드 결과표를 누적 순위로 표시](Changes.md#change-20261110-cumulative-score-order)
