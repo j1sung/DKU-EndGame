@@ -8,6 +8,35 @@
 - 확인: 이름 출처·복제 지연 조건 native 검사 추가, 독립 정적 리뷰와 diff 검사. 이 PC에는 Unreal이 없어 새 Editor 빌드·실제 로비/라운드 전환 재시험은 미실행이다.
 - 문서: [UI 개요](UI/Overview.md), [로비](UI/Lobby.md), [재시험 범위](Gameplay/MatchPresentationAndTravel.md#흐름과-경계).
 
+<a id="change-20261110-cumulative-score-order"></a>
+### 2026-11-10 · 모든 라운드 결과표를 누적 순위로 표시
+
+- Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋. 서버의 라운드 결과 배열을 누적 점수 내림차순·동점 PlayerId순으로 정렬하고, UI의 순위도 누적 점수 기준 공동 순위로 표시한다. 실제 라운드 순위·지급 점수·라운드 승자·최종 결과 처리는 유지한다. 기권은 이름 옆에 표시한다. [라운드 표시](RoundProgression.md#현재-점수-규칙) · [UI 개요](UI/Overview.md).
+- 확인: Unreal 5.8.2 Win64 Development Editor 빌드 성공 및 변경 경로 검토. 실제 다인 경기의 결과 UI·복제 화면은 이번 변경 후 미검증이다.
+
+<a id="change-20261110-test-controls-hide"></a>
+### 2026-11-10 · 테스트 게임모드 조작 안내 제거
+
+- Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋. `ACFKnockdownTestHUD::DrawHUD`의 안내 텍스트·상태·배경 패널만 제거하고 `R` 리셋과 캐릭터 조작을 보존했다. 정식 경기 UI와 성능 진단 출력은 변경하지 않았다. [개요](Gameplay/Overview.md#디버깅-로그).
+- 확인: Editor 빌드 성공 및 재시작 후 Round2 PIE에서 안내 패널 없이 닭 캐릭터가 표시되는 것을 확인했다.
+
+<a id="change-20261110-bumper-character-launch"></a>
+### 2026-11-10 · 범퍼의 닭 캐릭터 발사 연결
+
+- Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋. `BP_SimpleObstacle_Bumper`에 `CharacterLauncher`를 추가해 판 상승 중 윗면의 캐릭터를 서버에서 발사한다. Details의 `Launch Speed`로 강도(기본 900cm/s, 0이면 해제)를 조절한다. 기존 타임라인·배치·충돌 설정은 보존했다. [설정과 확인](Gameplay/Overview.md#ld-bumper-launch).
+- Editor 빌드·BP 저장/별도 로딩·Round2 PIE 닭 캐릭터 발사 검사 통과. 범퍼 밖과 강도 0 비교도 확인했으며 검사 배치는 저장하지 않았다. 재시작 전 사용자 Round2의 미저장 변경은 해당 맵만 저장하여 보존했다.
+
+<a id="change-20261110-moving-platform-pause"></a>
+### 2026-11-10 · 이동 발판 위·아래 도착 대기 시간
+
+- Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋. `BP_PhysicsObstacle_MovingPlatform`에 `EndpointPause`를 추가해 배치별 Details에서 위/아래 대기 시간을 각각 초 단위로 지정한다. 기본값 0초이며 기존 이동 컴포넌트·경로·속도 설정을 보존했다. [설정과 구현](Gameplay/Overview.md#ld-moving-obstacles).
+- 확인: Editor 빌드, BP 저장·별도 실행에서 재로딩, 실제 PIE의 양 끝 대기·반전 방향·0초 연속 이동 검사 통과. 검사 액터·수치는 맵에 저장하지 않았다.
+
+<a id="change-20261110-round2-quick-test"></a>
+### 2026-11-10 · Round2 대기창 임시 우회
+
+- Codex 수행 · 미커밋. `L_Round2`의 GameMode Override만 `CFRoundGameMode` → `CFKnockdownTestGameMode`로 변경·저장하고 PIE 직접 진입을 확인했다. 복구는 해당 설정만 되돌려 이후 맵 편집을 보존한다. [개요](Gameplay/Overview.md#경기-상태와-라운드) · [복구 기록](Gameplay/RoundGameplaySetup.md#round2-임시-단독-테스트-2026-11-10).
+
 <a id="change-20261110-jump-charge-gauge"></a>
 ### 2026-11-10 · 캐릭터 옆 세로 점프 게이지
 
