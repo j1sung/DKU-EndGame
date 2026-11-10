@@ -137,6 +137,8 @@ public:
     UFUNCTION(Client,Reliable) void ClientRoomClosed();
     UFUNCTION(Client,Reliable) void ClientStartRejected(const FText& Reason);
     void RegisterWaitingWidget(class UCFWaitingRoomWidget* Widget);
+    bool ShouldUseLegacyWaitingScreen() const;
+    static bool ShouldShowLegacyWaiting(bool bEOSSessionActive, bool bAutomaticMatch);
     UFUNCTION(Client,Reliable) void ClientCacheFinalResults(const FString& CompletedMatchId, const TArray<FCFFinalStanding>& Rows);
 protected:
     UFUNCTION(Server,Reliable) void ServerSetNickname(const FString& Nickname);

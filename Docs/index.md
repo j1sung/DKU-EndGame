@@ -19,6 +19,8 @@
 
 ## 최근 기록
 
+- [2026-11-10 · 로비 게임 닉네임·EOS 수동 대기 창 노출 수정](Changes.md#change-20261110-nickname-waiting)
+
 - [2026-11-10 · 캐릭터 옆 세로 점프 게이지](Changes.md#change-20261110-jump-charge-gauge)
 
 - [2026-11-10 · 공중에서 누른 차징 입력을 착지 후 처리](Changes.md#change-20261110-charge-held-input)

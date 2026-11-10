@@ -10,10 +10,12 @@
 #include "Character/ChickenCharacter.h"
 #include "Engine/World.h"
 #include "Network/CFWaitingNetwork.h"
+#include "GameFramework/PlayerState.h"
 
 void ACFLobbyController::OnPossess(APawn* InPawn)
 {
     Super::OnPossess(InPawn);
+    ApplyGameNickname();
     if (!bHasLobbySpawnTransform && Cast<AChickenCharacter>(InPawn))
     {
         LobbySpawnTransform = InPawn->GetActorTransform();
@@ -25,6 +27,9 @@ void ACFLobbyController::BeginPlay()
 {
     Super::BeginPlay();
     if (!IsLocalController()) return;
+    auto* Frontend = GetGameInstance()->GetSubsystem<UCFFrontendSubsystem>();
+    Frontend->OnStateChanged.AddUniqueDynamic(this, &ThisClass::ApplyGameNickname);
+    ApplyGameNickname();
     Lobby = GetGameInstance()->GetSubsystem<UCFLobbySubsystem>();
     Lobby->OnAudioChanged.AddDynamic(this, &ThisClass::ApplyAudio);
     Lobby->OnReturnToTitleAllowed.AddDynamic(this, &ThisClass::ReturnToTitle);
@@ -43,6 +48,15 @@ void ACFLobbyController::BeginPlay()
         SetInputMode(Mode); bShowMouseCursor = true;
     }
     Lobby->RestoreOnEntry();
+}
+
+void ACFLobbyController::ApplyGameNickname()
+{
+    if (!IsLocalController() || !HasAuthority() || !PlayerState || !GetGameInstance()) return;
+    const auto* Frontend = GetGameInstance()->GetSubsystem<UCFFrontendSubsystem>();
+    if (!Frontend || !Frontend->HasAuthenticatedProfile()) return;
+    PlayerState->SetPlayerName(Frontend->ProfileNickname);
+    PlayerState->ForceNetUpdate();
 }
 
 void ACFLobbyController::SetupInputComponent()
@@ -106,6 +120,9 @@ void ACFLobbyController::ReturnToTitle()
 
 void ACFLobbyController::EndPlay(const EEndPlayReason::Type Reason)
 {
+    if (const auto* Instance = GetGameInstance())
+        if (auto* Frontend = Instance->GetSubsystem<UCFFrontendSubsystem>())
+            Frontend->OnStateChanged.RemoveDynamic(this, &ThisClass::ApplyGameNickname);
     if (Lobby)
     {
         Lobby->OnAudioChanged.RemoveDynamic(this, &ThisClass::ApplyAudio);

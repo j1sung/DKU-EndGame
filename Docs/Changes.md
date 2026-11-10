@@ -1,5 +1,13 @@
 # 변경 이력
 
+<a id="change-20261110-nickname-waiting"></a>
+### 2026-11-10 · 로비 게임 닉네임과 EOS 대기 창 노출 수정
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+- 변경: 최신 작업 브랜치 `a0720d1`을 받아 동료의 조작감/색상/HUD 수정을 보존했다. 로비와 로컬 이름표에 인증된 게임 프로필 이름을 우선 적용하고, EOS 활성 세션을 기준으로 기존 수동 대기 창의 생성·등록·갱신을 차단했다. 접속 준비 표시와 4인 승인은 유지한다.
+- 확인: 이름 출처·복제 지연 조건 native 검사 추가, 독립 정적 리뷰와 diff 검사. 이 PC에는 Unreal이 없어 새 Editor 빌드·실제 로비/라운드 전환 재시험은 미실행이다.
+- 문서: [UI 개요](UI/Overview.md), [로비](UI/Lobby.md), [재시험 범위](Gameplay/MatchPresentationAndTravel.md#흐름과-경계).
+
 <a id="change-20261110-jump-charge-gauge"></a>
 ### 2026-11-10 · 캐릭터 옆 세로 점프 게이지
 

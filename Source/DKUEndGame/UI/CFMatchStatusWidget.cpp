@@ -1,6 +1,7 @@
 #include "UI/CFMatchStatusWidget.h"
 #include "Network/CFWaitingNetwork.h"
 #include "Network/CFSessionSubsystem.h"
+#include "Network/CFMatchSessionSubsystem.h"
 #include "Blueprint/WidgetTree.h"
 #include "Components/CanvasPanel.h"
 #include "Components/CanvasPanelSlot.h"
@@ -101,7 +102,9 @@ void UCFMatchStatusWidget::NativeOnInitialized()
 
 void UCFMatchStatusWidget::Refresh(const ACFWaitingGameState* State,bool bMenuOpen,bool bEliminated)
 {
-    PreparationPanel->SetVisibility(State->bAutomaticMatch && State->Phase == ECFMatchPhase::Waiting ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+    const auto* Bridge = GetGameInstance()->GetSubsystem<UCFMatchSessionSubsystem>();
+    const bool bAutomatic = State->bAutomaticMatch || (Bridge && Bridge->IsActive());
+    PreparationPanel->SetVisibility(bAutomatic && State->Phase == ECFMatchPhase::Waiting ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
     RoundText->SetText(FText::FromString(FString::Printf(TEXT("ROUND %d / %d   ·   생존 %d / %d"),State->CurrentRound,State->TotalRounds,State->AlivePlayers.Num(),State->Participants.Num())));
     const bool bCountdown=State->Phase==ECFMatchPhase::Countdown;
     CountdownText->SetVisibility(bCountdown ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
