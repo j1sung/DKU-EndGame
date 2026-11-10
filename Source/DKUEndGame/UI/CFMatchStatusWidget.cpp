@@ -126,9 +126,12 @@ void UCFMatchStatusWidget::Refresh(const ACFWaitingGameState* State,bool bMenuOp
         else
         {
             const auto& Row=State->Scoreboard[I];
-            const bool bTied=Row.Rank>0 && State->Scoreboard.ContainsByPredicate([&Row](const FCFPlayerRoundScore& R) { return R.PlayerId!=Row.PlayerId && R.Rank==Row.Rank; });
-            Rank=Row.bForfeited ? TEXT("기권") : Row.Rank>0 ? (bTied ? FString::Printf(TEXT("공동 %d"),Row.Rank) : FString::FromInt(Row.Rank)) : TEXT("—");
-            Name=Row.PlayerName; Total=Row.TotalScore; bConnected=Row.bConnected;
+            // Row.Rank는 이번 라운드 점수 계산용이므로 보존하고 표시 순위만 누적으로 계산한다.
+            int32 TotalRank=1;
+            for (const auto& Other:State->Scoreboard) if (Other.TotalScore>Row.TotalScore) ++TotalRank;
+            const bool bTied=State->Scoreboard.ContainsByPredicate([&Row](const FCFPlayerRoundScore& R) { return R.PlayerId!=Row.PlayerId && R.TotalScore==Row.TotalScore; });
+            Rank=bTied ? FString::Printf(TEXT("공동 %d"),TotalRank) : FString::FromInt(TotalRank);
+            Name=Row.PlayerName+(Row.bForfeited ? TEXT(" (기권)") : TEXT("")); Total=Row.TotalScore; bConnected=Row.bConnected;
             Points=FString::Printf(TEXT("+%d"),Row.RoundScore);
         }
         RankTexts[I]->SetText(FText::FromString(Rank));

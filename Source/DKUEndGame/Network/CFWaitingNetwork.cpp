@@ -456,8 +456,7 @@ void ACFWaitingGameMode::ScoreRound()
     }
     GS->Scoreboard.Sort([](const FCFPlayerRoundScore& A,const FCFPlayerRoundScore& B)
     {
-        const int32 ARank=A.Rank>0 ? A.Rank : MAX_int32, BRank=B.Rank>0 ? B.Rank : MAX_int32;
-        return ARank!=BRank ? ARank<BRank : A.PlayerId<B.PlayerId;
+        return A.TotalScore!=B.TotalScore ? A.TotalScore>B.TotalScore : A.PlayerId<B.PlayerId;
     });
     GS->ScoredRound=GS->CurrentRound;
     UE_LOG(LogTemp,Display,TEXT("CF_MATCH scores committed round=%d rows=%d"),GS->ScoredRound,GS->Scoreboard.Num());
