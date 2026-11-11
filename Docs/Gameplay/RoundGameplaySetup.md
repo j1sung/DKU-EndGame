@@ -6,6 +6,16 @@
 
 ## 받은 작업과 현재 상태
 
+### Round2 임시 단독 테스트 (2026-11-10)
+
+현재 상태(2026-11-10 · Codex 수행 · 요청자 GitHub ID 확인 필요): 실계정 경기의 다음 맵 진입 후 UI·색상이 사라진 로그와 설정을 확인해 `L_Round2`의 GameMode Override를 `/Script/DKUEndGame.CFRoundGameMode`로 복구했다. 실제 이전 값은 `/Game/Testing/Knockdown/BP_CF_KnockdownTestGameMode.BP_CF_KnockdownTestGameMode_C`였다. 아래는 복구 전 단독 테스트의 이력이며 현재 적용되는 예외가 아니다. EOS 수동 대기 창 차단 코드는 유지한다.
+
+같은 날 후속 요청으로 `ACFKnockdownTestHUD::DrawHUD`의 테스트 제목·조작키·넘어짐 상태 안내와 배경 패널을 제거했다(Codex 수행 · 미커밋). HUD의 `R` 캐릭터 리셋 입력은 유지한다. 이 HUD를 사용하는 다른 테스트 맵에도 안내 제거가 적용되며, 정식 경기 UI와 `stat`/VSM 진단 출력은 변경하지 않는다.
+
+Codex 수행 · 미커밋. 사용자 요청으로 `L_Round2`의 World Settings → GameMode Override만 `/Script/DKUEndGame.CFRoundGameMode`에서 `/Script/DKUEndGame.CFKnockdownTestGameMode`로 임시 변경했다. 기존 닭 캐릭터·ThirdPerson 컨트롤러와 테스트 HUD를 사용하여 대기창·4인 시작 조건 없이 바로 플레이한다. 저장 후 PIE에서 닭 캐릭터와 테스트 HUD가 나타나고 대기창을 우회하는 것을 확인했다. 다른 라운드의 모드는 변경하지 않았다.
+
+복구 시 **현재 맵의 GameMode Override만 변경·저장**했으며 맵 전체를 과거 백업으로 교체하지 않았다. 기존 배치의 액터 817개 클래스·위치·회전·크기·태그·클라이언트 로드 설정 보존과 다른 라운드 맵 파일의 SHA-256 불변을 검사하고, 별도 Unreal 5.8.4 프로세스에서 저장된 모드와 배치를 다시 확인했다. 이번 백업과 검증 자료는 `Saved/Round2ModeRestore/`와 `Saved/Logs/Round2ModeRestore.json`에 있다. 새 C++ 빌드·실제 EOS 4PC 전환 재시험은 수행하지 않았다. 과거 단독 테스트 전 백업 `Saved/Round2QuickTest/L_Round2_before_disk.umap`은 당시 미저장 배치까지 포함한 사본이 아니며 이번 복구에는 사용하지 않았다.
+
 선행 커밋 `8c50f59`에서 Unreal 5.8.4의 네 맵 ArenaSpawn 4개 적용·저장·재로딩과 재조회를 완료했다. 해당 시점 Round1·2의 GameMode Override는 없었고 Round3·4는 테스트용 GameMode였다.
 
 원격 커밋 `59c9f30`의 `ACFRoundGameMode`와 설정 도구를 받은 뒤, 2026-11-08 이 PC의 Unreal 5.8.4에서 정식 Editor 빌드와 네 맵 적용·저장·재로딩을 완료했다. 빌드에서 발견한 지역 변수 `Children`과 `AActor::Children`의 이름 충돌은 `AttachedActors`로 수정했다. **각 맵의 로컬 4인 생성과 첫 카운트다운까지 검증했으며, 전체 경기·맵 전환·EOS 연결 완료는 아니다.**

@@ -1,6 +1,7 @@
 #include "UI/CFMatchStatusWidget.h"
 #include "Network/CFWaitingNetwork.h"
 #include "Network/CFSessionSubsystem.h"
+#include "Network/CFMatchSessionSubsystem.h"
 #include "Blueprint/WidgetTree.h"
 #include "Components/CanvasPanel.h"
 #include "Components/CanvasPanelSlot.h"
@@ -101,7 +102,9 @@ void UCFMatchStatusWidget::NativeOnInitialized()
 
 void UCFMatchStatusWidget::Refresh(const ACFWaitingGameState* State,bool bMenuOpen,bool bEliminated)
 {
-    PreparationPanel->SetVisibility(State->bAutomaticMatch && State->Phase == ECFMatchPhase::Waiting ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+    const auto* Bridge = GetGameInstance()->GetSubsystem<UCFMatchSessionSubsystem>();
+    const bool bAutomatic = State->bAutomaticMatch || (Bridge && Bridge->IsActive());
+    PreparationPanel->SetVisibility(bAutomatic && State->Phase == ECFMatchPhase::Waiting ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
     RoundText->SetText(FText::FromString(FString::Printf(TEXT("ROUND %d / %d   ·   생존 %d / %d"),State->CurrentRound,State->TotalRounds,State->AlivePlayers.Num(),State->Participants.Num())));
     const bool bCountdown=State->Phase==ECFMatchPhase::Countdown;
     CountdownText->SetVisibility(bCountdown ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
@@ -136,9 +139,12 @@ void UCFMatchStatusWidget::Refresh(const ACFWaitingGameState* State,bool bMenuOp
         else
         {
             const auto& Row=State->Scoreboard[I];
-            const bool bTied=Row.Rank>0 && State->Scoreboard.ContainsByPredicate([&Row](const FCFPlayerRoundScore& R) { return R.PlayerId!=Row.PlayerId && R.Rank==Row.Rank; });
-            Rank=Row.bForfeited ? TEXT("기권") : Row.Rank>0 ? (bTied ? FString::Printf(TEXT("공동 %d"),Row.Rank) : FString::FromInt(Row.Rank)) : TEXT("—");
-            Name=Row.PlayerName; Total=Row.TotalScore; bConnected=Row.bConnected;
+            // Row.Rank는 이번 라운드 점수 계산용이므로 보존하고 표시 순위만 누적으로 계산한다.
+            int32 TotalRank=1;
+            for (const auto& Other:State->Scoreboard) if (Other.TotalScore>Row.TotalScore) ++TotalRank;
+            const bool bTied=State->Scoreboard.ContainsByPredicate([&Row](const FCFPlayerRoundScore& R) { return R.PlayerId!=Row.PlayerId && R.TotalScore==Row.TotalScore; });
+            Rank=bTied ? FString::Printf(TEXT("공동 %d"),TotalRank) : FString::FromInt(TotalRank);
+            Name=Row.PlayerName+(Row.bForfeited ? TEXT(" (기권)") : TEXT("")); Total=Row.TotalScore; bConnected=Row.bConnected;
             Points=FString::Printf(TEXT("+%d"),Row.RoundScore);
         }
         RankTexts[I]->SetText(FText::FromString(Rank));

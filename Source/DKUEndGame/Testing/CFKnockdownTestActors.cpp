@@ -3,7 +3,6 @@
 #include "Components/BoxComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/PlayerController.h"
-#include "Engine/Canvas.h"
 #include "Engine/World.h"
 #include "InputCoreTypes.h"
 #include "UObject/ConstructorHelpers.h"
@@ -32,20 +31,7 @@ void ACFKnockdownTestHUD::ResetTestCharacter()
 void ACFKnockdownTestHUD::DrawHUD()
 {
     Super::DrawHUD();
-    if (!Canvas) return;
-    const float Scale = FMath::Clamp(Canvas->ClipX / 1000.f, .65f, 1.2f);
-    DrawRect(FLinearColor(0.025f, 0.035f, 0.05f, 0.88f), 18*Scale, 18*Scale, 455*Scale, 117*Scale);
-    DrawText(TEXT("DIRECTIONAL KNOCKDOWN TEST"), FLinearColor::White, 32*Scale, 28*Scale, nullptr, 1.35f*Scale);
-    DrawText(TEXT("WASD Move / Tilt   R Reset"), FLinearColor::White, 32*Scale, 57*Scale, nullptr, Scale);
-    DrawText(TEXT("Hold / release left mouse: charge jump"), FLinearColor::White, 32*Scale, 79*Scale, nullptr, Scale);
-    auto* Chicken = PlayerOwner ? Cast<AChickenCharacter>(PlayerOwner->GetPawn()) : nullptr;
-    if (!Chicken) return;
-    const TCHAR* Names[] = {TEXT("FORWARD"), TEXT("BACK"), TEXT("LEFT"), TEXT("RIGHT")};
-    FString State = TEXT("Keep your balance - enter a colored zone");
-    if (Chicken->IsFallen() || Chicken->IsKnockdownPending())
-        State = FString::Printf(TEXT("%s: %s"), Chicken->IsFallen() ? TEXT("DOWN") : TEXT("LANDING FIRST"),
-            Names[static_cast<uint8>(Chicken->GetKnockdownDirection())]);
-    DrawText(State, FLinearColor(1.f, .8f, .35f), 32*Scale, 103*Scale, nullptr, Scale);
+    // 테스트용 R 리셋 입력은 유지하고 화면 안내 패널은 그리지 않는다.
 }
 
 ACFKnockdownTestGameMode::ACFKnockdownTestGameMode()

@@ -465,8 +465,7 @@ void ACFWaitingGameMode::ScoreRound()
     }
     GS->Scoreboard.Sort([](const FCFPlayerRoundScore& A,const FCFPlayerRoundScore& B)
     {
-        const int32 ARank=A.Rank>0 ? A.Rank : MAX_int32, BRank=B.Rank>0 ? B.Rank : MAX_int32;
-        return ARank!=BRank ? ARank<BRank : A.PlayerId<B.PlayerId;
+        return A.TotalScore!=B.TotalScore ? A.TotalScore>B.TotalScore : A.PlayerId<B.PlayerId;
     });
     GS->ScoredRound=GS->CurrentRound;
     UE_LOG(LogTemp,Display,TEXT("CF_MATCH scores committed round=%d rows=%d"),GS->ScoredRound,GS->Scoreboard.Num());
@@ -595,8 +594,27 @@ void ACFWaitingPlayerController::SetupInputComponent()
 
 void ACFWaitingPlayerController::RegisterWaitingWidget(UCFWaitingRoomWidget* Widget)
 {
+    if (!IsValid(Widget)) return;
     if (WaitingWidget && WaitingWidget!=Widget) WaitingWidget->RemoveFromParent();
-    WaitingWidget=Widget; WaitingWidgetClass=Widget->GetClass();
+    WaitingWidget=Widget;
+    if (!ShouldUseLegacyWaitingScreen())
+    {
+        // Blueprint에서 생성해 등록한 경우도 첫 렌더링 전에 숨기고 다음 갱신에서 정리한다.
+        Widget->SetVisibility(ESlateVisibility::Collapsed); return;
+    }
+    WaitingWidgetClass=Widget->GetClass();
+}
+
+bool ACFWaitingPlayerController::ShouldShowLegacyWaiting(bool bEOSSessionActive, bool bAutomaticMatch)
+{
+    return !bEOSSessionActive && !bAutomaticMatch;
+}
+bool ACFWaitingPlayerController::ShouldUseLegacyWaitingScreen() const
+{
+    const auto* Instance = GetGameInstance();
+    const auto* Bridge = Instance ? Instance->GetSubsystem<UCFMatchSessionSubsystem>() : nullptr;
+    const auto* GS = GetWorld() ? GetWorld()->GetGameState<ACFWaitingGameState>() : nullptr;
+    return ShouldShowLegacyWaiting(Bridge && Bridge->IsActive(), GS && GS->bAutomaticMatch);
 }
 
 void ACFWaitingPlayerController::RequestStartGame() { if (IsLocalController()) ServerRequestStartGame(); }
@@ -648,6 +666,8 @@ bool ACFWaitingPlayerController::CanUpdateMatchDisplay() const
 void ACFWaitingPlayerController::UpdateMatchDisplay()
 {
     if (!CanUpdateMatchDisplay()) return;
+    if (!ShouldUseLegacyWaitingScreen() && WaitingWidget)
+    { WaitingWidget->RemoveFromParent(); WaitingWidget=nullptr; }
     const auto* GS=GetWorld()->GetGameState<ACFWaitingGameState>(); if (!GS) return;
     UpdateSpectatorCamera();
     if (LastPhase!=GS->Phase || LastInputPawn.Get()!=GetPawn())
@@ -664,7 +684,7 @@ void ACFWaitingPlayerController::UpdateMatchDisplay()
         }
         SetMatchInputMode();
     }
-    if (GS->Phase==ECFMatchPhase::Waiting && !GS->bAutomaticMatch)
+    if (GS->Phase==ECFMatchPhase::Waiting && ShouldUseLegacyWaitingScreen())
     {
         if (MatchWidget) { MatchWidget->RemoveFromParent(); MatchWidget=nullptr; }
         if (!IsValid(WaitingWidget) && WaitingWidgetClass)
