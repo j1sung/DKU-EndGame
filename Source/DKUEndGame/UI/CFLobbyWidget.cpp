@@ -54,6 +54,7 @@ void UCFLobbyWidget::ToggleSettings()
 {
     bSettingsOpen = !bSettingsOpen;
     SettingsPanel->SetVisibility(bSettingsOpen ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
+    if (auto* Controller = Cast<ACFLobbyController>(GetOwningPlayer())) Controller->SetLobbyUIInput(bSettingsOpen);
     if (!bSettingsOpen) SaveAudio();
 }
 
@@ -71,7 +72,7 @@ void UCFLobbyWidget::RefreshAudio()
 {
     MusicSlider->SetValue(Lobby->MusicVolume); EffectsSlider->SetValue(Lobby->EffectsVolume);
     MusicSlider->SetToolTipText(FText::Format(Text(TEXT("배경음 {0}%")), FMath::RoundToInt(Lobby->MusicVolume * 100)));
-    EffectsSlider->SetToolTipText(FText::Format(Text(TEXT("효과음 {0}%")), FMath::RoundToInt(Lobby->EffectsVolume * 100)));
+    EffectsSlider->SetToolTipText(FText::Format(Text(TEXT("게임 소리 (점프·차징·착지·충돌) {0}%")), FMath::RoundToInt(Lobby->EffectsVolume * 100)));
 }
 
 void UCFLobbyWidget::Refresh()

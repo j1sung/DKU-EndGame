@@ -58,14 +58,16 @@ private:
     UFUNCTION(NetMulticast, Unreliable)
     void MulticastPlaySound(EChickenSound Event, float Strength);
 
-    // Presentation follows authoritative balance without feeding back into failure checks.
+    // Server-smoothed pose is shared by rendering and the final balance-failure gate.
     UPROPERTY(EditAnywhere, Category="Chicken|Animation", meta=(ClampMin="0.1"))
     float VisualTiltResponse = 6.f;
 
     UPROPERTY(EditAnywhere, Category="Chicken|Animation", meta=(ClampMin="1", Units="deg/s"))
     float MaxVisualTiltSpeed = 100.f;
 
+    UPROPERTY(Replicated)
     FVector2D VisualBodyTilt = FVector2D::ZeroVector;
+    void UpdateBalanceFailure();
 
     // Also applies to existing Blueprints that still override LandingRecoveryTime to 0.2.
     UPROPERTY(EditAnywhere, Category="Movement|Hopping", meta=(ClampMin="0.01", Units="s"))
@@ -173,7 +175,7 @@ protected:
     float MinJumpPower = 100.0f;
 
     UPROPERTY(EditAnywhere, Category = "Jump")
-    float MaxJumpPower = 400.0f;
+    float MaxJumpPower = 500.0f;
 
     UPROPERTY(EditAnywhere, Category = "Jump")
     float ChargeRate = 700.0f;
@@ -221,6 +223,22 @@ protected:
     float ChargedJumpVerticalScale = 1.15f;
 
     void ApplyCollisionResponse(const FVector& VelocityChange);
+    void UpdateCollisionTilt();
+
+    UPROPERTY(EditDefaultsOnly, Category="Chicken|Collision", meta=(ClampMin="0.3", ClampMax="0.5", Units="s"))
+    float CollisionTiltDelay = 0.4f;
+
+    struct FPendingCollisionTilt
+    {
+        double ApplyTime;
+        FVector WorldKick;
+    };
+    TArray<FPendingCollisionTilt> PendingCollisionTilts;
+
+    // World-space direction survives turning during the reaction delay.
+    UPROPERTY(Replicated)
+    FVector CollisionUpperBodyTilt = FVector::ZeroVector;
+    double CollisionUpperBodyEndTime = 0.0;
     TMap<TWeakObjectPtr<AChickenCharacter>, double> RecentCollisionTimes;
 
     UPROPERTY(EditDefaultsOnly, Category="Chicken|Collision", meta=(ClampMin="0.01", Units="s"))

@@ -33,7 +33,7 @@ EOS 경기 캐릭터는 화면 공간 UMG 이름표와 서버 배정 색상으�
 
 > 최근 기능 변경: 2026-11-05 · Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
 
-`L_Lobby_Playground`는 기존 연습 캐릭터·놀이기구를 유지하며 `BP_CF_LobbyGameMode`와 `WBP_CF_Lobby`를 사용한다. 오른쪽 위 빠른 대전/매칭 중 패널, Esc·톱니바퀴 설정, 배경음·효과음 볼륨 저장, 타이틀 복귀를 제공한다. `CFLobbySubsystem`의 비동기 요청/응답 인터페이스는 중복 시작·취소와 배정 경합·상태 불명·복귀 대기를 처리한다. `UCFMatchmakingSubsystem`이 티켓 제공자를 연결하고 인증 만료 시 로그인 복귀를 안내한다. 실제 EOS 세션 제공자는 후속 작업이다.
+`L_Lobby_Playground`는 기존 연습 캐릭터·놀이기구를 유지하며 `BP_CF_LobbyGameMode`와 `WBP_CF_Lobby`를 사용한다. 오른쪽 위 빠른 대전/매칭 중 패널, 평소 커서 숨김·Esc로 설정을 열 때 커서 표시, 배경음·효과음 볼륨 저장, 타이틀 복귀를 제공한다. `CFLobbySubsystem`의 비동기 요청/응답 인터페이스는 중복 시작·취소와 배정 경합·상태 불명·복귀 대기를 처리한다. `UCFMatchmakingSubsystem`이 티켓 제공자를 연결하고 인증 만료 시 로그인 복귀를 안내한다. 실제 EOS 세션 제공자는 후속 작업이다.
 - 상세: [연습 로비 UI](Lobby.md).
 
 <a id="waiting"></a>

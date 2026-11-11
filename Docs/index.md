@@ -19,6 +19,18 @@
 
 ## 최근 기록
 
+- [2026-11-12 · 카메라 상하 범위 축소·탈락 대기 제거](Changes.md#change-20261112-camera-death-delay-tuning)
+
+- [2026-11-12 · 자동 홉으로 인한 기울기 탈락 누락 수정](Changes.md#change-20261112-autohop-balance-gate)
+
+- [2026-11-12 · 게임 소리 볼륨 연결·착지 조기 탈락 보완](Changes.md#change-20261112-effects-balance-failure)
+
+- [2026-11-12 · 로비 커서 숨김과 공통 배경음](Changes.md#change-20261112-lobby-cursor-bgm)
+
+- [2026-11-12 · 마우스 Y축 상하 시야 확대](Changes.md#change-20261112-camera-pitch)
+
+- [2026-11-12 · 피격 뒤 지연 상체 기울기](Changes.md#change-20261112-delayed-hit-tilt)
+
 - [2026-11-10 · Round2 정식 경기 GameMode 복구](Changes.md#change-20261110-round2-match-mode-restore)
 
 - [2026-11-10 · 로비 게임 닉네임·EOS 수동 대기 창 노출 수정](Changes.md#change-20261110-nickname-waiting)

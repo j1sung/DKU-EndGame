@@ -3,6 +3,8 @@
 #include "GameFramework/Actor.h"
 #include "Sound/SoundAttenuation.h"
 #include "Sound/SoundWaveProcedural.h"
+#include "Engine/GameInstance.h"
+#include "UI/CFLobbySubsystem.h"
 
 namespace
 {
@@ -50,6 +52,14 @@ namespace
     }
 }
 
+float UChickenAudioComponent::GetUserEffectsVolume() const
+{
+    const auto* Owner = GetOwner();
+    const auto* Instance = Owner ? Owner->GetGameInstance() : nullptr;
+    const auto* Settings = Instance ? Instance->GetSubsystem<UCFLobbySubsystem>() : nullptr;
+    return Settings ? Settings->EffectsVolume : 1.f;
+}
+
 void UChickenAudioComponent::Play(EChickenSound Event, float Strength)
 {
     AActor* Owner = GetOwner();
@@ -87,7 +97,8 @@ void UChickenAudioComponent::Play(EChickenSound Event, float Strength)
     Voice->Stop();
     Voice->SetSound(Sound);
     const float EventVolume = Event == EChickenSound::Charge ? 0.28f : FMath::Lerp(0.35f, 1.f, Strength);
-    Voice->SetVolumeMultiplier(MasterVolume * EventVolume);
+    EventVolumes.Add(Event, EventVolume);
+    Voice->SetVolumeMultiplier(MasterVolume * EventVolume * GetUserEffectsVolume());
     Voice->Play();
     // Procedural streams do not finish on queue exhaustion; explicitly release each voice.
     RemainingTimes.Add(Event, Duration + 0.05f);
@@ -96,6 +107,9 @@ void UChickenAudioComponent::Play(EChickenSound Event, float Strength)
 void UChickenAudioComponent::Update(float DeltaTime, bool bCharging, float Charge)
 {
     if (!GetOwner() || GetOwner()->GetNetMode() == NM_DedicatedServer) return;
+    const float UserVolume = GetUserEffectsVolume();
+    for (const auto& Entry : Voices)
+        if (Entry.Value) Entry.Value->SetVolumeMultiplier(MasterVolume * EventVolumes.FindRef(Entry.Key) * UserVolume);
     for (auto It = RemainingTimes.CreateIterator(); It; ++It)
     {
         It.Value() -= DeltaTime;
@@ -134,5 +148,6 @@ void UChickenAudioComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
     }
     Voices.Reset();
     RemainingTimes.Reset();
+    EventVolumes.Reset();
     Super::EndPlay(EndPlayReason);
 }
