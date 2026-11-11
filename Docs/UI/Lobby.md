@@ -6,6 +6,8 @@
 
 ## 열어서 확인하기
 
+2026-11-10 닉네임 보완: 로비 컨트롤러가 등장·Pawn 소유·프로필 상태 변경 때 인증된 `ProfileNickname`을 로컬 권한 PlayerState에 적용한다. 로컬 이름표도 게임 프로필 이름을 우선 읽으므로 Epic 표시 이름이 노출되지 않는다. R키 부활과 경기 후 로비 복귀에도 같은 경로를 사용한다. 새 Editor 빌드·실계정 재확인은 아직 수행하지 않았다.
+
 1. Content Browser에서 `/Game/Map/L_Lobby_Playground`를 연다. 기존 `L_LobbyJS` 이름의 에셋과 구분한다.
 2. World Settings의 GameMode Override가 `BP_CF_LobbyGameMode`인지 확인하고 Play한다.
 3. 오른쪽 위에 빠른 대전, 왼쪽 위에 설정 톱니바퀴가 나타난다. 톱니바퀴 또는 Esc로 설정을 여닫는다.

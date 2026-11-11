@@ -99,7 +99,7 @@ BP 캐릭터의 `ChickenAudio` 컴포넌트에서 `SoundOverrides`에 이벤트�
 <a id="match"></a>
 ## 경기 상태와 라운드
 
-- 2026-11-10 임시 테스트 예외(Codex 수행 · 미커밋): `L_Round2`만 GameMode Override를 `CFKnockdownTestGameMode`로 바꿔 대기창 없이 닭 캐릭터를 바로 조작한다. 원상복구 시 Override만 `CFRoundGameMode`로 되돌린다. [설정·복구 기록](RoundGameplaySetup.md#round2-임시-단독-테스트-2026-11-10).
+- 2026-11-10(Codex 수행 · 미커밋): `L_Round2`에 남아 있던 단독 테스트 모드를 정식 `CFRoundGameMode`로 복구했다. GameMode Override만 변경하고 액터 817개 배치·태그와 다른 라운드 파일을 보존했으며 저장 후 별도 Editor 재로딩을 확인했다. 기존 EOS 수동 대기 창 차단은 유지한다. 실제 4PC 전환 재시험은 남아 있다. [설정·복구 기록](RoundGameplaySetup.md#round2-임시-단독-테스트-2026-11-10).
 > 최근 기능 변경: 2026-10-02 · @KyuminChung (`c8a7452`, `60d0b2f`, `99aeaf1`)
 
 정원 4명·최소 2명, 호스트 시작 → 3초 카운트다운 → 경기 → 결과 6초를 4R까지 진행한다. 서버가 참가자·생존자·탈락 순서·5/3/1/0점·누적 점수를 관리한다. 최후 1인 승리, 동시 마지막 탈락은 무승부·공동 순위다. 최종 누적 순위·MVP를 표시한 뒤 호스트가 같은 연결을 유지하며 전원을 걷기 대기로 돌려보낼 수 있다. 새 경기는 1R·0점으로 초기화한다.
