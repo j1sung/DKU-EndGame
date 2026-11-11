@@ -49,13 +49,15 @@ EOS 경기 캐릭터는 화면 공간 UMG 이름표와 서버 배정 색상으�
 
 2026-11-10 · Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋.
 
-`UCFPlayerPresentationComponent`가 기존 이름표와 같은 Screen 공간 WidgetComponent로 `UCFJumpChargeWidget`을 생성한다. 내 캐릭터 오른쪽에 18×144 크기의 세로 막대를 표시하며, 밝은 테두리·어두운 빈 영역 안에서 아래→위로 채워진다. 충전량이 높아질수록 노란색에서 빨간색으로 변한다. 게임 입력을 가로채지 않으며 별도 텍스처나 Blueprint 지정은 필요 없다.
+`UCFPlayerPresentationComponent`가 `UCFJumpChargeWidget`을 생성한다. 내 캐릭터의 게이지는 기존 Screen 공간 18×144 세로 막대를 유지한다. 2026-11-10 후속 변경(Codex 수행 · 미커밋)으로 상대 캐릭터에는 별도 `OpponentJumpCharge` World 공간 위젯을 추가했다. 상대 막대는 같은 160×160 위젯을 0.65배 월드 크기로 사용해 멀어지면 작아지고 카메라를 향한다. 밝은 테두리·어두운 빈 영역 안에서 아래→위로 채워지며, 충전량에 따라 노랑에서 빨강으로 변한다. 입력을 가로채거나 별도 Blueprint 지정을 요구하지 않는다.
 
-게이지는 `IsChargingJump()`와 서버에서 복제되는 `GetNormalizedJumpCharge()`를 읽는다. 발사·충전 취소 시 비워지고 공중 충전 대기는 빈 상태로 표시한다. 로컬 소유의 살아 있는 전투 캐릭터에만 표시하고 라운드 입력 잠금·넘어짐·공중 넘어짐 대기에서는 숨긴다. 다른 플레이어의 게이지는 표시하지 않는다. 로비 R 부활로 생성된 캐릭터에도 자동 연결한다. 전용 서버는 UI를 생성하지 않는다.
+게이지는 `IsChargingJump()`와 서버에서 복제되는 `GetNormalizedJumpCharge()`를 읽는다. 발사·충전 취소 시 비워지고 공중 충전 대기는 빈 상태로 표시한다. 내 게이지는 로컬 소유 캐릭터에만 표시한다. 상대는 PlayerState가 있는 다른 캐릭터가 로컬 카메라 앞·화면 안에 있을 때 표시하며, Masked 월드 위젯의 깊이 테스트로 벽에 가려지는 부분을 숨긴다. 벽의 Visibility 충돌 응답이나 라인트레이스에 의존하지 않는다. 두 게이지 모두 라운드 입력 잠금·넘어짐·공중 넘어짐 대기에서는 숨기고, 전용 서버에서는 생성하지 않는다. 기존 이름표 표시는 변경하지 않는다. 로비 R 부활로 생성된 캐릭터에도 자동 연결한다.
 
-위젯은 매 프레임 현재 충전량을 읽고, 표시 가능 상태는 기존 표현 컴포넌트의 0.1초 Tick에서 갱신한다. 로컬 UE 5.8.2의 UMG API와 코드 연결·diff를 확인했으며 빌드·에디터 외형·PIE·네트워크 표시 검증은 미수행이다. 코드: `Source/DKUEndGame/UI/CFJumpChargeWidget.h/.cpp`, `Source/DKUEndGame/Character/CFPlayerPresentationComponent.h/.cpp`.
+위젯은 매 프레임 충전량을 읽는다. 표현 컴포넌트도 매 프레임 상대 게이지의 화면 범위와 방향을 갱신하되, 이름표 문자열·색 갱신은 기존 10Hz로 제한한다. 현재 로컬 첫 PlayerController의 카메라를 기준으로 하며 분할 화면의 복수 로컬 카메라 대응은 검증하지 않았다. 코드: `Source/DKUEndGame/UI/CFJumpChargeWidget.h/.cpp`, `Source/DKUEndGame/Character/CFPlayerPresentationComponent.h/.cpp`.
 
-사용자가 제공한 후속 빌드 로그에서 게이지의 지역 변수 `Slot`이 `UWidget::Slot`을 가리는 C4458 오류를 확인했다. `FrameSlot`으로 변경했으며 수정 후 재빌드 결과는 아직 확인하지 않았다.
+초기 구현 후 `Slot`이 `UWidget::Slot`을 가리는 C4458 오류를 `FrameSlot`으로 수정했다. 2026-11-10 상대 가림 처리 변경 후 Unreal 5.8.2 Win64 Development Editor 빌드는 통과했다. 후속 Round2 테스트 로그에서는 `UnrealEditor-Win64-DebugGame.exe`가 수정 전 `UnrealEditor-DKUEndGame-Win64-DebugGame.dll`을 불러온 것을 확인했다. Development와 DebugGame은 별도 DLL이므로 실제 실행 구성도 같은 소스로 빌드해야 한다.
+
+후속 확인: 저장하지 않은 임시 PIE 월드에서 PlayerState를 부여한 비소유 닭 캐릭터를 사용했다. 카메라 앞의 World/Masked 게이지 생성, 카메라 뒤·화면 밖 숨김을 확인했고, 렌더 캡처로 충돌 없는 불투명 벽 앞에서는 막대가 보이고 벽 뒤에서는 가려짐을 확인했다. 자료는 `Saved/GaugeVisibility/verified.json`·`clear.png`·`wall.png`다. 검사 전용 카메라·캐릭터·벽은 맵에 저장하지 않았다. 실제 별도 PC 멀티, 분할 화면, 패키징과 플레이 중 크기·밝기 조정은 미검증이다.
 
 ### 기존 UI 연결
 

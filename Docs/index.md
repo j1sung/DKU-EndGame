@@ -19,6 +19,8 @@
 
 ## 최근 기록
 
+- [2026-11-10 · 상대 점프 게이지의 화면 범위·벽 가림 처리](Changes.md#change-20261110-opponent-charge-visibility)
+
 - [2026-11-10 · 모든 라운드 결과표를 누적 순위로 표시](Changes.md#change-20261110-cumulative-score-order)
 
 - [2026-11-10 · 테스트 게임모드 조작 안내 제거](Changes.md#change-20261110-test-controls-hide)

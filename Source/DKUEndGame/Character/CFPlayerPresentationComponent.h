@@ -32,7 +32,9 @@ private:
     UPROPERTY(ReplicatedUsing=OnRep_Colour) int32 ColourSlot = INDEX_NONE;
     UPROPERTY(Transient) TObjectPtr<class UWidgetComponent> Nameplate;
     UPROPERTY(Transient) TObjectPtr<class UWidgetComponent> JumpCharge;
+    UPROPERTY(Transient) TObjectPtr<class UWidgetComponent> OpponentJumpCharge;
     UPROPERTY(Transient) TArray<TObjectPtr<class UMaterialInstanceDynamic>> Materials;
     bool bTintWarningShown = false;
+    float NameplateUpdateRemaining = 0.f;
     UFUNCTION() void OnRep_Colour();
 };
