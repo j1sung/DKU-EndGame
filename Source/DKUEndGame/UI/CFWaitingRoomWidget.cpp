@@ -28,6 +28,11 @@ void UCFWaitingRoomWidget::NativeConstruct()
 {
     Super::NativeConstruct();
     if (auto* PC=Cast<ACFWaitingPlayerController>(GetOwningPlayer())) PC->RegisterWaitingWidget(this);
+    if (const auto* PC=Cast<ACFWaitingPlayerController>(GetOwningPlayer()); PC && !PC->ShouldUseLegacyWaitingScreen())
+    {
+        SetVisibility(ESlateVisibility::Collapsed);
+        return; // EOS 경기에서는 참가자 목록/시작 버튼/타이머를 초기화하지 않는다.
+    }
     StartButton->OnClicked.AddUniqueDynamic(this,&ThisClass::HandleStart);
     LeaveButton->OnClicked.AddUniqueDynamic(this,&ThisClass::HandleLeave);
     LastDisplayKey.Reset();

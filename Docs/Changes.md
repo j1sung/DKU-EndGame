@@ -1,5 +1,20 @@
 # 변경 이력
 
+<a id="change-20261110-round2-match-mode-restore"></a>
+### 2026-11-10 · Round2 정식 경기 GameMode 복구
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+- 변경: `55c4d88`에 포함된 Round2 단독 테스트 설정 때문에 라운드 이동 후 경기 Controller·UI·색상 배정 흐름이 빠지는 문제를 확인했다. `L_Round2`의 GameMode Override만 `CFRoundGameMode`로 복구하고 EOS 대기 창 차단과 기존 배치를 유지했다.
+- 확인: UE 5.8.4에서 저장 및 별도 프로세스 재조회, 액터 817개 클래스·변환·태그·클라이언트 로드 설정과 다른 라운드 파일 보존 검사 통과. 새 C++ 빌드·실제 4PC 경기 재시험은 미실행이다. [경기 상태](Gameplay/Overview.md#match), [상세 기록](Gameplay/RoundGameplaySetup.md#round2-임시-단독-테스트-2026-11-10).
+
+<a id="change-20261110-nickname-waiting"></a>
+### 2026-11-10 · 로비 게임 닉네임과 EOS 대기 창 노출 수정
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+- 변경: 최신 작업 브랜치 `a0720d1`을 받아 동료의 조작감/색상/HUD 수정을 보존했다. 로비와 로컬 이름표에 인증된 게임 프로필 이름을 우선 적용하고, EOS 활성 세션을 기준으로 기존 수동 대기 창의 생성·등록·갱신을 차단했다. 접속 준비 표시와 4인 승인은 유지한다.
+- 확인: 이름 출처·복제 지연 조건 native 검사 추가, 독립 정적 리뷰와 diff 검사. 이 PC에는 Unreal이 없어 새 Editor 빌드·실제 로비/라운드 전환 재시험은 미실행이다.
+- 문서: [UI 개요](UI/Overview.md), [로비](UI/Lobby.md), [재시험 범위](Gameplay/MatchPresentationAndTravel.md#흐름과-경계).
+
 <a id="change-20261110-cumulative-score-order"></a>
 ### 2026-11-10 · 모든 라운드 결과표를 누적 순위로 표시
 
