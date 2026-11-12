@@ -19,6 +19,8 @@
 
 ## 최근 기록
 
+- [2026-11-12 · Round4 놀이동산의 4인 경기 시작 위치 연결](Changes.md#change-20261112-round4-match-spawns)
+
 - [2026-11-12 · 위험 HUD에 카메라 기준 방향 화살표](Changes.md#change-20261112-danger-hud-arrows)
 
 - [2026-11-12 · 위험 효과의 화면 구성을 WBP로 분리](Changes.md#change-20261112-danger-hud-wbp)

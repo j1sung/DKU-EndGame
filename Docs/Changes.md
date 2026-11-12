@@ -1,5 +1,10 @@
 ﻿# 변경 이력
 
+<a id="change-20261112-round4-match-spawns"></a>
+## 2026-11-12 · Round4 놀이동산의 4인 경기 시작 위치 연결
+
+- Codex 수행 · 미커밋. `L_Round4`의 배치 닭 4명의 위치·방향에 PlayerStart 4개를 추가하고 미리보기의 서버 정리·클라이언트 로드 제외를 연결했다. 기존 배치와 시소·장애물 설정은 보존했다. [경기 개요](Gameplay/Overview.md#match) · [설정과 검증](Gameplay/RoundGameplaySetup.md#round4-spawn-restore).
+
 <a id="change-20261112-danger-hud-arrows"></a>
 ## 2026-11-12 · 위험 HUD에 카메라 기준 방향 화살표
 

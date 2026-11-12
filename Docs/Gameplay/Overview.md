@@ -119,6 +119,8 @@ BP 캐릭터의 `ChickenAudio` 컴포넌트에서 `SoundOverrides`에 이벤트�
 <a id="match"></a>
 ## 경기 상태와 라운드
 
+- 2026-11-12(Codex 수행 · 미커밋): 새 놀이동산 배치의 `L_Round4`에 편집용 닭 4명의 현재 위치·방향과 일치하는 `CF_RoundSpawn_01~04`를 추가했다. `ArenaSpawn`/`CFLinkedRoundSpawn` 태그와 미리보기의 `CFRoundSpawnPreview`·클라이언트 로드 제외를 연결했다. 기존 배치·GameMode·기믹 설정은 보존한다. [설정과 검증](RoundGameplaySetup.md#round4-spawn-restore).
+
 - 2026-11-10(Codex 수행 · 미커밋): `L_Round2`에 남아 있던 단독 테스트 모드를 정식 `CFRoundGameMode`로 복구했다. GameMode Override만 변경하고 액터 817개 배치·태그와 다른 라운드 파일을 보존했으며 저장 후 별도 Editor 재로딩을 확인했다. 기존 EOS 수동 대기 창 차단은 유지한다. 실제 4PC 전환 재시험은 남아 있다. [설정·복구 기록](RoundGameplaySetup.md#round2-임시-단독-테스트-2026-11-10).
 > 최근 기능 변경: 2026-10-02 · @KyuminChung (`c8a7452`, `60d0b2f`, `99aeaf1`)
 

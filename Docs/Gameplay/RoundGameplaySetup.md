@@ -6,6 +6,13 @@
 
 ## 받은 작업과 현재 상태
 
+<a id="round4-spawn-restore"></a>
+### Round4 놀이동산 스폰 복구 (2026-11-12)
+
+Codex 수행 · 미커밋. 현재 `L_Round4`에는 정식 `CFRoundGameMode`가 연결돼 있었지만 PlayerStart가 없고 배치 닭 4명의 미리보기 표식도 없었다. 배치 닭의 현재 위치·회전에 맞춰 `RoundSpawns/CF_RoundSpawn_01~04`를 생성하고 `ArenaSpawn`·`CFLinkedRoundSpawn` 액터 태그를 붙였다. 기존 닭에는 다른 라운드와 동일하게 `CFRoundSpawnPreview`와 `net_load_on_client=false`를 적용했다. 기존 190개 액터의 클래스·위치·회전·크기와 기타 태그·GameMode는 보존했다. 시소·장애물·발판 설정은 변경하지 않았다.
+
+원본은 `Saved/Round4SpawnFix/L_Round4_before.umap`에 백업했다. 저장 후 재로딩으로 네 스폰의 위치·회전 일치와 기존 배치 보존을 검사했다. UE 5.8.2 로컬 4인 Listen Server PIE에서 호스트·클라이언트 3개 모두 플레이어 4명·전투 캐릭터 4명·`Playing` 상태를 확인했다. 실제 EOS 4계정 매칭과 연속 맵 이동 완료를 검증한 것은 아니다.
+
 ### Round2 임시 단독 테스트 (2026-11-10)
 
 현재 상태(2026-11-10 · Codex 수행 · 요청자 GitHub ID 확인 필요): 실계정 경기의 다음 맵 진입 후 UI·색상이 사라진 로그와 설정을 확인해 `L_Round2`의 GameMode Override를 `/Script/DKUEndGame.CFRoundGameMode`로 복구했다. 실제 이전 값은 `/Game/Testing/Knockdown/BP_CF_KnockdownTestGameMode.BP_CF_KnockdownTestGameMode_C`였다. 아래는 복구 전 단독 테스트의 이력이며 현재 적용되는 예외가 아니다. EOS 수동 대기 창 차단 코드는 유지한다.
