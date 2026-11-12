@@ -35,6 +35,10 @@ public:
 
     bool IsChargingJump() const { return bIsCharging; }
     bool IsFallen() const { return bIsFallen; }
+    UFUNCTION(BlueprintPure, Category="Chicken|Balance")
+    float GetBalanceFailureAngleDegrees() const { return MaxBodyTilt * 35.f; }
+    UFUNCTION(BlueprintPure, Category="Chicken|Balance")
+    float GetBalanceDangerIntensity(float WarningAngleMargin = 10.f) const;
     bool IsRecoveringFromLanding() const { return bInLandingRecovery; }
     int32 GetTakeoffSerial() const { return TakeoffSerial; }
     float GetLandingRecoveryTime() const { return FMath::Max(0.01f, FMath::Max(LandingRecoveryTime, MinimumLandingRecoveryTime)); }

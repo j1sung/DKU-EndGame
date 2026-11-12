@@ -1,4 +1,4 @@
-# 프로젝트 문서 목차
+﻿# 프로젝트 문서 목차
 
 카테고리 대표 문서는 현재 구조를 설명하고, 상세 문서는 설정·연결·기술 설명을 보충한다. 코드·에셋 확인 범위는 각 문서의 제한을 참고한다.
 
@@ -18,6 +18,32 @@
 - [전체 문서 갱신 요청문](../.agents/prompts/refresh-project-docs.md)
 
 ## 최근 기록
+
+- [2026-11-12 · 위험 HUD에 카메라 기준 방향 화살표](Changes.md#change-20261112-danger-hud-arrows)
+
+- [2026-11-12 · 위험 효과의 화면 구성을 WBP로 분리](Changes.md#change-20261112-danger-hud-wbp)
+
+- [2026-11-12 · 탈락 각도에 따른 붉은 외곽 경고 HUD](Changes.md#change-20261112-balance-danger-hud)
+
+- [2026-11-12 · 시소 판과 함께 기울어지는 투명벽](Changes.md#change-20261112-round4-deck-boundaries)
+
+- [2026-11-12 · Round4 임시 부유 대피 발판](Changes.md#change-20261112-round4-floating-refuges)
+
+- [2026-11-12 · Round4 전투판 겹면 제거와 무광 표면](Changes.md#change-20261112-round4-deck-surface)
+
+- [2026-11-12 · Round4 시작 시 게이트 잠금과 대관람차 회전](Changes.md#change-20261112-round4-gates-ferris)
+
+- [2026-11-11 · 별도 Round4 놀이동산 시소 전투장](Changes.md#change-20261111-round4-amusement-seesaw)
+
+- [2026-11-11 · Round3 낮은 외곽벽 위 투명 충돌벽](Changes.md#change-20261111-round3-invisible-boundary)
+
+- [2026-11-11 · 다리 왕복 구체를 화물 상자로 교체](Changes.md#change-20261111-round3-bridge-crates)
+
+- [2026-11-11 · 굴러오는 통나무의 플레이어 밀침](Changes.md#change-20261111-round3-log-player-push)
+
+- [2026-11-11 · Round3 원판 고정과 회전 막대 분리](Changes.md#change-20261111-round3-fixed-sweeper-floor)
+
+- [2026-11-11 · Round3 댐 정비장 테마와 얕은 물](Changes.md#change-20261111-round3-dam-theme)
 
 - [2026-11-10 · 상대 점프 게이지의 화면 범위·벽 가림 처리](Changes.md#change-20261110-opponent-charge-visibility)
 

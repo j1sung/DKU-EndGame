@@ -340,6 +340,17 @@ void AChickenCharacter::MoveRight(float Value)
 	}
 }
 
+float AChickenCharacter::GetBalanceDangerIntensity(float WarningAngleMargin) const
+{
+    if (!bEnableBalanceFailure || !bRoundInputEnabled || bIsFallen || bKnockdownPending || MaxBodyTilt <= 0.f)
+        return 0.f;
+    // Match the dominant-axis failure check, including diagonal tilt.
+    const float Limit = GetBalanceFailureAngleDegrees();
+    const float Margin = FMath::Clamp(WarningAngleMargin, .1f, Limit);
+    const float Angle = FMath::Max(FMath::Abs(BodyTilt.X), FMath::Abs(BodyTilt.Y)) * 35.f;
+    return FMath::Clamp((Angle - (Limit - Margin)) / Margin, 0.f, 1.f);
+}
+
 void AChickenCharacter::FallOver()
 {
     // Airborne tilt is balance state, not an elimination request.

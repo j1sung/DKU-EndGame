@@ -1,4 +1,4 @@
-#include "Character/CFPlayerPresentationComponent.h"
+﻿#include "Character/CFPlayerPresentationComponent.h"
 #include "UI/CFFrontendSubsystem.h"
 #include "UI/CFLobbyController.h"
 #include "Engine/GameInstance.h"
@@ -16,6 +16,7 @@
 #include "Net/UnrealNetwork.h"
 #include "Character/ChickenCharacter.h"
 #include "UI/CFJumpChargeWidget.h"
+#include "UI/CFDangerOverlayWidget.h"
 
 void UCFNameplateWidget::NativeOnInitialized()
 {
@@ -34,6 +35,7 @@ UCFPlayerPresentationComponent::UCFPlayerPresentationComponent()
 {
     PrimaryComponentTick.bCanEverTick = true;
     SetIsReplicatedByDefault(true);
+    DangerOverlayClass = FSoftObjectPath(TEXT("/Game/UI/HUD/WBP_CFDangerOverlay.WBP_CFDangerOverlay_C"));
 }
 void UCFPlayerPresentationComponent::BeginPlay()
 {
@@ -97,6 +99,13 @@ void UCFPlayerPresentationComponent::BeginPlay()
         }
     OnRep_Colour();
 }
+void UCFPlayerPresentationComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+    if (DangerOverlay) DangerOverlay->RemoveFromParent();
+    DangerOverlay = nullptr;
+    Super::EndPlay(EndPlayReason);
+}
+
 void UCFPlayerPresentationComponent::SetColourSlot(int32 Slot)
 {
     if (!GetOwner()->HasAuthority() || Slot < 0 || Slot > 3) return;
@@ -118,6 +127,23 @@ void UCFPlayerPresentationComponent::TickComponent(float Delta, ELevelTick TickT
     const auto* Chicken = Cast<AChickenCharacter>(Pawn);
     const bool bCanShowCharge = Chicken && Chicken->IsRoundInputEnabled() &&
         !Chicken->IsFallen() && !Chicken->IsKnockdownPending();
+    auto* LocalController = Chicken && Chicken->IsLocallyControlled()
+        ? Cast<APlayerController>(Pawn->GetController()) : nullptr;
+    if (DangerOverlay && (!LocalController || DangerOverlay->GetOwningPlayer() != LocalController))
+    {
+        DangerOverlay->RemoveFromParent();
+        DangerOverlay = nullptr;
+    }
+    if (LocalController && LocalController->IsLocalController() && GetOwner()->GetNetMode() != NM_DedicatedServer)
+    {
+        if (!DangerOverlay && !DangerOverlayClass.IsNull())
+        {
+            DangerOverlay = CreateWidget<UCFDangerOverlayWidget>(LocalController, DangerOverlayClass.LoadSynchronous());
+            // 점수·안내 HUD보다 아래에 두며 입력은 가로채지 않는다.
+            if (DangerOverlay) DangerOverlay->AddToPlayerScreen(-10);
+        }
+        if (DangerOverlay) DangerOverlay->SetDangerIntensity(Chicken->GetBalanceDangerIntensity(DangerWarningAngleMargin));
+    }
     if (JumpCharge)
         JumpCharge->SetVisibility(bCanShowCharge && Chicken->IsLocallyControlled());
     const auto* State = Pawn ? Pawn->GetPlayerState() : nullptr;

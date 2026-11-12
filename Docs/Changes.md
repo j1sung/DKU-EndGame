@@ -1,4 +1,74 @@
-# 변경 이력
+﻿# 변경 이력
+
+<a id="change-20261112-danger-hud-arrows"></a>
+## 2026-11-12 · 위험 HUD에 카메라 기준 방향 화살표
+
+- Codex 수행 · 미커밋. 사용자가 추가한 위험 위젯/WBP에만 흰색·짙은 테두리 방향 화살표를 추가했다. 카메라 기준으로 기울어진 쪽 하나만 표시하고 0.7초 주기로 8px 왕복한다. 기존 각도 계산·플레이어 이동/균형·표현 컴포넌트는 유지했다. [Designer 이름과 움직임 설정](UI/Overview.md#balance-danger-overlay).
+
+<a id="change-20261112-danger-hud-wbp"></a>
+## 2026-11-12 · 위험 효과의 화면 구성을 WBP로 분리
+
+- Codex 수행 · 미커밋. `WBP_CFDangerOverlay`를 기존 C++ 위험 위젯의 자식으로 만들고 전체 화면 Image/재질을 Designer 계층으로 옮겼다. C++은 각도 계산·투명도·생성/제거만 담당한다. 사용자 경고 폭 15도와 기존 다른 UI는 보존했다. [Designer 편집 위치와 연결 이름](UI/Overview.md#balance-danger-overlay).
+
+<a id="change-20261112-balance-danger-hud"></a>
+## 2026-11-12 · 탈락 각도에 따른 붉은 외곽 경고 HUD
+
+- Codex 수행 · 미커밋. 로컬 캐릭터에 전체 화면 비네트를 추가했다. 탈락 한계보다 기본 10도 전부터 선형으로 붉어지고 탈락/공중 탈락 대기에는 바로 꺼진다. `PlayerPresentation`의 `Danger Warning Angle Margin`으로 경고 폭을 조절한다. 충전 게이지의 월드 UI 전환은 후속으로 보류했다. [설정과 구현 위치](UI/Overview.md#balance-danger-overlay).
+
+<a id="change-20261112-round4-deck-boundaries"></a>
+## 2026-11-12 · 시소 판과 함께 기울어지는 투명벽
+
+- Codex 수행 · 미커밋. `BP_R4A_SeesawRig`의 판 가장자리 네 방향에 높이 6m의 투명 Box Collision을 붙여 플레이어의 판 밖 이탈을 막았다. 카메라는 통과하며 현재 194개 액터 배치와 사용자 시소 설정을 유지했다. [편집 위치·범위](Gameplay/Overview.md#round4-amusement-seesaw).
+
+<a id="change-20261112-round4-floating-refuges"></a>
+## 2026-11-12 · Round4 임시 부유 대피 발판
+
+- Codex 수행 · 미커밋. 현재 놀이동산 맵에 독립 발판 3개를 추가했다. 첫 착지 뒤 설정 시간(Details `Stand Duration`, 기본 3초)이 지나면 경고 후 붕괴하고 6초 뒤 복구한다. 기존 179개 액터 배치와 사용자 시소 설정을 보존했다. [진입 높이·에셋·서버 소유 동작](Gameplay/Overview.md#round4-amusement-seesaw).
+
+<a id="change-20261112-round4-deck-surface"></a>
+### 2026-11-12 · Round4 전투판 겹면 제거와 무광 표면
+
+- Codex 수행 · 미커밋. 전투판의 얇은 줄눈·표시 겹면을 제거하고 로컬 좌표 기반 재질 무늬로 합쳤다. Roughness 0.92·Specular 0.2로 조정하고 거리 변화에 맞춰 무늬 가장자리를 완화했다. 현재 콜라이더·Nanite·재질 슬롯·177개 액터 변환·사용자 39도/간격 5초 설정은 보존했다. [상세와 확인 범위](Gameplay/Overview.md#round4-amusement-seesaw).
+
+<a id="change-20261112-round4-gates-ferris"></a>
+### 2026-11-12 · Round4 시작 시 게이트 잠금과 대관람차 회전
+
+- Codex 수행 · 미커밋. 계단 쪽 BoardingBridge와 Gate가 게임 시작 때 기본 0.75초 동안 수납/닫힘 동작을 한 번 재생하고, 이후 시소 주기와 관계없이 닫힌 상태를 유지하도록 변경했다. 대관람차는 고정 받침대/회전 링/수평 탑승칸으로 분리하고 초당 3도 회전을 적용했다. 사용자 설정 최대 39도·시소 간격 10초와 기존 176개 액터 변환을 보존했다. [설정 위치](Gameplay/Overview.md#round4-amusement-seesaw).
+- 확인: Development Editor 빌드, 저장·재로딩, 28초 PIE의 시작 시 다리·게이트 닫힘 애니메이션 및 완료 후 수납/충돌 유지·대관람차 회전·탑승칸 수평 유지 통과. 원격 멀티는 미검증이다.
+
+<a id="change-20261111-round4-amusement-seesaw"></a>
+### 2026-11-11 · 별도 Round4 놀이동산 시소 전투장
+
+- Codex 수행 · 미커밋. `L_Round4_Amusement`를 새로 만들고 기존 Round4는 보존했다. 18×12m 전투판, 10초 간격 좌우 교대 푸셔·최대 45도 기울기, 작동 전 탑승 다리 수납/게이트, 양쪽 계단과 짧은 U 대기줄·조작실·대형 놀이공원 배경을 구성했다. 전용 에셋 39개는 `LD_Gym/LDProps/StaticMeshes/Round4` 아래에 모았다. 독립 BlockingVolume 44개가 외곽 난간 위를 막는다. [구조·편집 위치·검증 범위](Gameplay/Overview.md#round4-amusement-seesaw).
+- 확인: Development Editor 빌드, 저장·재로딩, 28초 PIE의 ±45도/약 9.99초 교대·연결 다리 수납·캐릭터의 판 탑승, 외곽 396개/보행면 13개 검사 통과. 기존 공용 애니메이션의 Inertialization 누락은 미수정이며 원격 멀티·패키징은 미검증이다. 새 맵은 직접 테스트용이고 기존 정식 라운드 목록 연결은 변경하지 않았다.
+
+<a id="change-20261111-round3-invisible-boundary"></a>
+### 2026-11-11 · Round3 낮은 외곽벽 위 투명 충돌벽
+
+- Codex 수행 · 미커밋. 외곽 네 벽 위를 게임 중 보이지 않는 BlockingVolume 38개로 막았다. 상단 월드 Z=3000cm, Pawn만 충돌하며 카메라·그림자에는 영향을 주지 않는다. 기존 배치의 위치·크기 보존과 저장·재로딩 후 충돌 응답·342개 관통 검사 통과를 확인했다. 실제 점프·원격 멀티는 미검증이다. [구간별 편집 위치](Gameplay/Overview.md#round3-dam-theme).
+
+<a id="change-20261111-round3-bridge-crates"></a>
+### 2026-11-11 · 다리 왕복 구체를 화물 상자로 교체
+
+- Codex 수행 · 미커밋. Round3 다리 높이의 `R3A_Ball_Proxy`·`R3A_Ball_Proxy2`를 기존 화물 상자 메시로 교체했다. 위치·회전·크기·3초 PingPong 이동 경로 보존을 저장·재로딩 후 확인했다. 충돌은 새 메시의 단순 박스다. [편집 위치](Gameplay/Overview.md#round3-dam-theme).
+
+<a id="change-20261111-round3-log-player-push"></a>
+### 2026-11-11 · 굴러오는 통나무의 플레이어 밀침
+
+- Codex 수행 · 미커밋. Round3 두 통나무에만 고속 접촉 밀침과 280kg 질량을 적용했다. 정지 통나무는 계속 밀 수 있고, 접근속도 120cm/s 이상에서는 속도 비례 밀침·운동량 일부 보정으로 굴러오는 통나무의 힘을 살린다. 공유 스포너의 새 기능 기본값은 꺼져 있어 다른 맵은 유지한다. [설정과 검증 범위](Gameplay/Overview.md#round3-dam-theme).
+- 확인: DebugGame/Development Editor 빌드와 임시 PIE에서 정면·반대 입력 접촉/정지 통나무 밀기 통과. 재로딩 후 두 스포너의 활성화·280kg·재생성 대기 2초 유지 확인. 실제 닭 캐릭터의 경사로 전투·원격 멀티 체감은 미검증이다.
+
+<a id="change-20261111-round3-fixed-sweeper-floor"></a>
+### 2026-11-11 · Round3 원판 고정과 회전 막대 분리
+
+- Codex 수행 · 미커밋. `R3M_Sweeper`의 원판 메시·충돌을 `R3M_Sweeper_Floor`로 분리하고 Absolute Rotation/Scale을 적용했다. 기존 회전 부모와 막대·중심축의 부착, 30도/초 속도·사용자 크기·테스트 게임모드를 유지한다. [편집 구조](Gameplay/Overview.md#round3-dam-theme).
+- 확인: 저장·재로딩 후 약 5초 PIE에서 원판 회전각 불변, 막대·중심축 약 150도 회전 및 각도 일치 확인. 다인 경기 검증은 미실행이다.
+
+<a id="change-20261111-round3-dam-theme"></a>
+### 2026-11-11 · Round3 댐 정비장 테마와 얕은 물
+
+- Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋. 사용자 배치와 기믹 크기를 보존해 콘크리트 수조·목재 작업교·청록 배관·화물 상자·회전판 외장·외곽 암벽을 적용했다. 전용 메시 19종/재질 12종은 `/Game/LD_Gym/LDProps/StaticMeshes/Round3` 아래에 모았다. 얕은 웅덩이는 Single Layer Water와 시간 기반 잔물결을 사용하며 충돌·유체 물리는 추가하지 않았다.
+- 확인: 저장·재로딩 후 기존 액터 124개의 변환·부착·충돌 활성·Mobility 보존 비교, 약 14초 PIE에서 다리·회전판·분수 움직임 확인. 원격 멀티·패키징·통나무 재생성은 이번 변경 후 미검증. [테마·편집 위치](Gameplay/Overview.md#round3-dam-theme).
 
 <a id="change-20261110-opponent-charge-visibility"></a>
 ### 2026-11-10 · 상대 점프 게이지의 화면 범위·벽 가림 처리
