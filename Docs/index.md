@@ -19,6 +19,7 @@
 
 ## 최근 기록
 
+- [2026-11-12 · EOS 세션 참가 콜백 수명 오류 수정](Changes.md#change-20261112-eos-session-callback)
 - [2026-11-12 · 초기 호스트 접속 제한을 60초로 확대](Changes.md#change-20261112-initial-connect-timeout)
 
 - [2026-11-12 · Round4 놀이동산의 4인 경기 시작 위치 연결](Changes.md#change-20261112-round4-match-spawns)

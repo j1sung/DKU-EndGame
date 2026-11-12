@@ -1,5 +1,10 @@
 ﻿# 변경 이력
 
+<a id="change-20261112-eos-session-callback"></a>
+## 2026-11-12 · EOS 세션 참가 콜백 수명 오류 수정
+
+- Codex 수행 · 미커밋. 검색 완료 바인딩 해제 후 람다 캡처를 읽던 코드를 수정했다. [Network](Network/Overview.md#eos-round1) · [세션 처리 순서](Network/EOSRound1Session.md#소유권과-순서).
+
 <a id="change-20261112-initial-connect-timeout"></a>
 ## 2026-11-12 · 초기 호스트 접속 제한을 60초로 확대
 
