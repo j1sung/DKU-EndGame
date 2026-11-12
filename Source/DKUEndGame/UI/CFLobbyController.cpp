@@ -41,12 +41,8 @@ void ACFLobbyController::BeginPlay()
     {
         LobbyWidget = CreateWidget<UCFLobbyWidget>(this, LobbyWidgetClass);
         LobbyWidget->AddToViewport();
-        FInputModeGameAndUI Mode;
-        Mode.SetWidgetToFocus(LobbyWidget->TakeWidget());
-        Mode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
-        Mode.SetHideCursorDuringCapture(false);
-        SetInputMode(Mode); bShowMouseCursor = true;
     }
+    SetLobbyUIInput(false);
     Lobby->RestoreOnEntry();
 }
 
@@ -98,6 +94,28 @@ void ACFLobbyController::ServerRespawnInLobby_Implementation()
     ClientSetRotation(LobbySpawnTransform.Rotator(), true);
 }
 
+void ACFLobbyController::SetLobbyUIInput(bool bUIOpen)
+{
+    if (!IsLocalController()) return;
+    bShowMouseCursor = bUIOpen;
+    if (bUIOpen)
+    {
+        FInputModeGameAndUI Mode;
+        if (LobbyWidget) Mode.SetWidgetToFocus(LobbyWidget->TakeWidget());
+        Mode.SetHideCursorDuringCapture(false);
+        SetInputMode(Mode);
+    }
+    else
+    {
+        FInputModeGameOnly Mode;
+        Mode.SetConsumeCaptureMouseDown(false);
+        SetInputMode(Mode);
+    }
+    // A visible menu must not turn the camera or move the character behind the UI.
+    ResetIgnoreLookInput(); SetIgnoreLookInput(bUIOpen);
+    ResetIgnoreMoveInput(); SetIgnoreMoveInput(bUIOpen);
+}
+
 void ACFLobbyController::ToggleLobbySettings()
 {
     if (LobbyWidget) LobbyWidget->ToggleSettings();
@@ -107,7 +125,7 @@ void ACFLobbyController::ApplyAudio()
 {
     if (!Lobby || !VolumeMix) return;
     if (MusicClass) UGameplayStatics::SetSoundMixClassOverride(this, VolumeMix, MusicClass, Lobby->MusicVolume, 1.f, .05f, true);
-    if (EffectsClass) UGameplayStatics::SetSoundMixClassOverride(this, VolumeMix, EffectsClass, Lobby->EffectsVolume, 1.f, .05f, true);
+    // Character effects read the saved slider directly in every map; do not multiply twice here.
 }
 
 void ACFLobbyController::ReturnToTitle()

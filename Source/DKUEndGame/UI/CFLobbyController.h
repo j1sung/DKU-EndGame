@@ -15,6 +15,7 @@ class DKUENDGAME_API ACFLobbyController : public ADKUEndGamePlayerController
 public:
     UFUNCTION(BlueprintCallable, Category="CF|Lobby") void ToggleLobbySettings();
     void RequestLobbyRespawn();
+    void SetLobbyUIInput(bool bUIOpen);
 protected:
     virtual void OnPossess(APawn* InPawn) override;
     virtual void BeginPlay() override;
