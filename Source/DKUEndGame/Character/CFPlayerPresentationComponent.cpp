@@ -1,4 +1,4 @@
-#include "Character/CFPlayerPresentationComponent.h"
+﻿#include "Character/CFPlayerPresentationComponent.h"
 #include "UI/CFFrontendSubsystem.h"
 #include "UI/CFLobbyController.h"
 #include "Engine/GameInstance.h"
@@ -10,10 +10,13 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/PlayerState.h"
+#include "GameFramework/PlayerController.h"
+#include "Engine/World.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Net/UnrealNetwork.h"
 #include "Character/ChickenCharacter.h"
 #include "UI/CFJumpChargeWidget.h"
+#include "UI/CFDangerOverlayWidget.h"
 
 void UCFNameplateWidget::NativeOnInitialized()
 {
@@ -30,8 +33,9 @@ void UCFNameplateWidget::SetName(const FString& Name, FLinearColor Colour)
 }
 UCFPlayerPresentationComponent::UCFPlayerPresentationComponent()
 {
-    PrimaryComponentTick.bCanEverTick = true; PrimaryComponentTick.TickInterval = .1f;
+    PrimaryComponentTick.bCanEverTick = true;
     SetIsReplicatedByDefault(true);
+    DangerOverlayClass = FSoftObjectPath(TEXT("/Game/UI/HUD/WBP_CFDangerOverlay.WBP_CFDangerOverlay_C"));
 }
 void UCFPlayerPresentationComponent::BeginPlay()
 {
@@ -60,6 +64,27 @@ void UCFPlayerPresentationComponent::BeginPlay()
         if (auto* Gauge = Cast<UCFJumpChargeWidget>(JumpCharge->GetUserWidgetObject()))
             Gauge->SetCharacter(Cast<AChickenCharacter>(Character));
         JumpCharge->SetVisibility(false);
+
+        // 상대 게이지는 깊이 테스트가 적용되는 월드 위젯으로 그려 벽 뒤로 비치지 않게 한다.
+        OpponentJumpCharge = NewObject<UWidgetComponent>(Character, TEXT("OpponentJumpCharge"));
+        OpponentJumpCharge->SetupAttachment(Character->GetRootComponent());
+        OpponentJumpCharge->SetWidgetSpace(EWidgetSpace::World);
+        OpponentJumpCharge->SetDrawSize(FVector2D(160, 160));
+        OpponentJumpCharge->SetPivot(FVector2D(.5f, .5f));
+        OpponentJumpCharge->SetRelativeScale3D(FVector(.65f));
+        OpponentJumpCharge->SetBlendMode(EWidgetBlendMode::Masked);
+        OpponentJumpCharge->SetCastShadow(false);
+        OpponentJumpCharge->SetWidgetClass(UCFJumpChargeWidget::StaticClass());
+        OpponentJumpCharge->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+        OpponentJumpCharge->SetVisibility(false);
+        OpponentJumpCharge->RegisterComponent();
+        OpponentJumpCharge->InitWidget();
+        if (auto* Gauge = Cast<UCFJumpChargeWidget>(OpponentJumpCharge->GetUserWidgetObject()))
+            Gauge->SetCharacter(Cast<AChickenCharacter>(Character));
+        // 런타임 생성 직후에도 프록시가 실제 게이지 렌더 타깃을 참조하도록 초기화한다.
+        OpponentJumpCharge->UpdateWidget();
+        OpponentJumpCharge->UpdateRenderTarget(FIntPoint(160, 160));
+        OpponentJumpCharge->SetMaterial(0, OpponentJumpCharge->GetMaterial(0));
     }
     auto* Mesh = Character->GetMesh();
     if (Mesh && Character->GetNetMode() != NM_DedicatedServer)
@@ -74,6 +99,13 @@ void UCFPlayerPresentationComponent::BeginPlay()
         }
     OnRep_Colour();
 }
+void UCFPlayerPresentationComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+    if (DangerOverlay) DangerOverlay->RemoveFromParent();
+    DangerOverlay = nullptr;
+    Super::EndPlay(EndPlayReason);
+}
+
 void UCFPlayerPresentationComponent::SetColourSlot(int32 Slot)
 {
     if (!GetOwner()->HasAuthority() || Slot < 0 || Slot > 3) return;
@@ -93,10 +125,53 @@ void UCFPlayerPresentationComponent::TickComponent(float Delta, ELevelTick TickT
     Super::TickComponent(Delta, TickType, Function);
     auto* Pawn = Cast<APawn>(GetOwner());
     const auto* Chicken = Cast<AChickenCharacter>(Pawn);
+    const bool bCanShowCharge = Chicken && Chicken->IsRoundInputEnabled() &&
+        !Chicken->IsFallen() && !Chicken->IsKnockdownPending();
+    auto* LocalController = Chicken && Chicken->IsLocallyControlled()
+        ? Cast<APlayerController>(Pawn->GetController()) : nullptr;
+    if (DangerOverlay && (!LocalController || DangerOverlay->GetOwningPlayer() != LocalController))
+    {
+        DangerOverlay->RemoveFromParent();
+        DangerOverlay = nullptr;
+    }
+    if (LocalController && LocalController->IsLocalController() && GetOwner()->GetNetMode() != NM_DedicatedServer)
+    {
+        if (!DangerOverlay && !DangerOverlayClass.IsNull())
+        {
+            DangerOverlay = CreateWidget<UCFDangerOverlayWidget>(LocalController, DangerOverlayClass.LoadSynchronous());
+            // 점수·안내 HUD보다 아래에 두며 입력은 가로채지 않는다.
+            if (DangerOverlay) DangerOverlay->AddToPlayerScreen(-10);
+        }
+        if (DangerOverlay) DangerOverlay->SetDangerIntensity(Chicken->GetBalanceDangerIntensity(DangerWarningAngleMargin));
+    }
     if (JumpCharge)
-        JumpCharge->SetVisibility(Chicken && Chicken->IsLocallyControlled() && Chicken->IsRoundInputEnabled() &&
-            !Chicken->IsFallen() && !Chicken->IsKnockdownPending());
+        JumpCharge->SetVisibility(bCanShowCharge && Chicken->IsLocallyControlled());
     const auto* State = Pawn ? Pawn->GetPlayerState() : nullptr;
+    if (OpponentJumpCharge)
+    {
+        bool bShowOpponent = false;
+        auto* Viewer = GetWorld()->GetFirstPlayerController();
+        if (bCanShowCharge && !Chicken->IsLocallyControlled() && State && Viewer && Viewer->IsLocalController())
+        {
+            FVector CameraLocation; FRotator CameraRotation;
+            Viewer->GetPlayerViewPoint(CameraLocation, CameraRotation);
+            const FVector Target = OpponentJumpCharge->GetComponentLocation();
+            FVector2D ScreenPosition;
+            int32 Width=0, Height=0;
+            Viewer->GetViewportSize(Width, Height);
+            bShowOpponent = FVector::DotProduct(Target-CameraLocation, CameraRotation.Vector()) > 0.f &&
+                Viewer->ProjectWorldLocationToScreen(Target, ScreenPosition) &&
+                ScreenPosition.X >= 0.f && ScreenPosition.Y >= 0.f &&
+                ScreenPosition.X < Width && ScreenPosition.Y < Height;
+            if (bShowOpponent)
+                OpponentJumpCharge->SetWorldRotation((CameraLocation-Target).Rotation());
+        }
+        OpponentJumpCharge->SetVisibility(bShowOpponent);
+    }
+    // 게이지 방향만 매 프레임 갱신하고 이름 표시는 기존 10Hz를 유지한다.
+    NameplateUpdateRemaining -= Delta;
+    if (NameplateUpdateRemaining > 0.f) return;
+    NameplateUpdateRemaining = .1f;
     if (!Nameplate) return;
     auto* Widget = Cast<UCFNameplateWidget>(Nameplate->GetUserWidgetObject());
     const auto* Instance = GetWorld() ? GetWorld()->GetGameInstance() : nullptr;
