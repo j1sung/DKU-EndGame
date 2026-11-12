@@ -47,6 +47,24 @@
 
 - [2026-11-10 · 상대 점프 게이지의 화면 범위·벽 가림 처리](Changes.md#change-20261110-opponent-charge-visibility)
 
+- [2026-11-12 · 카메라 상하 범위 축소·탈락 대기 제거](Changes.md#change-20261112-camera-death-delay-tuning)
+
+- [2026-11-12 · 자동 홉으로 인한 기울기 탈락 누락 수정](Changes.md#change-20261112-autohop-balance-gate)
+
+- [2026-11-12 · 게임 소리 볼륨 연결·착지 조기 탈락 보완](Changes.md#change-20261112-effects-balance-failure)
+
+- [2026-11-12 · 로비 커서 숨김과 공통 배경음](Changes.md#change-20261112-lobby-cursor-bgm)
+
+- [2026-11-12 · 마우스 Y축 상하 시야 확대](Changes.md#change-20261112-camera-pitch)
+
+- [2026-11-12 · 피격 뒤 지연 상체 기울기](Changes.md#change-20261112-delayed-hit-tilt)
+
+- [2026-11-11 · 경기 Esc 메뉴 버튼 정리](Changes.md#change-20261111-match-esc-menu)
+
+- [2026-11-11 · 로비 안내 문구를 카드 내부로 배치](Changes.md#change-20261111-lobby-notice-card)
+
+- [2026-11-11 · 최종 결과 점수표 정렬](Changes.md#change-20261111-final-result-table)
+
 - [2026-11-10 · Round2 정식 경기 GameMode 복구](Changes.md#change-20261110-round2-match-mode-restore)
 
 - [2026-11-10 · 로비 게임 닉네임·EOS 수동 대기 창 노출 수정](Changes.md#change-20261110-nickname-waiting)

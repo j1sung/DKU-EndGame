@@ -39,6 +39,8 @@ private:
     UPROPERTY(Transient)
     TMap<EChickenSound, TObjectPtr<UAudioComponent>> Voices;
     TMap<EChickenSound, float> RemainingTimes;
+    TMap<EChickenSound, float> EventVolumes;
+    float GetUserEffectsVolume() const;
     float ChargePulseRemaining = 0.f;
     bool bWasCharging = false;
 };

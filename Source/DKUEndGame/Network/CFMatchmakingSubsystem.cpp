@@ -208,7 +208,7 @@ void UCFMatchmakingSubsystem::Apply(const FCFMatchUpdate& Update)
     if (Update.State == ECFMatchUpdate::Waiting) Lobby->ReportWaiting(Id, Update.RemainingSeconds);
     else if (Update.State == ECFMatchUpdate::Assigned)
     {
-        Lobby->ReportAssigned(Id, FText::FromString(TEXT("매칭이 완료되었습니다. 연결을 기다리고 있습니다.")));
+        Lobby->ReportAssigned(Id, FText::FromString(TEXT("매칭이 완료되었습니다.\n연결을 기다리고 있습니다.")));
         if (Update.bNewAssignment) OnMatchAssigned.Broadcast(Flow.MatchId);
     }
     else if (Update.State == ECFMatchUpdate::Uncertain)

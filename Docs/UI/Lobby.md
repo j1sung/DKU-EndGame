@@ -6,13 +6,15 @@
 
 ## 열어서 확인하기
 
+2026-11-12 커서·배경음 변경(Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋): 로비 입장 시 Game Only 입력과 숨김 커서를 적용한다. 설정을 열 때만 Game and UI·커서 표시를 사용하며 카메라/이동 입력을 막고, 닫으면 복구한다. 기존 BG 슬라이더는 모든 라운드에서도 유지되는 공통 배경음 볼륨에 적용한다. [공통 배경음](../Gameplay/Overview.md#background-music). 빌드·실제 UI 조작/오디오 재생은 미검증이다.
+
 2026-11-10 닉네임 보완: 로비 컨트롤러가 등장·Pawn 소유·프로필 상태 변경 때 인증된 `ProfileNickname`을 로컬 권한 PlayerState에 적용한다. 로컬 이름표도 게임 프로필 이름을 우선 읽으므로 Epic 표시 이름이 노출되지 않는다. R키 부활과 경기 후 로비 복귀에도 같은 경로를 사용한다. 새 Editor 빌드·실계정 재확인은 아직 수행하지 않았다.
 
 1. Content Browser에서 `/Game/Map/L_Lobby_Playground`를 연다. 기존 `L_LobbyJS` 이름의 에셋과 구분한다.
 2. World Settings의 GameMode Override가 `BP_CF_LobbyGameMode`인지 확인하고 Play한다.
-3. 오른쪽 위에 빠른 대전, 왼쪽 위에 설정 톱니바퀴가 나타난다. 톱니바퀴 또는 Esc로 설정을 여닫는다.
+3. 평소에는 커서 없이 마우스로 시점을 조작한다. Esc로 설정을 열면 커서가 나타나고 빠른 대전·매칭 취소·볼륨 버튼을 사용할 수 있다. Esc 또는 톱니바퀴로 설정을 닫으면 커서가 다시 숨겨진다.
 4. 기존 닭싸움 캐릭터의 WASD·마우스 차징 점프로 연습한다. 착지 후 자동 반동도 기존 캐릭터 코드가 처리한다.
-5. BG는 배경음, VFX는 효과음 볼륨이다. 타이틀로 돌아가기는 기존 `Lvl_CF_MainMenu`를 연다.
+5. BG는 배경음, VFX는 게임 소리(자동 홉·점프 차징·발사·착지·충돌) 볼륨이다. 2026-11-12부터 캐릭터 효과음에 실제 배율을 적용하며 재생 중인 소리와 다른 라운드에도 저장값을 반영한다. VFX를 0으로 내려도 BG는 유지된다. 타이틀로 돌아가기는 기존 `Lvl_CF_MainMenu`를 연다.
 
 메인 타이틀의 인증·프로필·실제 로비 이동은 [Entry 연결 코드](../Network/LoginEntry.md)에 구현했다. 2026-11-06 사용자는 실제 로그인부터 로비 입장 성공을 보고했다. [매칭 티켓 제공자](../Network/MatchmakingTickets.md)를 추가해 빠른 대전·조회·취소를 API에 연결했다. 로그인 없이 직접 맵을 열면 로그인 안내를 표시한다. 실제 EOS 세션 생성·참가는 후속 작업이며 가짜 매칭 성공이나 임의의 인원을 만들지 않는다.
 
@@ -32,7 +34,7 @@ Figma `ChickenFight`의 로비 프레임 `100:994`를 기준으로 제작했다.
 |---|---|
 | 로비 맵 | `/Game/Map/L_Lobby_Playground` — 기존 배치 유지, 로비 게임모드 지정 |
 | UMG | `/Game/UI/Lobby/WBP_CF_Lobby` — Designer에서 배치 수정, 부모 `UCFLobbyWidget` |
-| 컨트롤러 | `/Game/UI/Lobby/BP_CF_LobbyController` — 부모 `ACFLobbyController`, Game and UI 입력 |
+| 컨트롤러 | `/Game/UI/Lobby/BP_CF_LobbyController` — 부모 `ACFLobbyController`, 평소 Game Only / 설정 중 Game and UI 입력 |
 | 게임모드 | `/Game/UI/Lobby/BP_CF_LobbyGameMode` — 기존 `BP_ChickenCharacter` 사용 |
 | 원본 디자인 | `Content/UI/Lobby/SourceArt/` — Gear PNG와 패널 SVG 3개 |
 | 텍스처 | `/Game/UI/Lobby/Textures/` — 원본 이미지와 SVG를 변환한 UI 텍스처 |
@@ -41,6 +43,17 @@ Figma `ChickenFight`의 로비 프레임 `100:994`를 기준으로 제작했다.
 | 표시·입력 | `CFLobbyWidget.h/.cpp`, `CFLobbyController.h/.cpp` |
 
 맵에 배치된 Player0 자동 소유 캐릭터를 유지한다. 컨트롤러는 기존 `ADKUEndGamePlayerController`를 상속하고 기존 ThirdPerson 입력 매핑 목록을 복사했다. 경기용 `CFWaitingGameMode`·기존 LAN 대기 UI와 별도이므로 연습 화면이 경기 시작이나 승패 판정을 실행하지 않는다. 기존 메인 UI 코드와 에셋은 수정하지 않았다.
+
+<a id="notice-card"></a>
+## 카드 내부 안내 문구
+
+2026-11-11 · Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋.
+
+`WBP_CF_Lobby`의 빠른 대전·매칭 상태 카드는 제목 → 안내 → 버튼 순서로 배치한다. 안내 영역은 최소 48 Slate 단위 높이와 자동 줄바꿈을 사용하며, 긴 문장은 세로 콘텐츠와 배경을 함께 늘린다. 기존 패널·버튼 이름, 스타일, 오른쪽 위 기준점과 이벤트 연결은 유지한다. 카드 밖 `ErrorLabel`은 제거했다.
+
+평상시 `QuickSubtitle`에는 `4인 온라인 매칭`을 표시하고 경기 종료·매칭 취소 등 Idle 안내가 있으면 그 문구로 대체한다. `StatusDetail`은 연결 확인 중 안내, 대기 시간, 연결 진행 문구를 표시한다. `CFLobbyWidget`은 경기 종료와 참가자 이탈 문구만 표시용으로 짧게 줄바꿈하며, 원본 메시지와 상태는 바꾸지 않는다. 긴 인증·오류 안내는 생략하지 않는다.
+
+UE 5.8.2 Editor 빌드·UMG 컴파일/재저장과 실제 PIE 렌더링을 확인했다. 1280×720 및 960×640 실제 캡처에서 안내의 카드 내부 배치·버튼 비겹침, 경기 종료·참가자 이탈·매칭 취소, 긴 안내와 연결 중 문구를 직접 확인했다. PIE 인스턴스에만 모의 제공자를 연결해 기존 UButton OnClicked 이벤트와 중복 요청·늦은 응답 방어 등 33개 검사를 통과했다. 위젯의 런타임 좌표 조회가 0을 반환해 화면 배치는 좌표 자동 판정 대신 캡처를 직접 검토했다. 기존 `ChickenFight.Matchmaking.TicketFlow`와 `ResponseGuards`도 통과했다. 네트워크 제공자와 상태 전이 코드는 변경하지 않았고, 실제 EOS/백엔드 4PC 매치는 재시험하지 않았다.
 
 ## 매칭 통합 연결
 

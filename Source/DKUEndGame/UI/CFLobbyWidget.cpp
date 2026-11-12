@@ -7,7 +7,21 @@
 #include "Components/TextBlock.h"
 #include "Engine/GameInstance.h"
 
-namespace { FText Text(const TCHAR* Value) { return FText::FromString(Value); } }
+namespace
+{
+FText Text(const TCHAR* Value) { return FText::FromString(Value); }
+
+FText NoticeText(const FText& Message)
+{
+    // 상태·서버 응답은 유지하고 카드에 표시하는 안내만 짧게 정리한다.
+    const FString Value = Message.ToString();
+    if (Value == TEXT("경기가 종료되었습니다. 다시 빠른 대전을 시작할 수 있습니다."))
+        return Text(TEXT("경기가 종료되었습니다.\n다시 대전할 수 있습니다."));
+    if (Value == TEXT("참가자가 나가 경기를 종료합니다."))
+        return Text(TEXT("참가자가 나가\n경기를 종료합니다."));
+    return Message;
+}
+}
 
 void UCFLobbyWidget::NativeConstruct()
 {
@@ -54,6 +68,7 @@ void UCFLobbyWidget::ToggleSettings()
 {
     bSettingsOpen = !bSettingsOpen;
     SettingsPanel->SetVisibility(bSettingsOpen ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
+    if (auto* Controller = Cast<ACFLobbyController>(GetOwningPlayer())) Controller->SetLobbyUIInput(bSettingsOpen);
     if (!bSettingsOpen) SaveAudio();
 }
 
@@ -71,7 +86,7 @@ void UCFLobbyWidget::RefreshAudio()
 {
     MusicSlider->SetValue(Lobby->MusicVolume); EffectsSlider->SetValue(Lobby->EffectsVolume);
     MusicSlider->SetToolTipText(FText::Format(Text(TEXT("배경음 {0}%")), FMath::RoundToInt(Lobby->MusicVolume * 100)));
-    EffectsSlider->SetToolTipText(FText::Format(Text(TEXT("효과음 {0}%")), FMath::RoundToInt(Lobby->EffectsVolume * 100)));
+    EffectsSlider->SetToolTipText(FText::Format(Text(TEXT("게임 소리 (점프·차징·착지·충돌) {0}%")), FMath::RoundToInt(Lobby->EffectsVolume * 100)));
 }
 
 void UCFLobbyWidget::Refresh()
@@ -93,8 +108,7 @@ void UCFLobbyWidget::Refresh()
     ReturnButton->SetIsEnabled(Lobby->CanReturnToTitle());
     ReturnLabel->SetText(Text(S == ECFQueueScreen::AuthenticationRequired ? TEXT("로그인 화면으로") : Lobby->bReturnRequested ? TEXT("취소 후 돌아가기...") : TEXT("타이틀로 돌아가기")));
     ReturnButton->SetToolTipText(Text(S == ECFQueueScreen::AuthenticationRequired ? TEXT("기존 매칭의 취소를 확정하지 않고 다시 로그인합니다.") : S == ECFQueueScreen::Connecting ? TEXT("연결 중에는 돌아갈 수 없습니다.") : TEXT("매칭 중이면 취소 확인 후 타이틀로 돌아갑니다.")));
-    ErrorLabel->SetText(Lobby->ErrorMessage);
-    ErrorLabel->SetVisibility(Lobby->ErrorMessage.IsEmpty() ? ESlateVisibility::Collapsed : ESlateVisibility::HitTestInvisible);
+    QuickSubtitle->SetText(Lobby->ErrorMessage.IsEmpty() ? Text(TEXT("4인 온라인 매칭")) : NoticeText(Lobby->ErrorMessage));
     LastRemainingSeconds = -2; RefreshTime();
 }
 
@@ -104,7 +118,9 @@ void UCFLobbyWidget::RefreshTime()
     if (LastRemainingSeconds == Remaining) return;
     LastRemainingSeconds = Remaining;
     FText Detail;
-    if (Lobby->Screen == ECFQueueScreen::Waiting && Remaining >= 0)
+    if (!Lobby->ErrorMessage.IsEmpty())
+        Detail = NoticeText(Lobby->ErrorMessage);
+    else if (Lobby->Screen == ECFQueueScreen::Waiting && Remaining >= 0)
         Detail = Remaining > 0 ? FText::FromString(FString::Printf(TEXT("남은 대기 시간 %d:%02d"), Remaining / 60, Remaining % 60)) : Text(TEXT("매칭 상태 확인 중..."));
     else if (Lobby->Screen == ECFQueueScreen::Connecting)
         Detail = Lobby->ConnectionMessage.IsEmpty() ? Text(TEXT("플레이어와 연결하고 있습니다.")) : Lobby->ConnectionMessage;
