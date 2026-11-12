@@ -1,5 +1,12 @@
 ﻿# 변경 이력
 
+<a id="change-20261112-initial-connect-timeout"></a>
+## 2026-11-12 · 초기 호스트 접속 제한을 60초로 확대
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
+- 변경: 원격 dev `074fb3c`에서 새 작업 브랜치를 만들어 `IpNetDriver.InitialConnectTimeout`을 15초에서 60초로 변경했다. 연결 후 끊김 판정과 서버 매칭 단계 기한은 유지한다.
+- 확인: EOS 설정 상속·EOSLocal 덮어쓰기 부재·변경 범위를 정적으로 확인했다. 새 빌드·실제 접속 재시험은 미실행이다. [Network](Network/Overview.md#eos-round1), [검사 방법과 기한 구분](Network/EOSRound1Session.md#각-테스트-pc-준비).
+
 <a id="change-20261112-round4-match-spawns"></a>
 ## 2026-11-12 · Round4 놀이동산의 4인 경기 시작 위치 연결
 
