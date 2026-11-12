@@ -329,14 +329,8 @@ void UCFMatchSessionSubsystem::Advance()
     {
         bStartPending = true;
         const uint64 Epoch = Generation;
-        StartHandle = Sessions->AddOnStartSessionCompleteDelegate_Handle(FOnStartSessionCompleteDelegate::CreateWeakLambda(this,
-            [this, Epoch](FName Name, bool bSuccess)
-            {
-                if (Epoch != Generation || IsStopping() || Name != NAME_GameSession) return;
-                Sessions->ClearOnStartSessionCompleteDelegate_Handle(StartHandle); StartHandle.Reset(); bStartPending = false;
-                if (!bSuccess) { Abort(TEXT("EOS 경기 시작에 실패했습니다.")); return; }
-                bSessionStarted = true;
-            }));
+        StartHandle = Sessions->AddOnStartSessionCompleteDelegate_Handle(FOnStartSessionCompleteDelegate::CreateUObject(
+            this, &UCFMatchSessionSubsystem::OnStartSessionComplete, Epoch));
         if (!Sessions->StartSession(NAME_GameSession))
         {
             Sessions->ClearOnStartSessionCompleteDelegate_Handle(StartHandle); StartHandle.Reset();
@@ -372,18 +366,8 @@ void UCFMatchSessionSubsystem::Create()
     Settings.Set(FirstMapKey, FirstMap, EOnlineDataAdvertisementType::ViaOnlineService);
     Settings.Set(ProtocolKey, FString(TEXT("2")), EOnlineDataAdvertisementType::ViaOnlineService);
     const uint64 Epoch = Generation;
-    CreateHandle = Sessions->AddOnCreateSessionCompleteDelegate_Handle(FOnCreateSessionCompleteDelegate::CreateWeakLambda(this,
-        [this, Epoch](FName Name, bool bSuccess)
-        {
-            if (Epoch != Generation || Name != NAME_GameSession) return;
-            Sessions->ClearOnCreateSessionCompleteDelegate_Handle(CreateHandle); CreateHandle.Reset();
-            if (IsStopping()) { bCleaning = false; BeginCleanup(); return; }
-            const FNamedOnlineSession* Session = Sessions->GetNamedSession(Name);
-            if (!bSuccess || !Session || !Session->SessionInfo.IsValid()) { Abort(TEXT("EOS 세션 생성에 실패했습니다.")); return; }
-            PublishedSessionId = Session->SessionInfo->GetSessionId().ToString();
-            Connection = EConnection::HostTravel;
-            UGameplayStatics::OpenLevel(GetGameInstance(), FName(*FirstMap), true, TEXT("listen") + TravelOptions());
-        }));
+    CreateHandle = Sessions->AddOnCreateSessionCompleteDelegate_Handle(FOnCreateSessionCompleteDelegate::CreateUObject(
+        this, &UCFMatchSessionSubsystem::OnCreateSessionComplete, Epoch));
     if (!Sessions->CreateSession(0, NAME_GameSession, Settings))
     {
         Sessions->ClearOnCreateSessionCompleteDelegate_Handle(CreateHandle); CreateHandle.Reset();
@@ -399,53 +383,82 @@ void UCFMatchSessionSubsystem::Find()
     Search->bIsLanQuery = false; Search->MaxSearchResults = 10;
     Search->QuerySettings.Set(MatchKey, MatchId, EOnlineComparisonOp::Equals);
     const uint64 Epoch = Generation;
-    FindHandle = Sessions->AddOnFindSessionsCompleteDelegate_Handle(FOnFindSessionsCompleteDelegate::CreateWeakLambda(this,
-        [this, Epoch](bool bSuccess)
-        {
-            if (Epoch != Generation) return;
-            Sessions->ClearOnFindSessionsCompleteDelegate_Handle(FindHandle); FindHandle.Reset();
-            if (IsStopping()) { FinishCleanup(); return; }
-            for (const auto& Result : Search->SearchResults)
-            {
-                FString ResultMatch, Version, Map, Protocol;
-                if (!bSuccess || !Result.IsValid() || !Result.Session.OwningUserId.IsValid() ||
-                    ProductUserId(*Result.Session.OwningUserId) != Match.Host ||
-                    Result.GetSessionIdStr() != Match.SessionId ||
-                    !Result.Session.SessionSettings.Get(MatchKey, ResultMatch) || ResultMatch != MatchId ||
-                    !Result.Session.SessionSettings.Get(VersionKey, Version) || Version != TEXT("0.1.0") ||
-                    !Result.Session.SessionSettings.Get(ProtocolKey, Protocol) || Protocol != TEXT("2") ||
-                    !Result.Session.SessionSettings.Get(FirstMapKey, Map) || !UCFMatchRuntimeSubsystem::MapNumber(Map)) continue;
-                FirstMap = Map;
-                Connection = EConnection::Joining;
-                JoinHandle = Sessions->AddOnJoinSessionCompleteDelegate_Handle(FOnJoinSessionCompleteDelegate::CreateWeakLambda(this,
-                    [this, Epoch](FName Name, EOnJoinSessionCompleteResult::Type Outcome)
-                    {
-                        if (Epoch != Generation || Name != NAME_GameSession) return;
-                        Sessions->ClearOnJoinSessionCompleteDelegate_Handle(JoinHandle); JoinHandle.Reset();
-                        if (IsStopping()) { bCleaning = false; BeginCleanup(); return; }
-                        FString Address;
-                        if (Outcome != EOnJoinSessionCompleteResult::Success || !Sessions->GetResolvedConnectString(Name, Address))
-                        { Abort(TEXT("EOS 세션에 참가하지 못했습니다.")); return; }
-                        APlayerController* PC = GetGameInstance()->GetFirstLocalPlayerController();
-                        if (!PC) { Abort(TEXT("로컬 플레이어가 없습니다.")); return; }
-                        Connection = EConnection::ClientTravel;
-                        PC->ClientTravel(BuildRoundTravelURL(Address, MatchId, Match.Attempt), TRAVEL_Absolute);
-                    }));
-                if (!Sessions->JoinSession(0, NAME_GameSession, Result))
-                {
-                    Sessions->ClearOnJoinSessionCompleteDelegate_Handle(JoinHandle); JoinHandle.Reset();
-                    Abort(TEXT("EOS 참가 요청에 실패했습니다."));
-                }
-                return;
-            }
-            // 광고 전파가 늦으면 동일 세션을 다음 조회 주기에 다시 검색한다.
-            Connection = EConnection::None;
-        }));
+    FindHandle = Sessions->AddOnFindSessionsCompleteDelegate_Handle(FOnFindSessionsCompleteDelegate::CreateUObject(
+        this, &UCFMatchSessionSubsystem::OnFindSessionsComplete, Epoch));
     if (!Sessions->FindSessions(0, Search.ToSharedRef()))
     {
         Sessions->ClearOnFindSessionsCompleteDelegate_Handle(FindHandle); FindHandle.Reset();
         Abort(TEXT("EOS 세션 검색 요청에 실패했습니다."));
     }
+}
+
+void UCFMatchSessionSubsystem::OnDestroySessionComplete(FName Name, bool bSuccess, uint64 Epoch)
+{
+    if (Epoch == Generation && Name == NAME_GameSession) FinishCleanup();
+}
+
+void UCFMatchSessionSubsystem::OnCreateSessionComplete(FName Name, bool bSuccess, uint64 Epoch)
+{
+    if (Epoch != Generation || Name != NAME_GameSession) return;
+    Sessions->ClearOnCreateSessionCompleteDelegate_Handle(CreateHandle); CreateHandle.Reset();
+    if (IsStopping()) { bCleaning = false; BeginCleanup(); return; }
+    const FNamedOnlineSession* Session = Sessions->GetNamedSession(Name);
+    if (!bSuccess || !Session || !Session->SessionInfo.IsValid()) { Abort(TEXT("EOS 세션 생성에 실패했습니다.")); return; }
+    PublishedSessionId = Session->SessionInfo->GetSessionId().ToString();
+    Connection = EConnection::HostTravel;
+    UGameplayStatics::OpenLevel(GetGameInstance(), FName(*FirstMap), true, TEXT("listen") + TravelOptions());
+}
+
+void UCFMatchSessionSubsystem::OnStartSessionComplete(FName Name, bool bSuccess, uint64 Epoch)
+{
+    if (Epoch != Generation || IsStopping() || Name != NAME_GameSession) return;
+    Sessions->ClearOnStartSessionCompleteDelegate_Handle(StartHandle); StartHandle.Reset(); bStartPending = false;
+    if (!bSuccess) { Abort(TEXT("EOS 경기 시작에 실패했습니다.")); return; }
+    bSessionStarted = true;
+}
+
+void UCFMatchSessionSubsystem::OnFindSessionsComplete(bool bSuccess, uint64 Epoch)
+{
+    if (Epoch != Generation) return;
+    Sessions->ClearOnFindSessionsCompleteDelegate_Handle(FindHandle); FindHandle.Reset();
+    if (IsStopping()) { FinishCleanup(); return; }
+    for (const auto& Result : Search->SearchResults)
+    {
+        FString ResultMatch, Version, Map, Protocol;
+        if (!bSuccess || !Result.IsValid() || !Result.Session.OwningUserId.IsValid() ||
+            ProductUserId(*Result.Session.OwningUserId) != Match.Host ||
+            Result.GetSessionIdStr() != Match.SessionId ||
+            !Result.Session.SessionSettings.Get(MatchKey, ResultMatch) || ResultMatch != MatchId ||
+            !Result.Session.SessionSettings.Get(VersionKey, Version) || Version != TEXT("0.1.0") ||
+            !Result.Session.SessionSettings.Get(ProtocolKey, Protocol) || Protocol != TEXT("2") ||
+            !Result.Session.SessionSettings.Get(FirstMapKey, Map) || !UCFMatchRuntimeSubsystem::MapNumber(Map)) continue;
+        FirstMap = Map;
+        Connection = EConnection::Joining;
+        JoinHandle = Sessions->AddOnJoinSessionCompleteDelegate_Handle(FOnJoinSessionCompleteDelegate::CreateUObject(
+            this, &UCFMatchSessionSubsystem::OnJoinSessionComplete, Epoch));
+        if (!Sessions->JoinSession(0, NAME_GameSession, Result))
+        {
+            Sessions->ClearOnJoinSessionCompleteDelegate_Handle(JoinHandle); JoinHandle.Reset();
+            Abort(TEXT("EOS 참가 요청에 실패했습니다."));
+        }
+        return;
+    }
+    // 광고 전파가 늦으면 동일 세션을 다음 조회 주기에 다시 검색한다.
+    Connection = EConnection::None;
+}
+
+void UCFMatchSessionSubsystem::OnJoinSessionComplete(FName Name, EOnJoinSessionCompleteResult::Type Outcome, uint64 Epoch)
+{
+    if (Epoch != Generation || Name != NAME_GameSession) return;
+    Sessions->ClearOnJoinSessionCompleteDelegate_Handle(JoinHandle); JoinHandle.Reset();
+    if (IsStopping()) { bCleaning = false; BeginCleanup(); return; }
+    FString Address;
+    if (Outcome != EOnJoinSessionCompleteResult::Success || !Sessions->GetResolvedConnectString(Name, Address))
+    { Abort(TEXT("EOS 세션에 참가하지 못했습니다.")); return; }
+    APlayerController* PC = GetGameInstance()->GetFirstLocalPlayerController();
+    if (!PC) { Abort(TEXT("로컬 플레이어가 없습니다.")); return; }
+    Connection = EConnection::ClientTravel;
+    PC->ClientTravel(BuildRoundTravelURL(Address, MatchId, Match.Attempt), TRAVEL_Absolute);
 }
 
 void UCFMatchSessionSubsystem::NotifyPlaying()
@@ -519,11 +532,8 @@ void UCFMatchSessionSubsystem::BeginCleanup()
     if (CreateHandle.IsValid() || JoinHandle.IsValid() || FindHandle.IsValid()) return;
     if (!Sessions || !Sessions->GetNamedSession(NAME_GameSession)) { FinishCleanup(); return; }
     const uint64 Epoch = Generation;
-    DestroyHandle = Sessions->AddOnDestroySessionCompleteDelegate_Handle(FOnDestroySessionCompleteDelegate::CreateWeakLambda(this,
-        [this, Epoch](FName Name, bool bSuccess)
-        {
-            if (Epoch == Generation && Name == NAME_GameSession) FinishCleanup();
-        }));
+    DestroyHandle = Sessions->AddOnDestroySessionCompleteDelegate_Handle(FOnDestroySessionCompleteDelegate::CreateUObject(
+        this, &UCFMatchSessionSubsystem::OnDestroySessionComplete, Epoch));
     if (!Sessions->DestroySession(NAME_GameSession)) CleanupDeadline = FPlatformTime::Seconds() + 1;
 }
 

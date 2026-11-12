@@ -76,6 +76,11 @@ private:
     bool LocalRoundReady() const;
     void Create();
     void Find();
+    void OnDestroySessionComplete(FName Name, bool bSuccess, uint64 Epoch);
+    void OnCreateSessionComplete(FName Name, bool bSuccess, uint64 Epoch);
+    void OnStartSessionComplete(FName Name, bool bSuccess, uint64 Epoch);
+    void OnFindSessionsComplete(bool bSuccess, uint64 Epoch);
+    void OnJoinSessionComplete(FName Name, EOnJoinSessionCompleteResult::Type Outcome, uint64 Epoch);
     static FString BuildRoundTravelURL(const FString& Address, const FString& AssignedMatchId, int32 Attempt);
     void ClearSessionDelegates();
     void Abort(const TCHAR* Reason);
