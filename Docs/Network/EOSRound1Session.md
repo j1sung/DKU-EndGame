@@ -33,6 +33,8 @@
 
 ## 각 테스트 PC 준비
 
+2026-11-12 접속 시간 비교 검사(Codex 수행 · 요청자 GitHub ID 확인 필요): `Config/DefaultEngine.ini`의 `IpNetDriver.InitialConnectTimeout`을 15초에서 60초로 늘렸다. EOS의 `NetDriverEOSBase → NetDriverEOS → IpNetDriver` 상속에도 적용되며 EOSLocal 생성 도구에는 별도 timeout 덮어쓰기가 없다. 연결 완료 시 즉시 다음 단계로 진행한다. 연결 후 `ConnectionTimeout=10.0`, 매칭 서버 단계별 준비 기한 60초와 클라이언트의 서버 기한 추적은 유지하므로 매칭 전체에 60초를 추가하는 변경은 아니다. 실제 4PC 재시험은 남아 있으며, Unreal/테스트 게임을 재실행해야 새 설정을 읽는다.
+
 Unreal 5.8 Editor와 동일한 브랜치의 소스가 필요하다. 계정은 서로 다른 네 개이며 개발 조직/테스트 접근 권한과 기존 프로필이 있어야 한다. Dev Auth Tool은 이 Account Portal 게임 테스트의 필수 도구가 아니다.
 
 1. 프로젝트와 Unreal을 종료한다. 이 변경을 받은 뒤 프로젝트 루트 PowerShell에서 기존 설정을 갱신한다. **Secret을 다시 출력하거나 팀원에게 설정 파일을 복사하지 않는다.**
