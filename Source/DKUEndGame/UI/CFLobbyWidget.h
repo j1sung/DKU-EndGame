@@ -34,7 +34,7 @@ protected:
     UPROPERTY(meta=(BindWidget)) TObjectPtr<UTextBlock> StatusDetail;
     UPROPERTY(meta=(BindWidget)) TObjectPtr<UTextBlock> CancelLabel;
     UPROPERTY(meta=(BindWidget)) TObjectPtr<UTextBlock> ReturnLabel;
-    UPROPERTY(meta=(BindWidget)) TObjectPtr<UTextBlock> ErrorLabel;
+    UPROPERTY(meta=(BindWidget)) TObjectPtr<UTextBlock> QuickSubtitle;
 private:
     UPROPERTY(Transient) TObjectPtr<UCFLobbySubsystem> Lobby;
     bool bSettingsOpen = false;

@@ -31,6 +31,12 @@
 
 - [2026-11-12 · 피격 뒤 지연 상체 기울기](Changes.md#change-20261112-delayed-hit-tilt)
 
+- [2026-11-11 · 경기 Esc 메뉴 버튼 정리](Changes.md#change-20261111-match-esc-menu)
+
+- [2026-11-11 · 로비 안내 문구를 카드 내부로 배치](Changes.md#change-20261111-lobby-notice-card)
+
+- [2026-11-11 · 최종 결과 점수표 정렬](Changes.md#change-20261111-final-result-table)
+
 - [2026-11-10 · Round2 정식 경기 GameMode 복구](Changes.md#change-20261110-round2-match-mode-restore)
 
 - [2026-11-10 · 로비 게임 닉네임·EOS 수동 대기 창 노출 수정](Changes.md#change-20261110-nickname-waiting)

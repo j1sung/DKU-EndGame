@@ -3,6 +3,7 @@
 #include "Network/CFSessionSubsystem.h"
 #include "Network/CFMatchSessionSubsystem.h"
 #include "Blueprint/WidgetTree.h"
+#include "Brushes/SlateRoundedBoxBrush.h"
 #include "Components/CanvasPanel.h"
 #include "Components/CanvasPanelSlot.h"
 #include "Components/TextBlock.h"
@@ -85,9 +86,23 @@ void UCFMatchStatusWidget::NativeOnInitialized()
     Content->AddChildToVerticalBox(ReturnSize)->SetPadding(FMargin(0,20,0,0));
     ReturnButton->OnClicked.AddUniqueDynamic(this,&ThisClass::ReturnToWaiting);
 
+    MenuPanel=WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(),TEXT("MatchMenuPanel"));
+    MenuPanel->SetBrush(FSlateRoundedBoxBrush(FLinearColor(.025f,.035f,.045f,.88f),16.f));
+    MenuPanel->SetPadding(FMargin(16));
+    auto* MenuSlot=Canvas->AddChildToCanvas(MenuPanel); MenuSlot->SetAnchors(FAnchors(1,0));
+    MenuSlot->SetAlignment(FVector2D(1,0)); MenuSlot->SetPosition(FVector2D(-24,64)); MenuSlot->SetAutoSize(true);
     LeaveButton=WidgetTree->ConstructWidget<UButton>(UButton::StaticClass(),TEXT("LeaveButton"));
-    auto* Label=WidgetTree->ConstructWidget<UTextBlock>(); Label->SetText(FText::FromString(TEXT("방 나가기"))); LeaveButton->SetContent(Label);
-    auto* CanvasSlot=Canvas->AddChildToCanvas(LeaveButton); CanvasSlot->SetAnchors(FAnchors(1,0)); CanvasSlot->SetAlignment(FVector2D(1,0)); CanvasSlot->SetPosition(FVector2D(-24,64)); CanvasSlot->SetSize(FVector2D(140,44));
+    FButtonStyle LeaveStyle=LeaveButton->GetStyle();
+    LeaveStyle.SetNormal(FSlateRoundedBoxBrush(FLinearColor(.65f,.19f,.10f,.95f),12.f))
+        .SetHovered(FSlateRoundedBoxBrush(FLinearColor(.78f,.25f,.14f,1.f),12.f))
+        .SetPressed(FSlateRoundedBoxBrush(FLinearColor(.46f,.12f,.06f,1.f),12.f))
+        .SetNormalPadding(FMargin(16,10)).SetPressedPadding(FMargin(16,10));
+    LeaveButton->SetStyle(LeaveStyle);
+    auto* Label=MakeText(TEXT("LeaveLabel"),20); Label->SetText(FText::FromString(TEXT("방 나가기")));
+    Label->SetShadowOffset(FVector2D::ZeroVector); LeaveButton->SetContent(Label);
+    auto* LeaveSize=WidgetTree->ConstructWidget<USizeBox>(); LeaveSize->SetWidthOverride(220); LeaveSize->SetHeightOverride(56);
+    LeaveSize->SetContent(LeaveButton); MenuPanel->SetContent(LeaveSize);
+    MenuPanel->SetVisibility(ESlateVisibility::Collapsed);
     LeaveButton->OnClicked.AddUniqueDynamic(this,&ThisClass::LeaveRoom);
     PreparationPanel = WidgetTree->ConstructWidget<UBorder>();
     PreparationPanel->SetBrushColor(FLinearColor(.02f, .025f, .035f, 1));
@@ -179,6 +194,7 @@ void UCFMatchStatusWidget::Refresh(const ACFWaitingGameState* State,bool bMenuOp
         WidgetTree->FindWidget(TEXT("ReturnSize"))->SetVisibility(ESlateVisibility::Collapsed);
     }
     SpectatorText->SetVisibility(bEliminated && !bFinal ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
+    MenuPanel->SetVisibility(bMenuOpen ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
     LeaveButton->SetVisibility(bMenuOpen ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 }
 

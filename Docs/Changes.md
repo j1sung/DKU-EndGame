@@ -43,6 +43,27 @@
 - 변경: 즉시 밀림은 유지하고 기본 0.4초 뒤 균형 충격과 상체 기울기를 적용한다. 월드 방향 저장으로 지연 중 회전을 반영하며, 개별 피격 예약·서버 복제·탈락/라운드 초기화를 처리한다. 상체 목표는 0.5초 유지 후 보간 복귀한다.
 - 확인: 호출·복제·초기화 경로 정적 검토와 diff 검사. 빌드·PIE·AnimBP 그래프 및 실제 다인 표시 시점은 미검증이다. [게임플레이](Gameplay/Overview.md#knockdown), [애니메이션](Animation/Overview.md#basic).
 
+<a id="change-20261111-match-esc-menu"></a>
+### 2026-11-11 · 경기 Esc 메뉴 버튼 정리
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋.
+- 변경: `CFMatchStatusWidget`의 기본 회색 나가기 버튼을 반투명 둥근 패널·주황색 버튼으로 바꾸고 글자 크기와 여백을 지정했다. 기존 나가기 처리와 Esc 입력 경로는 유지했다.
+- 확인: UE 5.8.2 빌드, 실제 로컬 PIE에서 Esc 열기·닫기·재열기와 두 해상도 캡처 통과. 실제 EOS 매치·퇴장 통신은 재시험하지 않았다. [구조와 확인 범위](UI/Overview.md#match-esc-menu).
+
+<a id="change-20261111-lobby-notice-card"></a>
+### 2026-11-11 · 로비 매칭 안내를 카드 내부로 배치
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋.
+- 변경: `WBP_CF_Lobby`의 안내를 제목·버튼 사이로 통합하고 자동 줄바꿈·카드 높이 확장을 적용했다. `CFLobbyWidget`의 표시 문구만 정리하고 매칭 상태/요청 처리는 유지했다.
+- 확인: UE 5.8.2 빌드·에셋 컴파일, 1280×720 및 960×640 실제 PIE 표시와 모의 제공자 기반 시작·취소·재확인 검사 통과. 실제 EOS 경기는 재시험하지 않았다. [로비 안내 상세](UI/Lobby.md#notice-card).
+
+<a id="change-20261111-final-result-table"></a>
+### 2026-11-11 · 최종 결과 화면의 점수표 정렬
+
+- 작업자: Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋.
+- 변경: `CFCompletedMatchWidget`의 한 줄 문자열 나열을 `순위 / 플레이어 / 총점 / MVP` 고정 폭 표로 변경했다. 공동 순위와 긴 이름 표시를 보완하고 점수 계산·세션 종료·개인별 확인 경로는 유지했다.
+- 확인: UE 5.8.2 빌드, 두 해상도의 실제 위젯 렌더링·공동 MVP·열 정렬·확인 버튼 동작 검사 통과. 실제 EOS 경기는 재시험하지 않았다. [UI 구조와 검증 범위](UI/Overview.md#final-result-table).
+
 <a id="change-20261110-round2-match-mode-restore"></a>
 ### 2026-11-10 · Round2 정식 경기 GameMode 복구
 

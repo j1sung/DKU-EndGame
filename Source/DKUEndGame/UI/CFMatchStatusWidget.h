@@ -21,6 +21,7 @@ private:
     UPROPERTY() TObjectPtr<class UTextBlock> SpectatorText;
     UPROPERTY() TObjectPtr<class UBorder> ResultPanel;
     UPROPERTY() TObjectPtr<class UBorder> PreparationPanel;
+    UPROPERTY() TObjectPtr<class UBorder> MenuPanel;
     UPROPERTY() TArray<TObjectPtr<class UHorizontalBox>> ScoreRows;
     UPROPERTY() TArray<TObjectPtr<class UTextBlock>> RankTexts;
     UPROPERTY() TArray<TObjectPtr<class UTextBlock>> NameTexts;
