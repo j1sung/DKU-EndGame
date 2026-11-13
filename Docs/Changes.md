@@ -1,5 +1,10 @@
 ﻿# 변경 이력
 
+<a id="change-20261113-round1-ring-boundary"></a>
+## 2026-11-13 · Round1 로프 바깥 이탈 방지
+
+- Codex 수행 · 미커밋. `Ring_Rope`와 `Cube35` 테두리 사이에 플레이어만 막는 사각 Blocking Volume 4개를 추가했다. 카메라는 통과하며 기존 링·플레이어 시작 위치는 보존했다. [배치·높이·편집 위치](Gameplay/Overview.md#round1-sparring-ring).
+
 <a id="change-20261112-eos-session-callback"></a>
 ## 2026-11-12 · EOS 세션 참가 콜백 수명 오류 수정
 

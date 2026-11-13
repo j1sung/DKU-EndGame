@@ -19,6 +19,8 @@
 
 ## 최근 기록
 
+- [2026-11-13 · Round1 로프 바깥 이탈 방지](Changes.md#change-20261113-round1-ring-boundary)
+
 - [2026-11-12 · EOS 세션 참가 콜백 수명 오류 수정](Changes.md#change-20261112-eos-session-callback)
 - [2026-11-12 · 초기 호스트 접속 제한을 60초로 확대](Changes.md#change-20261112-initial-connect-timeout)
 

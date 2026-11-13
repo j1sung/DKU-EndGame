@@ -220,6 +220,8 @@ BP 캐릭터의 `ChickenAudio` 컴포넌트에서 `SoundOverrides`에 이벤트�
 <a id="round1-sparring-ring"></a>
 ## Round1 도심 스파링장 크기 조정
 
+- 2026-11-13 · Codex 수행 · 미커밋: `L_Round1`의 `Ring_Rope`와 `Cube35` 바깥 테두리 사이에 `R1_RingBoundary_West/East/South/North` Blocking Volume 4개를 추가했다. 아웃라이너 `Space/Arena/InvisibleBoundary`에서 각 면을 편집한다. 두께 12cm, 하단 Z=200cm·상단 Z=1220cm(링 바닥 위 10m)이며 모서리를 연결해 플레이어 이탈을 막는다. Pawn만 Block하고 Camera 등 나머지 채널은 Ignore한다. 게임 중 숨김·그림자·오버랩 이벤트 제외이며 투명 재질/메시 에셋은 추가하지 않았다. 기존 98개 액터 배치·GameMode·네 시작 위치는 보존했다. 저장 후 재로딩과 캡슐 충돌 60곳, 로컬 4인 전투 시작, 높이 700/1120cm에서 실제 캐릭터의 네 방향 벽 차단 8회를 확인했다. 백업·검증은 `Saved/Round1Boundary/`에 있다.
+
 > 최근 구성 변경: 2026-11-08 · Codex 수행 · 요청자 GitHub ID 확인 필요 · 미커밋
 
 `Content/Map/L_Round1.umap`의 중앙 링을 4인 교전 공간 확보를 위해 12×12m에서 16×16m로 확대했다. 바닥 면적은 144㎡에서 256㎡로 약 78% 늘었다. 기존 중심 (50, 590)cm와 보행면 높이 220cm를 유지한다. 위의 `L_TestJS` 원본과 구분한다.
